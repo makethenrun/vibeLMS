@@ -241,7 +241,7 @@ export default async function HomeworkDetailPage({
         <AttachmentCard url={detail.homework.attachment_url} />
       ) : null}
 
-      {submission && submission.score !== null ? (
+      {submission && submission.score !== null && detail.homework.type === "FILE" ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Результат</CardTitle>
@@ -270,6 +270,7 @@ export default async function HomeworkDetailPage({
               questions={detail.questions}
               initialAnswers={initialAnswers}
               lastScore={submission?.score ?? null}
+              initialResults={detail.submissionResults}
             />
           ) : (
             <FileSubmission

@@ -107,7 +107,7 @@ export async function submitFileAction(
 export async function submitQuizAction(
   homeworkId: string,
   input: QuizSubmissionInput,
-): Promise<ActionResult<{ score: number }>> {
+): Promise<ActionResult<{ score: number; results: boolean[] }>> {
   const student = await getStudentOrNull();
   if (!student) return fail("Недостаточно прав");
 
@@ -116,14 +116,14 @@ export async function submitQuizAction(
 
   const db = createServerSupabaseClient();
   try {
-    const { score } = await submitQuiz(db, {
+    const { score, results } = await submitQuiz(db, {
       homeworkId,
       studentId: student.studentId,
       answers: parsed.data.answers,
     });
     revalidatePath(`/homework/${homeworkId}`);
     revalidatePath("/homework");
-    return ok({ score });
+    return ok({ score, results });
   } catch (error) {
     return fail(getErrorMessage(error));
   }

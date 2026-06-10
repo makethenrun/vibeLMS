@@ -28,6 +28,24 @@ function normalizeUrl(url: string | undefined): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
+/** Parses a stored quiz answer (JSON array) into a fixed-length string array. */
+function parseStoredAnswers(answer: string | null, count: number): string[] {
+  if (answer) {
+    try {
+      const parsed: unknown = JSON.parse(answer);
+      if (Array.isArray(parsed)) {
+        return Array.from({ length: count }, (_, index) => {
+          const value = parsed[index];
+          return typeof value === "string" ? value : "";
+        });
+      }
+    } catch {
+      // answer is not a JSON array — fall through to empty answers
+    }
+  }
+  return Array.from({ length: count }, () => "");
+}
+
 export async function getHomework(db: Db, id: string): Promise<Homework | null> {
   const { data } = await db.from("homework").select("*").eq("id", id).maybeSingle();
   return data ?? null;
@@ -277,6 +295,8 @@ export interface StudentHomeworkDetail {
   groupName: string;
   questions: QuizQuestionForStudent[];
   submission: HomeworkSubmission | null;
+  /** Per-question correctness of the existing submission (QUIZ only), else null. */
+  submissionResults: boolean[] | null;
 }
 
 export async function getStudentHomeworkDetail(
@@ -305,6 +325,9 @@ export async function getStudentHomeworkDetail(
     .maybeSingle();
 
   let questions: QuizQuestionForStudent[] = [];
+  // Correct answers are kept server-side (never sent to the student) and used
+  // only to compute per-question correctness booleans.
+  let correctAnswers: string[] = [];
   if (homework.type === "QUIZ") {
     const { data: quiz } = await db
       .from("quizzes")
@@ -314,15 +337,17 @@ export async function getStudentHomeworkDetail(
     if (quiz) {
       const { data: rows } = await db
         .from("quiz_questions")
-        .select("id, question, position, options")
+        .select("id, question, position, options, correct_answer")
         .eq("quiz_id", quiz.id)
         .order("position", { ascending: true });
-      questions = (rows ?? []).map((row) => ({
+      const list = rows ?? [];
+      questions = list.map((row) => ({
         id: row.id,
         question: row.question,
         position: row.position,
         options: row.options,
       }));
+      correctAnswers = list.map((row) => row.correct_answer);
     }
   }
 
@@ -333,12 +358,22 @@ export async function getStudentHomeworkDetail(
     .eq("student_id", studentId)
     .maybeSingle();
 
+  let submissionResults: boolean[] | null = null;
+  if (submission && homework.type === "QUIZ" && correctAnswers.length > 0) {
+    const studentAnswers = parseStoredAnswers(submission.answer, correctAnswers.length);
+    submissionResults = correctAnswers.map((correctAnswer, index) => {
+      const answer = normalizeAnswer(studentAnswers[index] ?? "");
+      return answer !== "" && answer === normalizeAnswer(correctAnswer);
+    });
+  }
+
   return {
     homework,
     lessonTitle: lesson.title,
     groupName: group?.name ?? "—",
     questions,
     submission: submission ?? null,
+    submissionResults,
   };
 }
 
@@ -375,7 +410,7 @@ export async function submitFileHomework(
 export async function submitQuiz(
   db: Db,
   params: { homeworkId: string; studentId: string; answers: string[] },
-): Promise<{ score: number }> {
+): Promise<{ score: number; results: boolean[] }> {
   await assertStudentCanAccess(db, params.homeworkId, params.studentId);
 
   const { data: quiz } = await db
@@ -393,9 +428,11 @@ export async function submitQuiz(
   const questionList = questions ?? [];
 
   let correct = 0;
-  questionList.forEach((question, index) => {
+  const results: boolean[] = questionList.map((question, index) => {
     const answer = normalizeAnswer(params.answers[index] ?? "");
-    if (answer !== "" && answer === normalizeAnswer(question.correct_answer)) correct += 1;
+    const ok = answer !== "" && answer === normalizeAnswer(question.correct_answer);
+    if (ok) correct += 1;
+    return ok;
   });
   const score =
     questionList.length > 0
@@ -414,5 +451,5 @@ export async function submitQuiz(
   );
   if (error) throw new Error(error.message);
 
-  return { score };
+  return { score, results };
 }
