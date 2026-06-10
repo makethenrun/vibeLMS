@@ -27,14 +27,18 @@ export function RegisterForm() {
   });
 
   async function onSubmit(values: RegisterInput) {
-    const result = await registerAction(values);
-    if (result.success) {
-      router.push("/dashboard");
-      router.refresh();
-      return;
+    try {
+      const result = await registerAction(values);
+      if (result.success) {
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+      applyFieldErrors(form.setError, result.fieldErrors);
+      toast.error(result.error);
+    } catch {
+      toast.error("Не удалось связаться с сервером. Попробуйте ещё раз.");
     }
-    applyFieldErrors(form.setError, result.fieldErrors);
-    toast.error(result.error);
   }
 
   return (

@@ -20,5 +20,11 @@ export function getErrorMessage(
   error: unknown,
   fallback = "Произошла ошибка. Попробуйте ещё раз.",
 ): string {
-  return error instanceof Error && error.message ? error.message : fallback;
+  if (error instanceof Error && error.message) return error.message;
+  // Supabase/PostgREST errors are plain objects with a `message` field.
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message: unknown }).message;
+    if (typeof message === "string" && message) return message;
+  }
+  return fallback;
 }
