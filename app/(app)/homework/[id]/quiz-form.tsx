@@ -55,18 +55,42 @@ export function QuizForm({ homeworkId, questions, initialAnswers, lastScore }: Q
         </div>
       ) : null}
 
-      {questions.map((question, index) => (
-        <div key={question.id} className="space-y-1.5">
-          <label className="text-sm font-medium">
-            {index + 1}. {question.question}
-          </label>
-          <Input
-            value={answers[index] ?? ""}
-            onChange={(event) => update(index, event.target.value)}
-            placeholder="Ваш ответ"
-          />
-        </div>
-      ))}
+      {questions.map((question, index) => {
+        const options = question.options ?? [];
+        const isChoice = options.length > 0;
+        return (
+          <div key={question.id} className="space-y-1.5">
+            <p className="text-sm font-medium">
+              {index + 1}. {question.question}
+            </p>
+            {isChoice ? (
+              <div className="space-y-1.5">
+                {options.map((option) => (
+                  <label
+                    key={option}
+                    className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-sm hover:bg-accent"
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${question.id}`}
+                      className="h-4 w-4"
+                      checked={answers[index] === option}
+                      onChange={() => update(index, option)}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <Input
+                value={answers[index] ?? ""}
+                onChange={(event) => update(index, event.target.value)}
+                placeholder="Ваш ответ"
+              />
+            )}
+          </div>
+        );
+      })}
 
       <LoadingButton type="submit" loading={submitting}>
         {score !== null ? "Пройти заново" : "Отправить ответы"}

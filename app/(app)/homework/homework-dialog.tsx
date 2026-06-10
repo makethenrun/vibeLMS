@@ -18,6 +18,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -32,10 +33,15 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { FileUpload } from "@/components/shared/file-upload";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { HOMEWORK_TYPE_LABELS } from "@/lib/constants";
-import { applyFieldErrors } from "@/lib/utils/form";
-import { homeworkSchema, type HomeworkInput } from "@/lib/validators";
+import {
+  homeworkFormSchema,
+  type HomeworkFormInput,
+  type HomeworkInput,
+} from "@/lib/validators";
 import { createHomeworkAction } from "./actions";
 
 interface LessonOption {
@@ -43,24 +49,64 @@ interface LessonOption {
   label: string;
 }
 
-const DEFAULTS: HomeworkInput = {
+interface MaterialOption {
+  id: string;
+  title: string;
+  fileUrl: string;
+}
+
+const DEFAULTS: HomeworkFormInput = {
   lessonId: "",
   title: "",
   type: "FILE",
   deadline: "",
+  attachmentUrl: "",
   questions: [],
 };
 
+const EMPTY_QUESTION = {
+  question: "",
+  kind: "TEXT" as const,
+  correctAnswer: "",
+  optionsText: "",
+};
+
+function toServerPayload(values: HomeworkFormInput): HomeworkInput {
+  return {
+    lessonId: values.lessonId,
+    title: values.title,
+    type: values.type,
+    deadline: values.deadline,
+    attachmentUrl: values.type === "FILE" ? values.attachmentUrl : "",
+    questions:
+      values.type === "QUIZ"
+        ? values.questions.map((question) => ({
+            question: question.question,
+            correctAnswer: question.correctAnswer,
+            options:
+              question.kind === "CHOICE"
+                ? question.optionsText
+                    .split("\n")
+                    .map((line) => line.trim())
+                    .filter((line) => line !== "")
+                : [],
+          }))
+        : [],
+  };
+}
+
 export function HomeworkDialog({
   lessons,
+  materials,
   trigger,
 }: {
   lessons: LessonOption[];
+  materials: MaterialOption[];
   trigger: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const form = useForm<HomeworkInput>({
-    resolver: zodResolver(homeworkSchema),
+  const form = useForm<HomeworkFormInput>({
+    resolver: zodResolver(homeworkFormSchema),
     defaultValues: DEFAULTS,
   });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "questions" });
@@ -71,21 +117,16 @@ export function HomeworkDialog({
   }, [open, form]);
 
   useEffect(() => {
-    if (type === "QUIZ" && fields.length === 0) {
-      append({ question: "", correctAnswer: "" });
-    }
+    if (type === "QUIZ" && fields.length === 0) append({ ...EMPTY_QUESTION });
   }, [type, fields.length, append]);
 
-  async function onSubmit(values: HomeworkInput) {
-    const payload: HomeworkInput =
-      values.type === "FILE" ? { ...values, questions: [] } : values;
-    const result = await createHomeworkAction(payload);
+  async function onSubmit(values: HomeworkFormInput) {
+    const result = await createHomeworkAction(toServerPayload(values));
     if (result.success) {
       toast.success("Задание создано");
       setOpen(false);
       return;
     }
-    applyFieldErrors(form.setError, result.fieldErrors);
     toast.error(result.error);
   }
 
@@ -179,6 +220,66 @@ export function HomeworkDialog({
               />
             </div>
 
+            {type === "FILE" ? (
+              <FormField
+                control={form.control}
+                name="attachmentUrl"
+                render={({ field }) => (
+                  <FormItem className="rounded-lg border p-3">
+                    <FormLabel>Файл задания (необязательно)</FormLabel>
+                    {materials.length > 0 ? (
+                      <Select
+                        value={
+                          field.value && materials.some((m) => m.fileUrl === field.value)
+                            ? field.value
+                            : ""
+                        }
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выбрать из материалов" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {materials.map((material) => (
+                            <SelectItem key={material.id} value={material.fileUrl}>
+                              {material.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : null}
+                    <FileUpload
+                      folder="materials"
+                      value={field.value || null}
+                      onUploaded={(url) => field.onChange(url ?? "")}
+                    />
+                    {field.value ? (
+                      <div className="flex items-center gap-3 text-sm">
+                        <a
+                          href={field.value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate text-primary hover:underline"
+                        >
+                          Прикреплённый файл
+                        </a>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => field.onChange("")}
+                        >
+                          убрать
+                        </button>
+                      </div>
+                    ) : null}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
+
             {type === "QUIZ" ? (
               <div className="space-y-3 rounded-lg border p-3">
                 <div className="flex items-center justify-between">
@@ -187,7 +288,7 @@ export function HomeworkDialog({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ question: "", correctAnswer: "" })}
+                    onClick={() => append({ ...EMPTY_QUESTION })}
                   >
                     <Plus className="h-4 w-4" />
                     Вопрос
@@ -196,49 +297,98 @@ export function HomeworkDialog({
                 {questionsMessage ? (
                   <p className="text-sm font-medium text-destructive">{questionsMessage}</p>
                 ) : null}
-                {fields.map((fieldItem, index) => (
-                  <div key={fieldItem.id} className="space-y-2 rounded-md bg-muted/40 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Вопрос {index + 1}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
-                        onClick={() => remove(index)}
-                        disabled={fields.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                {fields.map((fieldItem, index) => {
+                  const kind = form.watch(`questions.${index}.kind`);
+                  return (
+                    <div key={fieldItem.id} className="space-y-2 rounded-md bg-muted/40 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Вопрос {index + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => remove(index)}
+                          disabled={fields.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name={`questions.${index}.question`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="Текст вопроса" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`questions.${index}.kind`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="TEXT">Текстовый ответ</SelectItem>
+                                <SelectItem value="CHOICE">Выбор варианта</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {kind === "CHOICE" ? (
+                        <FormField
+                          control={form.control}
+                          name={`questions.${index}.optionsText`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea
+                                  placeholder={"Вариант 1\nВариант 2\nВариант 3"}
+                                  rows={3}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>Варианты — по одному на строку.</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : null}
+                      <FormField
+                        control={form.control}
+                        name={`questions.${index}.correctAnswer`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                placeholder={
+                                  kind === "CHOICE"
+                                    ? "Правильный вариант (как в списке)"
+                                    : "Правильный ответ"
+                                }
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <FormField
-                      control={form.control}
-                      name={`questions.${index}.question`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input placeholder="Текст вопроса" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`questions.${index}.correctAnswer`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input placeholder="Правильный ответ" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : null}
 

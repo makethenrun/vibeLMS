@@ -25,6 +25,7 @@ import {
   listHomeworkForTutor,
 } from "@/services/homework/homework.service";
 import { listLessonOptions } from "@/services/lessons/lessons.service";
+import { listMaterials } from "@/services/materials/materials.service";
 import type { StudentHomeworkItem } from "@/types";
 import { HomeworkActions } from "./homework-actions";
 import { HomeworkDialog } from "./homework-dialog";
@@ -44,10 +45,16 @@ export default async function HomeworkPage() {
   const db = createServerSupabaseClient();
 
   if (user.role === "TUTOR") {
-    const [homework, lessons] = await Promise.all([
+    const [homework, lessons, materials] = await Promise.all([
       listHomeworkForTutor(db),
       listLessonOptions(db),
+      listMaterials(db),
     ]);
+    const materialOptions = materials.map((material) => ({
+      id: material.id,
+      title: material.title,
+      fileUrl: material.file_url,
+    }));
 
     const addButton = (
       <Button disabled={lessons.length === 0}>
@@ -62,7 +69,11 @@ export default async function HomeworkPage() {
           title="Домашние задания"
           description="Задания и тесты, привязанные к занятиям."
           actions={
-            lessons.length > 0 ? <HomeworkDialog lessons={lessons} trigger={addButton} /> : addButton
+            lessons.length > 0 ? (
+              <HomeworkDialog lessons={lessons} materials={materialOptions} trigger={addButton} />
+            ) : (
+              addButton
+            )
           }
         />
 

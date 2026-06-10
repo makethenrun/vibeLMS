@@ -68,6 +68,8 @@ export interface QuizQuestionForStudent {
   id: string;
   question: string;
   position: number;
+  /** Choices for multiple-choice questions; null/empty => free-text answer. */
+  options: string[] | null;
 }
 
 // --- Dashboard & statistics models -----------------------------------------

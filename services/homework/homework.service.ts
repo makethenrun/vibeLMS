@@ -22,6 +22,12 @@ function normalizeAnswer(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function normalizeUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 export async function getHomework(db: Db, id: string): Promise<Homework | null> {
   const { data } = await db.from("homework").select("*").eq("id", id).maybeSingle();
   return data ?? null;
@@ -141,6 +147,7 @@ export async function createHomework(db: Db, input: HomeworkInput): Promise<stri
       title: input.title,
       type: input.type,
       deadline: normalizeDeadline(input.deadline),
+      attachment_url: input.type === "FILE" ? normalizeUrl(input.attachmentUrl) : null,
     })
     .select("id")
     .single();
@@ -158,6 +165,7 @@ export async function createHomework(db: Db, input: HomeworkInput): Promise<stri
       quiz_id: quiz.id,
       question: question.question,
       correct_answer: question.correctAnswer,
+      options: question.options.length > 0 ? question.options : null,
       position: index,
     }));
     const { error: questionsError } = await db.from("quiz_questions").insert(questionRows);
@@ -306,13 +314,14 @@ export async function getStudentHomeworkDetail(
     if (quiz) {
       const { data: rows } = await db
         .from("quiz_questions")
-        .select("id, question, position")
+        .select("id, question, position, options")
         .eq("quiz_id", quiz.id)
         .order("position", { ascending: true });
       questions = (rows ?? []).map((row) => ({
         id: row.id,
         question: row.question,
         position: row.position,
+        options: row.options,
       }));
     }
   }

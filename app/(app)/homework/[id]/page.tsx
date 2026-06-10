@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Download } from "lucide-react";
+import { Check, Download, Paperclip, X } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +10,13 @@ import { HOMEWORK_TYPE_LABELS } from "@/lib/constants";
 import { getCurrentStudent } from "@/lib/auth/current-user";
 import { requireUser } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
-import { formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import {
   getStudentHomeworkDetail,
   getTutorHomeworkDetail,
   listSubmissions,
 } from "@/services/homework/homework.service";
+import type { QuizQuestion } from "@/types";
 import { FileSubmission } from "./file-submission";
 import { GradeForm } from "./grade-form";
 import { QuizForm } from "./quiz-form";
@@ -37,6 +38,66 @@ function parseAnswers(answer: string | null, count: number): string[] {
     }
   }
   return Array.from({ length: count }, () => "");
+}
+
+function isCorrect(given: string, correctAnswer: string): boolean {
+  const normalizedGiven = given.trim().toLowerCase();
+  return normalizedGiven !== "" && normalizedGiven === correctAnswer.trim().toLowerCase();
+}
+
+function AttachmentCard({ url }: { url: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Файл задания</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Button asChild variant="outline" size="sm">
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <Paperclip className="h-4 w-4" />
+            Скачать файл задания
+          </a>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Per-question correctness breakdown of a quiz submission (tutor view). */
+function QuizBreakdown({ questions, answer }: { questions: QuizQuestion[]; answer: string | null }) {
+  const studentAnswers = parseAnswers(answer, questions.length);
+  return (
+    <div className="space-y-1.5">
+      {questions.map((question, index) => {
+        const given = studentAnswers[index] ?? "";
+        const correct = isCorrect(given, question.correct_answer);
+        return (
+          <div
+            key={question.id}
+            className={cn(
+              "rounded-md border p-2 text-sm",
+              correct ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50",
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">
+                {index + 1}. {question.question}
+              </p>
+              {correct ? (
+                <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+              ) : (
+                <X className="h-4 w-4 shrink-0 text-red-600" />
+              )}
+            </div>
+            <p className="text-muted-foreground">Ответ ученика: {given || "—"}</p>
+            {!correct ? (
+              <p className="text-muted-foreground">Правильно: {question.correct_answer}</p>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default async function HomeworkDetailPage({
@@ -69,6 +130,10 @@ export default async function HomeworkDetailPage({
           ) : null}
         </div>
 
+        {detail.homework.type === "FILE" && detail.homework.attachment_url ? (
+          <AttachmentCard url={detail.homework.attachment_url} />
+        ) : null}
+
         {detail.homework.type === "QUIZ" ? (
           <Card>
             <CardHeader>
@@ -81,7 +146,14 @@ export default async function HomeworkDetailPage({
                     <p className="font-medium">
                       {index + 1}. {question.question}
                     </p>
-                    <p className="text-muted-foreground">Ответ: {question.correct_answer}</p>
+                    {question.options && question.options.length > 0 ? (
+                      <p className="text-muted-foreground">
+                        Варианты: {question.options.join(", ")}
+                      </p>
+                    ) : null}
+                    <p className="text-muted-foreground">
+                      Правильный ответ: {question.correct_answer}
+                    </p>
                   </li>
                 ))}
               </ol>
@@ -122,6 +194,10 @@ export default async function HomeworkDetailPage({
                     </Button>
                   ) : null}
 
+                  {detail.homework.type === "QUIZ" ? (
+                    <QuizBreakdown questions={detail.questions} answer={submission.answer} />
+                  ) : null}
+
                   <GradeForm
                     submissionId={submission.id}
                     homeworkId={detail.homework.id}
@@ -160,6 +236,10 @@ export default async function HomeworkDetailPage({
           <Badge variant="outline">Дедлайн: {formatDateTime(detail.homework.deadline)}</Badge>
         ) : null}
       </div>
+
+      {detail.homework.type === "FILE" && detail.homework.attachment_url ? (
+        <AttachmentCard url={detail.homework.attachment_url} />
+      ) : null}
 
       {submission && submission.score !== null ? (
         <Card>

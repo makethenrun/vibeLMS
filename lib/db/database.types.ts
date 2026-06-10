@@ -170,6 +170,7 @@ export interface Database {
           title: string;
           type: HomeworkType;
           deadline: string | null;
+          attachment_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -178,6 +179,7 @@ export interface Database {
           title: string;
           type: HomeworkType;
           deadline?: string | null;
+          attachment_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -186,6 +188,7 @@ export interface Database {
           title?: string;
           type?: HomeworkType;
           deadline?: string | null;
+          attachment_url?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -244,6 +247,7 @@ export interface Database {
           quiz_id: string;
           question: string;
           correct_answer: string;
+          options: string[] | null;
           position: number;
           created_at: string;
         };
@@ -252,6 +256,7 @@ export interface Database {
           quiz_id: string;
           question: string;
           correct_answer: string;
+          options?: string[] | null;
           position?: number;
           created_at?: string;
         };
@@ -260,6 +265,7 @@ export interface Database {
           quiz_id?: string;
           question?: string;
           correct_answer?: string;
+          options?: string[] | null;
           position?: number;
           created_at?: string;
         };

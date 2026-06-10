@@ -103,12 +103,14 @@ create table if not exists public.materials (
 -- homework
 -- ---------------------------------------------------------------------------
 create table if not exists public.homework (
-  id         uuid primary key default gen_random_uuid(),
-  lesson_id  uuid not null references public.lessons (id) on delete cascade,
-  title      text not null,
-  type       text not null check (type in ('FILE', 'QUIZ')),
-  deadline   timestamptz,
-  created_at timestamptz not null default now()
+  id             uuid primary key default gen_random_uuid(),
+  lesson_id      uuid not null references public.lessons (id) on delete cascade,
+  title          text not null,
+  type           text not null check (type in ('FILE', 'QUIZ')),
+  deadline       timestamptz,
+  -- For FILE homework: optional task file (uploaded or chosen from materials).
+  attachment_url text,
+  created_at     timestamptz not null default now()
 );
 
 create index if not exists homework_lesson_id_idx on public.homework (lesson_id);
@@ -150,6 +152,8 @@ create table if not exists public.quiz_questions (
   quiz_id        uuid not null references public.quizzes (id) on delete cascade,
   question       text not null,
   correct_answer text not null,
+  -- NULL/empty => free-text question; non-empty => multiple-choice options.
+  options        text[],
   position       integer not null default 0,
   created_at     timestamptz not null default now()
 );
