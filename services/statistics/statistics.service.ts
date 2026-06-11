@@ -164,3 +164,80 @@ export async function getOverviewStatistics(db: Db): Promise<OverviewStatistics>
     totalPaid,
   };
 }
+
+export interface PaymentBreakdownItem {
+  label: string;
+  total: number;
+}
+
+export interface PaymentStatistics {
+  byMonth: PaymentBreakdownItem[];
+  byGroup: PaymentBreakdownItem[];
+  byStudent: PaymentBreakdownItem[];
+}
+
+export async function getPaymentStatistics(db: Db): Promise<PaymentStatistics> {
+  const { data: payments } = await db
+    .from("payments")
+    .select("student_id, amount, payment_date");
+  const list = payments ?? [];
+
+  // By month (YYYY-MM)
+  const monthTotals = new Map<string, number>();
+  const studentTotals = new Map<string, number>();
+  for (const payment of list) {
+    const month = payment.payment_date.slice(0, 7);
+    const amount = Number(payment.amount);
+    monthTotals.set(month, (monthTotals.get(month) ?? 0) + amount);
+    studentTotals.set(payment.student_id, (studentTotals.get(payment.student_id) ?? 0) + amount);
+  }
+
+  const byMonth: PaymentBreakdownItem[] = [...monthTotals.entries()]
+    .map(([label, total]) => ({ label, total }))
+    .sort((a, b) => b.label.localeCompare(a.label))
+    .slice(0, 12);
+
+  const studentIds = [...studentTotals.keys()];
+
+  // By student (top 10)
+  let studentNameById = new Map<string, string>();
+  if (studentIds.length > 0) {
+    const { data: students } = await db
+      .from("students")
+      .select("id, full_name")
+      .in("id", studentIds);
+    studentNameById = new Map(
+      (students ?? []).map((student) => [student.id, student.full_name] as const),
+    );
+  }
+  const byStudent: PaymentBreakdownItem[] = [...studentTotals.entries()]
+    .map(([studentId, total]) => ({ label: studentNameById.get(studentId) ?? "—", total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
+
+  // By group: a student's total is attributed to every group they belong to.
+  const byGroup: PaymentBreakdownItem[] = [];
+  if (studentIds.length > 0) {
+    const { data: members } = await db.from("group_members").select("group_id, student_id");
+    const groupTotals = new Map<string, number>();
+    for (const member of members ?? []) {
+      const studentTotal = studentTotals.get(member.student_id);
+      if (studentTotal) {
+        groupTotals.set(member.group_id, (groupTotals.get(member.group_id) ?? 0) + studentTotal);
+      }
+    }
+    const groupIds = [...groupTotals.keys()];
+    if (groupIds.length > 0) {
+      const { data: groups } = await db.from("groups").select("id, name").in("id", groupIds);
+      const groupNameById = new Map(
+        (groups ?? []).map((group) => [group.id, group.name] as const),
+      );
+      for (const [groupId, total] of groupTotals.entries()) {
+        byGroup.push({ label: groupNameById.get(groupId) ?? "—", total });
+      }
+      byGroup.sort((a, b) => b.total - a.total);
+    }
+  }
+
+  return { byMonth, byGroup, byStudent };
+}

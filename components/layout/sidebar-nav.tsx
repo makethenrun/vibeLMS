@@ -30,19 +30,23 @@ export function SidebarNav({ role, className, onNavigate }: SidebarNavProps) {
             title={item.label}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "group/nav relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-200",
+              // px-3 (nav) + w-10 (icon zone) + gap-3 == 64px, so the label
+              // starts exactly at the collapsed rail edge and is fully hidden.
+              "group/nav flex h-10 items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-200",
               isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-sidebar-foreground hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >
-            <Icon
-              className={cn(
-                "h-5 w-5 shrink-0 transition-transform duration-200",
-                !isActive && "group-hover/nav:scale-110",
-              )}
-            />
-            <span className="whitespace-nowrap">{item.label}</span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <Icon
+                className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  !isActive && "group-hover/nav:scale-110",
+                )}
+              />
+            </span>
+            <span className="whitespace-nowrap pr-3">{item.label}</span>
           </Link>
         );
       })}

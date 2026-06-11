@@ -27,14 +27,16 @@ interface AppShellProps {
 
 function Brand({ orgName, logoUrl }: { orgName: string; logoUrl: string | null }) {
   return (
-    <Link href="/dashboard" className="flex items-center gap-2.5 overflow-hidden font-semibold">
-      {logoUrl ? (
-        <img src={logoUrl} alt={orgName} className="h-8 w-8 shrink-0 rounded-lg object-cover" />
-      ) : (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          <GraduationCap className="h-5 w-5" />
-        </span>
-      )}
+    <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden font-semibold">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+        {logoUrl ? (
+          <img src={logoUrl} alt={orgName} className="h-8 w-8 rounded-lg object-cover" />
+        ) : (
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+            <GraduationCap className="h-5 w-5" />
+          </span>
+        )}
+      </span>
       <span className="whitespace-nowrap text-base tracking-tight">{orgName}</span>
     </Link>
   );
@@ -55,7 +57,10 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
         <div className="flex h-14 shrink-0 items-center border-b px-3">
           <Brand orgName={orgName} logoUrl={logoUrl} />
         </div>
-        <SidebarNav role={role} className="flex-1 overflow-y-auto overflow-x-hidden p-2.5" />
+        <SidebarNav
+          role={role}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3"
+        />
       </aside>
 
       {/* Main column */}
@@ -75,7 +80,7 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
               </SheetHeader>
               <SidebarNav
                 role={role}
-                className="p-2.5"
+                className="px-3 py-3"
                 onNavigate={() => setMobileOpen(false)}
               />
             </SheetContent>

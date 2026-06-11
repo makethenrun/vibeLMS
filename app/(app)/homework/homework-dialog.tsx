@@ -111,9 +111,13 @@ export function HomeworkDialog({
   });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "questions" });
   const type = form.watch("type");
+  const [hasDeadline, setHasDeadline] = useState(false);
 
   useEffect(() => {
-    if (open) form.reset(DEFAULTS);
+    if (open) {
+      form.reset(DEFAULTS);
+      setHasDeadline(false);
+    }
   }, [open, form]);
 
   useEffect(() => {
@@ -183,41 +187,55 @@ export function HomeworkDialog({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Тип</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="FILE">{HOMEWORK_TYPE_LABELS.FILE}</SelectItem>
-                        <SelectItem value="QUIZ">{HOMEWORK_TYPE_LABELS.QUIZ}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="deadline"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Дедлайн</FormLabel>
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Тип</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
-                      <Input type="datetime-local" {...field} value={field.value ?? ""} />
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    <SelectContent>
+                      <SelectItem value="FILE">{HOMEWORK_TYPE_LABELS.FILE}</SelectItem>
+                      <SelectItem value="QUIZ">{HOMEWORK_TYPE_LABELS.QUIZ}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-2">
+              <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary"
+                  checked={hasDeadline}
+                  onChange={(event) => {
+                    setHasDeadline(event.target.checked);
+                    if (!event.target.checked) form.setValue("deadline", "");
+                  }}
+                />
+                Указать дедлайн
+              </label>
+              {hasDeadline ? (
+                <FormField
+                  control={form.control}
+                  name="deadline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
             </div>
 
             {type === "FILE" ? (
