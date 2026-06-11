@@ -24,7 +24,7 @@ export type QuizQuestionInput = z.infer<typeof quizQuestionSchema>;
 
 export const homeworkSchema = z
   .object({
-    lessonId: z.string().uuid("Выберите занятие"),
+    lessonIds: z.array(z.string().uuid()).min(1, "Выберите хотя бы одно занятие"),
     title: z.string().trim().min(2, "Минимум 2 символа").max(160, "Максимум 160 символов"),
     type: z.enum(["FILE", "QUIZ"]),
     deadline: z.string().optional().or(z.literal("")),
@@ -89,7 +89,7 @@ export type HomeworkQuestionFormInput = z.infer<typeof homeworkQuestionFormSchem
 
 export const homeworkFormSchema = z
   .object({
-    lessonId: z.string().uuid("Выберите занятие"),
+    lessonIds: z.array(z.string().uuid()).min(1, "Выберите хотя бы одно занятие"),
     title: z.string().trim().min(2, "Минимум 2 символа").max(160, "Максимум 160 символов"),
     type: z.enum(["FILE", "QUIZ"]),
     deadline: z.string().optional().or(z.literal("")),

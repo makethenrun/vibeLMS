@@ -56,7 +56,7 @@ interface MaterialOption {
 }
 
 const DEFAULTS: HomeworkFormInput = {
-  lessonId: "",
+  lessonIds: [],
   title: "",
   type: "FILE",
   deadline: "",
@@ -73,7 +73,7 @@ const EMPTY_QUESTION = {
 
 function toServerPayload(values: HomeworkFormInput): HomeworkInput {
   return {
-    lessonId: values.lessonId,
+    lessonIds: values.lessonIds,
     title: values.title,
     type: values.type,
     deadline: values.deadline,
@@ -152,24 +152,35 @@ export function HomeworkDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="lessonId"
+              name="lessonIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Занятие</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите занятие" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {lessons.map((lesson) => (
-                        <SelectItem key={lesson.id} value={lesson.id}>
-                          {lesson.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Занятия / группы</FormLabel>
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border p-2">
+                    {lessons.map((lesson) => {
+                      const checked = field.value.includes(lesson.id);
+                      return (
+                        <label
+                          key={lesson.id}
+                          className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-accent"
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 shrink-0 accent-primary"
+                            checked={checked}
+                            onChange={(event) => {
+                              if (event.target.checked) {
+                                field.onChange([...field.value, lesson.id]);
+                              } else {
+                                field.onChange(field.value.filter((id) => id !== lesson.id));
+                              }
+                            }}
+                          />
+                          <span>{lesson.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

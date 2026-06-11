@@ -2,11 +2,12 @@ import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
 import { getStudentGroupIds } from "@/services/groups/groups.service";
-import type { GradeSubmissionInput, HomeworkInput } from "@/lib/validators";
+import type { GradeSubmissionInput } from "@/lib/validators";
 import type {
   Homework,
   HomeworkListItem,
   HomeworkSubmission,
+  HomeworkType,
   QuizQuestion,
   QuizQuestionForStudent,
   StudentHomeworkItem,
@@ -157,7 +158,22 @@ export async function getTutorHomeworkDetail(
   };
 }
 
-export async function createHomework(db: Db, input: HomeworkInput): Promise<string> {
+export interface CreateHomeworkQuestion {
+  question: string;
+  correctAnswer: string;
+  options: string[];
+}
+
+export interface CreateHomeworkInput {
+  lessonId: string;
+  title: string;
+  type: HomeworkType;
+  deadline?: string;
+  attachmentUrl?: string;
+  questions: CreateHomeworkQuestion[];
+}
+
+export async function createHomework(db: Db, input: CreateHomeworkInput): Promise<string> {
   const { data: homework, error } = await db
     .from("homework")
     .insert({
@@ -191,6 +207,46 @@ export async function createHomework(db: Db, input: HomeworkInput): Promise<stri
   }
 
   return homework.id;
+}
+
+/** Copies a homework (and its quiz questions) to another lesson. */
+export async function duplicateHomework(
+  db: Db,
+  homeworkId: string,
+  targetLessonId: string,
+): Promise<string> {
+  const homework = await getHomework(db, homeworkId);
+  if (!homework) throw new Error("Задание не найдено");
+
+  let questions: CreateHomeworkQuestion[] = [];
+  if (homework.type === "QUIZ") {
+    const { data: quiz } = await db
+      .from("quizzes")
+      .select("id")
+      .eq("homework_id", homework.id)
+      .maybeSingle();
+    if (quiz) {
+      const { data: rows } = await db
+        .from("quiz_questions")
+        .select("question, correct_answer, options, position")
+        .eq("quiz_id", quiz.id)
+        .order("position", { ascending: true });
+      questions = (rows ?? []).map((row) => ({
+        question: row.question,
+        correctAnswer: row.correct_answer,
+        options: row.options ?? [],
+      }));
+    }
+  }
+
+  return createHomework(db, {
+    lessonId: targetLessonId,
+    title: homework.title,
+    type: homework.type,
+    deadline: homework.deadline ?? undefined,
+    attachmentUrl: homework.attachment_url ?? undefined,
+    questions,
+  });
 }
 
 export async function deleteHomework(db: Db, id: string): Promise<void> {

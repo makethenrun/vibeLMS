@@ -123,7 +123,7 @@ export default async function HomeworkPage() {
                     </TableCell>
                     <TableCell>{item.submissionCount}</TableCell>
                     <TableCell className="text-right">
-                      <HomeworkActions id={item.id} title={item.title} />
+                      <HomeworkActions id={item.id} title={item.title} lessons={lessons} />
                     </TableCell>
                   </TableRow>
                 ))}

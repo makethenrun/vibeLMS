@@ -18,6 +18,7 @@ import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action
 import {
   createHomework,
   deleteHomework,
+  duplicateHomework,
   gradeSubmission,
   submitFileHomework,
   submitQuiz,
@@ -32,7 +33,36 @@ export async function createHomeworkAction(input: HomeworkInput): Promise<Action
 
   const db = createServerSupabaseClient();
   try {
-    await createHomework(db, parsed.data);
+    // The same task can be assigned to several lessons/groups at once.
+    for (const lessonId of parsed.data.lessonIds) {
+      await createHomework(db, {
+        lessonId,
+        title: parsed.data.title,
+        type: parsed.data.type,
+        deadline: parsed.data.deadline,
+        attachmentUrl: parsed.data.attachmentUrl,
+        questions: parsed.data.questions,
+      });
+    }
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+
+  revalidatePath("/homework");
+  return ok();
+}
+
+export async function duplicateHomeworkAction(
+  homeworkId: string,
+  targetLessonId: string,
+): Promise<ActionResult> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return fail("Недостаточно прав");
+  if (!targetLessonId) return fail("Выберите занятие");
+
+  const db = createServerSupabaseClient();
+  try {
+    await duplicateHomework(db, homeworkId, targetLessonId);
   } catch (error) {
     return fail(getErrorMessage(error));
   }

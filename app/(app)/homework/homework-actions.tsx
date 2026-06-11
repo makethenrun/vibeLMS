@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteHomeworkAction } from "./actions";
+import { DuplicateHomeworkDialog } from "./duplicate-dialog";
 
-export function HomeworkActions({ id, title }: { id: string; title: string }) {
+interface LessonOption {
+  id: string;
+  label: string;
+}
+
+export function HomeworkActions({
+  id,
+  title,
+  lessons,
+}: {
+  id: string;
+  title: string;
+  lessons: LessonOption[];
+}) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
 
   return (
     <>
@@ -33,6 +48,10 @@ export function HomeworkActions({ id, title }: { id: string; title: string }) {
               <ExternalLink className="h-4 w-4" />
               Открыть
             </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setDuplicateOpen(true)}>
+            <Copy className="h-4 w-4" />
+            Дублировать
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -57,6 +76,12 @@ export function HomeworkActions({ id, title }: { id: string; title: string }) {
         variant="destructive"
         successMessage="Задание удалено"
         action={deleteHomeworkAction.bind(null, id)}
+      />
+      <DuplicateHomeworkDialog
+        homeworkId={id}
+        lessons={lessons}
+        open={duplicateOpen}
+        onOpenChange={setDuplicateOpen}
       />
     </>
   );
