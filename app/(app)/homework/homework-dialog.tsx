@@ -34,7 +34,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUpload } from "@/components/shared/file-upload";
+import { MultiFileUpload } from "@/components/shared/multi-file-upload";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { HOMEWORK_TYPE_LABELS } from "@/lib/constants";
 import {
@@ -60,7 +60,7 @@ const DEFAULTS: HomeworkFormInput = {
   title: "",
   type: "FILE",
   deadline: "",
-  attachmentUrl: "",
+  attachmentUrls: [],
   maxAttemptsText: "",
   questions: [],
 };
@@ -86,7 +86,7 @@ function toServerPayload(values: HomeworkFormInput): HomeworkInput {
     title: values.title,
     type: values.type,
     deadline: values.deadline,
-    attachmentUrl: values.type === "FILE" ? values.attachmentUrl : "",
+    attachmentUrls: values.type === "FILE" ? values.attachmentUrls : [],
     questions:
       values.type === "QUIZ"
         ? values.questions.map((question) => {
@@ -273,60 +273,51 @@ export function HomeworkDialog({
             {type === "FILE" ? (
               <FormField
                 control={form.control}
-                name="attachmentUrl"
-                render={({ field }) => (
-                  <FormItem className="rounded-lg border p-3">
-                    <FormLabel>Файл задания (необязательно)</FormLabel>
-                    {materials.length > 0 ? (
-                      <Select
-                        value={
-                          field.value && materials.some((m) => m.fileUrl === field.value)
-                            ? field.value
-                            : ""
-                        }
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Выбрать из материалов" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {materials.map((material) => (
-                            <SelectItem key={material.id} value={material.fileUrl}>
-                              {material.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : null}
-                    <FileUpload
-                      folder="materials"
-                      value={field.value || null}
-                      onUploaded={(url) => field.onChange(url ?? "")}
-                    />
-                    {field.value ? (
-                      <div className="flex items-center gap-3 text-sm">
-                        <a
-                          href={field.value}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="truncate text-primary hover:underline"
-                        >
-                          Прикреплённый файл
-                        </a>
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => field.onChange("")}
-                        >
-                          убрать
-                        </button>
-                      </div>
-                    ) : null}
-                    <FormMessage />
-                  </FormItem>
-                )}
+                name="attachmentUrls"
+                render={({ field }) => {
+                  const urls = field.value;
+                  const atMax = urls.length >= 5;
+                  const addUrl = (url: string) => {
+                    if (!url || urls.includes(url) || urls.length >= 5) return;
+                    field.onChange([...urls, url]);
+                  };
+                  return (
+                    <FormItem className="rounded-lg border p-3">
+                      <FormLabel>Файлы задания (до 5, необязательно)</FormLabel>
+                      {materials.length > 0 ? (
+                        <Select value="" onValueChange={addUrl}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  atMax ? "Достигнут лимит (5)" : "Добавить из материалов"
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {materials.map((material) => (
+                              <SelectItem
+                                key={material.id}
+                                value={material.fileUrl}
+                                disabled={atMax || urls.includes(material.fileUrl)}
+                              >
+                                {material.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : null}
+                      <MultiFileUpload
+                        folder="materials"
+                        value={urls}
+                        onChange={field.onChange}
+                        max={5}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             ) : null}
 

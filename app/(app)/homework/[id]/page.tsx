@@ -17,6 +17,7 @@ import {
   gradeQuestion,
   listQuizAttempts,
   listSubmissions,
+  mergeAttachmentUrls,
   parseQuizAnswers,
   type TutorQuizAttempt,
 } from "@/services/homework/homework.service";
@@ -24,6 +25,7 @@ import type { QuizQuestion } from "@/types";
 import { FileSubmission } from "./file-submission";
 import { GradeForm } from "./grade-form";
 import { QuizForm } from "./quiz-form";
+import { TutorAttempts, type AttemptView } from "./tutor-attempts";
 
 export const metadata: Metadata = { title: "Задание" };
 
@@ -37,19 +39,65 @@ function correctAnswerText(question: QuizQuestion): string {
   return correct.join(", ");
 }
 
-function AttachmentCard({ url }: { url: string }) {
+/** Builds the per-attempt, per-question breakdown shown to the tutor. */
+function buildAttemptViews(
+  questions: QuizQuestion[],
+  attempts: TutorQuizAttempt[],
+): AttemptView[] {
+  return attempts.map((attempt) => {
+    const selected = parseQuizAnswers(attempt.answers, questions.length);
+    return {
+      attemptNo: attempt.attemptNo,
+      score: attempt.score,
+      createdAt: attempt.createdAt,
+      breakdown: questions.map((question, index) => {
+        const given = selected[index] ?? [];
+        return {
+          id: question.id,
+          question: `${index + 1}. ${question.question}`,
+          given: given.join(", "),
+          fraction: gradeQuestion(question, given),
+          correctText: correctAnswerText(question),
+        };
+      }),
+    };
+  });
+}
+
+/** A row of download links for one or more attached files. */
+function FileLinks({ urls, single }: { urls: string[]; single: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {urls.map((url, index) => (
+        <Button key={url} asChild size="sm" variant="outline">
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <Download className="h-4 w-4" />
+            {urls.length > 1 ? `Файл ${index + 1}` : single}
+          </a>
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function AttachmentCard({ urls }: { urls: string[] }) {
+  if (urls.length === 0) return null;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Файл задания</CardTitle>
+        <CardTitle className="text-base">
+          {urls.length > 1 ? "Файлы задания" : "Файл задания"}
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Button asChild variant="outline" size="sm">
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            <Paperclip className="h-4 w-4" />
-            Скачать файл задания
-          </a>
-        </Button>
+      <CardContent className="flex flex-wrap gap-2">
+        {urls.map((url, index) => (
+          <Button key={url} asChild variant="outline" size="sm">
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              <Paperclip className="h-4 w-4" />
+              {urls.length > 1 ? `Файл ${index + 1}` : "Скачать файл задания"}
+            </a>
+          </Button>
+        ))}
       </CardContent>
     </Card>
   );
@@ -102,16 +150,6 @@ function QuizBreakdown({ questions, answer }: { questions: QuizQuestion[]; answe
   );
 }
 
-function TutorAttempts({ attempts }: { attempts: TutorQuizAttempt[] }) {
-  if (attempts.length <= 1) return null;
-  return (
-    <p className="text-xs text-muted-foreground">
-      Попытки:{" "}
-      {attempts.map((attempt) => `№${attempt.attemptNo} — ${attempt.score ?? "—"}`).join(", ")}
-    </p>
-  );
-}
-
 export default async function HomeworkDetailPage({
   params,
 }: {
@@ -133,6 +171,11 @@ export default async function HomeworkDetailPage({
       attemptsByStudent.set(attempt.studentId, list);
     }
 
+    const taskFiles = mergeAttachmentUrls(
+      detail.homework.attachment_urls,
+      detail.homework.attachment_url,
+    );
+
     return (
       <div className="space-y-6">
         <PageHeader
@@ -149,9 +192,7 @@ export default async function HomeworkDetailPage({
           ) : null}
         </div>
 
-        {detail.homework.type === "FILE" && detail.homework.attachment_url ? (
-          <AttachmentCard url={detail.homework.attachment_url} />
-        ) : null}
+        {detail.homework.type === "FILE" ? <AttachmentCard urls={taskFiles} /> : null}
 
         {detail.homework.type === "QUIZ" ? (
           <Card>
@@ -193,47 +234,55 @@ export default async function HomeworkDetailPage({
             {submissions.length === 0 ? (
               <p className="text-sm text-muted-foreground">Пока никто не сдал задание.</p>
             ) : (
-              submissions.map((submission) => (
-                <div key={submission.id} className="space-y-3 rounded-lg border p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{submission.studentName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Сдано: {formatDateTime(submission.submitted_at)}
-                      </p>
+              submissions.map((submission) => {
+                const submissionFiles =
+                  detail.homework.type === "FILE"
+                    ? mergeAttachmentUrls(submission.attachment_urls, submission.answer)
+                    : [];
+                const attemptViews =
+                  detail.homework.type === "QUIZ"
+                    ? buildAttemptViews(
+                        detail.questions,
+                        attemptsByStudent.get(submission.student_id) ?? [],
+                      )
+                    : [];
+                return (
+                  <div key={submission.id} className="space-y-3 rounded-lg border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{submission.studentName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Сдано: {formatDateTime(submission.submitted_at)}
+                        </p>
+                      </div>
+                      {submission.score !== null ? (
+                        <Badge variant="success">Балл: {submission.score}</Badge>
+                      ) : (
+                        <Badge variant="secondary">Не оценено</Badge>
+                      )}
                     </div>
-                    {submission.score !== null ? (
-                      <Badge variant="success">Балл: {submission.score}</Badge>
-                    ) : (
-                      <Badge variant="secondary">Не оценено</Badge>
-                    )}
+
+                    {detail.homework.type === "FILE" && submissionFiles.length > 0 ? (
+                      <FileLinks urls={submissionFiles} single="Открыть решение" />
+                    ) : null}
+
+                    {detail.homework.type === "QUIZ" ? (
+                      <QuizBreakdown questions={detail.questions} answer={submission.answer} />
+                    ) : null}
+
+                    {detail.homework.type === "QUIZ" ? (
+                      <TutorAttempts attempts={attemptViews} />
+                    ) : null}
+
+                    <GradeForm
+                      submissionId={submission.id}
+                      homeworkId={detail.homework.id}
+                      defaultScore={submission.score}
+                      defaultComment={submission.comment}
+                    />
                   </div>
-
-                  {detail.homework.type === "FILE" && submission.answer ? (
-                    <Button asChild size="sm" variant="outline">
-                      <a href={submission.answer} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4" />
-                        Открыть решение
-                      </a>
-                    </Button>
-                  ) : null}
-
-                  {detail.homework.type === "QUIZ" ? (
-                    <QuizBreakdown questions={detail.questions} answer={submission.answer} />
-                  ) : null}
-
-                  {detail.homework.type === "QUIZ" ? (
-                    <TutorAttempts attempts={attemptsByStudent.get(submission.student_id) ?? []} />
-                  ) : null}
-
-                  <GradeForm
-                    submissionId={submission.id}
-                    homeworkId={detail.homework.id}
-                    defaultScore={submission.score}
-                    defaultComment={submission.comment}
-                  />
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -248,6 +297,14 @@ export default async function HomeworkDetailPage({
 
   const submission = detail.submission;
   const initialAnswers = parseQuizAnswers(submission?.answer ?? null, detail.questions.length);
+  const taskFiles = mergeAttachmentUrls(
+    detail.homework.attachment_urls,
+    detail.homework.attachment_url,
+  );
+  const submittedFiles = mergeAttachmentUrls(
+    submission?.attachment_urls ?? null,
+    submission?.answer ?? null,
+  );
 
   return (
     <div className="space-y-6">
@@ -265,9 +322,7 @@ export default async function HomeworkDetailPage({
         ) : null}
       </div>
 
-      {detail.homework.type === "FILE" && detail.homework.attachment_url ? (
-        <AttachmentCard url={detail.homework.attachment_url} />
-      ) : null}
+      {detail.homework.type === "FILE" ? <AttachmentCard urls={taskFiles} /> : null}
 
       {submission && submission.score !== null && detail.homework.type === "FILE" ? (
         <Card>
@@ -309,10 +364,7 @@ export default async function HomeworkDetailPage({
               maxAttempts={detail.maxAttempts}
             />
           ) : (
-            <FileSubmission
-              homeworkId={detail.homework.id}
-              currentUrl={submission?.answer ?? null}
-            />
+            <FileSubmission homeworkId={detail.homework.id} currentUrls={submittedFiles} />
           )}
         </CardContent>
       </Card>

@@ -190,6 +190,7 @@ export interface Database {
           type: HomeworkType;
           deadline: string | null;
           attachment_url: string | null;
+          attachment_urls: string[] | null;
           max_attempts: number | null;
           created_at: string;
         };
@@ -200,6 +201,7 @@ export interface Database {
           type: HomeworkType;
           deadline?: string | null;
           attachment_url?: string | null;
+          attachment_urls?: string[] | null;
           max_attempts?: number | null;
           created_at?: string;
         };
@@ -210,6 +212,7 @@ export interface Database {
           type?: HomeworkType;
           deadline?: string | null;
           attachment_url?: string | null;
+          attachment_urls?: string[] | null;
           max_attempts?: number | null;
           created_at?: string;
         };
@@ -251,6 +254,7 @@ export interface Database {
           homework_id: string;
           student_id: string;
           answer: string | null;
+          attachment_urls: string[] | null;
           score: number | null;
           comment: string | null;
           submitted_at: string;
@@ -260,6 +264,7 @@ export interface Database {
           homework_id: string;
           student_id: string;
           answer?: string | null;
+          attachment_urls?: string[] | null;
           score?: number | null;
           comment?: string | null;
           submitted_at?: string;
@@ -269,6 +274,7 @@ export interface Database {
           homework_id?: string;
           student_id?: string;
           answer?: string | null;
+          attachment_urls?: string[] | null;
           score?: number | null;
           comment?: string | null;
           submitted_at?: string;

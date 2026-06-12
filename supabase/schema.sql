@@ -122,7 +122,10 @@ create table if not exists public.homework (
   type           text not null check (type in ('FILE', 'QUIZ')),
   deadline       timestamptz,
   -- For FILE homework: optional task file (uploaded or chosen from materials).
+  -- attachment_url keeps the first file for back-compat; attachment_urls holds
+  -- the full list (up to 5).
   attachment_url text,
+  attachment_urls text[],
   -- For QUIZ homework: max number of attempts (NULL = unlimited).
   max_attempts   integer,
   created_at     timestamptz not null default now()
@@ -132,18 +135,20 @@ create index if not exists homework_lesson_id_idx on public.homework (lesson_id)
 
 -- ---------------------------------------------------------------------------
 -- homework_submissions
--- For FILE homework `answer` stores the uploaded file URL.
+-- For FILE homework `answer` stores the first uploaded file URL (back-compat)
+-- and `attachment_urls` holds the full list of submitted files (up to 5).
 -- For QUIZ homework `answer` stores a JSON array of the student's answers.
 -- `score` is a 0..100 percentage (auto-computed for quizzes, manual for files).
 -- ---------------------------------------------------------------------------
 create table if not exists public.homework_submissions (
-  id           uuid primary key default gen_random_uuid(),
-  homework_id  uuid not null references public.homework (id) on delete cascade,
-  student_id   uuid not null references public.students (id) on delete cascade,
-  answer       text,
-  score        numeric(5, 2),
-  comment      text,
-  submitted_at timestamptz not null default now(),
+  id              uuid primary key default gen_random_uuid(),
+  homework_id     uuid not null references public.homework (id) on delete cascade,
+  student_id      uuid not null references public.students (id) on delete cascade,
+  answer          text,
+  attachment_urls text[],
+  score           numeric(5, 2),
+  comment         text,
+  submitted_at    timestamptz not null default now(),
   unique (homework_id, student_id)
 );
 

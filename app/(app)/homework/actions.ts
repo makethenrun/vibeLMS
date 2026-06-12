@@ -40,7 +40,7 @@ export async function createHomeworkAction(input: HomeworkInput): Promise<Action
         title: parsed.data.title,
         type: parsed.data.type,
         deadline: parsed.data.deadline,
-        attachmentUrl: parsed.data.attachmentUrl,
+        attachmentUrls: parsed.data.attachmentUrls,
         maxAttempts: parsed.data.maxAttempts,
         questions: parsed.data.questions,
       });
@@ -124,7 +124,7 @@ export async function submitFileAction(
     await submitFileHomework(db, {
       homeworkId,
       studentId: student.studentId,
-      fileUrl: parsed.data.answer,
+      fileUrls: parsed.data.fileUrls,
     });
   } catch (error) {
     return fail(getErrorMessage(error));

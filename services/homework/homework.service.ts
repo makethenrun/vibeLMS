@@ -25,10 +25,22 @@ function normalizeAnswer(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function normalizeUrl(url: string | undefined): string | null {
-  if (!url) return null;
-  const trimmed = url.trim();
-  return trimmed === "" ? null : trimmed;
+function normalizeUrls(urls: string[] | undefined): string[] {
+  if (!urls) return [];
+  const cleaned = urls.map((url) => url.trim()).filter((url) => url !== "");
+  return [...new Set(cleaned)].slice(0, 5);
+}
+
+/**
+ * Merges the new array column with the legacy single-value column so that
+ * rows created before the multi-file migration keep working.
+ */
+export function mergeAttachmentUrls(
+  urls: string[] | null,
+  legacy: string | null,
+): string[] {
+  if (urls && urls.length > 0) return urls;
+  return legacy ? [legacy] : [];
 }
 
 export interface GradableQuestion {
@@ -211,12 +223,13 @@ export interface CreateHomeworkInput {
   title: string;
   type: HomeworkType;
   deadline?: string;
-  attachmentUrl?: string;
+  attachmentUrls?: string[];
   maxAttempts?: number | null;
   questions: CreateHomeworkQuestion[];
 }
 
 export async function createHomework(db: Db, input: CreateHomeworkInput): Promise<string> {
+  const attachmentUrls = input.type === "FILE" ? normalizeUrls(input.attachmentUrls) : [];
   const { data: homework, error } = await db
     .from("homework")
     .insert({
@@ -224,7 +237,9 @@ export async function createHomework(db: Db, input: CreateHomeworkInput): Promis
       title: input.title,
       type: input.type,
       deadline: normalizeDeadline(input.deadline),
-      attachment_url: input.type === "FILE" ? normalizeUrl(input.attachmentUrl) : null,
+      // Keep the first file in the legacy column for any single-value reader.
+      attachment_url: attachmentUrls[0] ?? null,
+      attachment_urls: attachmentUrls.length > 0 ? attachmentUrls : null,
       max_attempts: input.type === "QUIZ" ? (input.maxAttempts ?? null) : null,
     })
     .select("id")
@@ -292,7 +307,7 @@ export async function duplicateHomework(
     title: homework.title,
     type: homework.type,
     deadline: homework.deadline ?? undefined,
-    attachmentUrl: homework.attachment_url ?? undefined,
+    attachmentUrls: mergeAttachmentUrls(homework.attachment_urls, homework.attachment_url),
     maxAttempts: homework.max_attempts,
     questions,
   });
@@ -525,11 +540,19 @@ async function assertStudentCanAccess(
 
 export async function submitFileHomework(
   db: Db,
-  params: { homeworkId: string; studentId: string; fileUrl: string },
+  params: { homeworkId: string; studentId: string; fileUrls: string[] },
 ): Promise<void> {
   await assertStudentCanAccess(db, params.homeworkId, params.studentId);
+  const fileUrls = normalizeUrls(params.fileUrls);
+  if (fileUrls.length === 0) throw new Error("Прикрепите хотя бы один файл");
   const { error } = await db.from("homework_submissions").upsert(
-    { homework_id: params.homeworkId, student_id: params.studentId, answer: params.fileUrl },
+    {
+      homework_id: params.homeworkId,
+      student_id: params.studentId,
+      // Keep the first file in `answer` for back-compat; full list in the array.
+      answer: fileUrls[0] ?? null,
+      attachment_urls: fileUrls,
+    },
     { onConflict: "homework_id,student_id" },
   );
   if (error) throw new Error(error.message);
@@ -614,13 +637,15 @@ export interface TutorQuizAttempt {
   attemptNo: number;
   score: number | null;
   createdAt: string;
+  /** Raw stored answers (JSON), so the tutor can review each attempt. */
+  answers: string | null;
 }
 
 /** All quiz attempts for a homework (tutor view), ordered by attempt number. */
 export async function listQuizAttempts(db: Db, homeworkId: string): Promise<TutorQuizAttempt[]> {
   const { data } = await db
     .from("quiz_attempts")
-    .select("student_id, attempt_no, score, created_at")
+    .select("student_id, attempt_no, score, created_at, answers")
     .eq("homework_id", homeworkId)
     .order("attempt_no", { ascending: true });
   return (data ?? []).map((row) => ({
@@ -628,5 +653,6 @@ export async function listQuizAttempts(db: Db, homeworkId: string): Promise<Tuto
     attemptNo: row.attempt_no,
     score: row.score,
     createdAt: row.created_at,
+    answers: row.answers,
   }));
 }

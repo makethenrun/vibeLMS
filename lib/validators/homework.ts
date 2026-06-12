@@ -46,13 +46,10 @@ export const homeworkSchema = z
     title: z.string().trim().min(2, "Минимум 2 символа").max(160, "Максимум 160 символов"),
     type: z.enum(["FILE", "QUIZ"]),
     deadline: z.string().optional().or(z.literal("")),
-    attachmentUrl: z
-      .string()
-      .trim()
-      .url("Некорректная ссылка")
-      .max(1000)
-      .optional()
-      .or(z.literal("")),
+    attachmentUrls: z
+      .array(z.string().trim().url("Некорректная ссылка").max(1000))
+      .max(5, "Не более 5 файлов")
+      .default([]),
     maxAttempts: z.number().int().min(1).max(50).nullable().default(null),
     questions: z.array(quizQuestionSchema).default([]),
   })
@@ -130,13 +127,10 @@ export const homeworkFormSchema = z
     title: z.string().trim().min(2, "Минимум 2 символа").max(160, "Максимум 160 символов"),
     type: z.enum(["FILE", "QUIZ"]),
     deadline: z.string().optional().or(z.literal("")),
-    attachmentUrl: z
-      .string()
-      .trim()
-      .url("Некорректная ссылка")
-      .max(1000)
-      .optional()
-      .or(z.literal("")),
+    attachmentUrls: z
+      .array(z.string().trim().url().max(1000))
+      .max(5, "Не более 5 файлов")
+      .default([]),
     maxAttemptsText: z.string().default(""),
     questions: z.array(homeworkQuestionFormSchema).default([]),
   })
@@ -165,7 +159,10 @@ export const homeworkFormSchema = z
 export type HomeworkFormInput = z.infer<typeof homeworkFormSchema>;
 
 export const fileSubmissionSchema = z.object({
-  answer: z.string().trim().url("Прикрепите файл с решением"),
+  fileUrls: z
+    .array(z.string().trim().url("Прикрепите файл с решением"))
+    .min(1, "Прикрепите хотя бы один файл")
+    .max(5, "Не более 5 файлов"),
 });
 export type FileSubmissionInput = z.infer<typeof fileSubmissionSchema>;
 
