@@ -48,6 +48,12 @@ export interface HomeworkListItem extends Homework {
   submissionCount: number;
 }
 
+export interface AttendanceRosterItem {
+  studentId: string;
+  fullName: string;
+  present: boolean;
+}
+
 /** Homework as seen by a student, including their own submission (if any). */
 export interface StudentHomeworkItem extends Homework {
   lessonTitle: string;

@@ -10,9 +10,12 @@ import type { LessonStatus } from "@/lib/db/database.types";
 import {
   createLesson,
   deleteLesson,
+  getLessonRoster,
+  setLessonAttendance,
   setLessonStatus,
   updateLesson,
 } from "@/services/lessons/lessons.service";
+import type { AttendanceRosterItem } from "@/types";
 
 const STATUSES: LessonStatus[] = ["SCHEDULED", "COMPLETED", "CANCELLED"];
 
@@ -87,5 +90,38 @@ export async function deleteLessonAction(id: string): Promise<ActionResult> {
 
   revalidatePath("/lessons");
   revalidatePath("/dashboard");
+  return ok();
+}
+
+export async function loadAttendanceAction(
+  lessonId: string,
+): Promise<ActionResult<AttendanceRosterItem[]>> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return fail("Недостаточно прав");
+
+  const db = createServerSupabaseClient();
+  try {
+    const roster = await getLessonRoster(db, lessonId);
+    return ok(roster);
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
+export async function saveAttendanceAction(
+  lessonId: string,
+  presentStudentIds: string[],
+): Promise<ActionResult> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return fail("Недостаточно прав");
+
+  const db = createServerSupabaseClient();
+  try {
+    await setLessonAttendance(db, lessonId, presentStudentIds);
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+
+  revalidatePath("/lessons");
   return ok();
 }

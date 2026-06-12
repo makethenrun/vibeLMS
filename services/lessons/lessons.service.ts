@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
 import type { LessonInput } from "@/lib/validators";
-import type { Lesson, LessonStatus, LessonWithGroup } from "@/types";
+import type { AttendanceRosterItem, Lesson, LessonStatus, LessonWithGroup } from "@/types";
 
 function toIso(value: string): string {
   return new Date(value).toISOString();
@@ -146,4 +146,72 @@ export async function listLessonOptions(db: Db): Promise<LessonOption[]> {
     id: lesson.id,
     label: `${lesson.title} — ${nameById.get(lesson.group_id) ?? "—"}`,
   }));
+}
+
+/** Returns the lesson's group members with their present flag. */
+export async function getLessonRoster(db: Db, lessonId: string): Promise<AttendanceRosterItem[]> {
+  const { data: lesson } = await db
+    .from("lessons")
+    .select("group_id")
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (!lesson) return [];
+
+  const { data: links } = await db
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", lesson.group_id);
+  const studentIds = (links ?? []).map((link) => link.student_id);
+  if (studentIds.length === 0) return [];
+
+  const { data: students } = await db
+    .from("students")
+    .select("id, full_name")
+    .in("id", studentIds)
+    .order("full_name", { ascending: true });
+
+  const { data: attendance } = await db
+    .from("lesson_attendance")
+    .select("student_id")
+    .eq("lesson_id", lessonId);
+  const presentSet = new Set((attendance ?? []).map((row) => row.student_id));
+
+  return (students ?? []).map((student) => ({
+    studentId: student.id,
+    fullName: student.full_name,
+    present: presentSet.has(student.id),
+  }));
+}
+
+/** Replaces the lesson's attendance with the given present students. */
+export async function setLessonAttendance(
+  db: Db,
+  lessonId: string,
+  presentStudentIds: string[],
+): Promise<void> {
+  const { data: lesson } = await db
+    .from("lessons")
+    .select("group_id")
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (!lesson) throw new Error("Занятие не найдено");
+
+  const { data: links } = await db
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", lesson.group_id);
+  const memberSet = new Set((links ?? []).map((link) => link.student_id));
+  const valid = [...new Set(presentStudentIds)].filter((id) => memberSet.has(id));
+
+  const { error: deleteError } = await db
+    .from("lesson_attendance")
+    .delete()
+    .eq("lesson_id", lessonId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (valid.length > 0) {
+    const rows = valid.map((studentId) => ({ lesson_id: lessonId, student_id: studentId }));
+    const { error } = await db.from("lesson_attendance").insert(rows);
+    if (error) throw new Error(error.message);
+  }
 }

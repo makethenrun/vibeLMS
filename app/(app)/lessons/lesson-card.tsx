@@ -2,7 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, CheckCircle2, MoreVertical, Pencil, RotateCcw, Trash2, Video } from "lucide-react";
+import {
+  Ban,
+  CheckCircle2,
+  MoreVertical,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  UserCheck,
+  Video,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -19,6 +28,7 @@ import type { LessonStatus } from "@/lib/db/database.types";
 import { formatTime } from "@/lib/utils";
 import type { LessonWithGroup } from "@/types";
 import { deleteLessonAction, setLessonStatusAction } from "./actions";
+import { AttendanceDialog } from "./attendance-dialog";
 import { LessonDialog } from "./lesson-dialog";
 
 interface GroupOption {
@@ -36,6 +46,7 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function changeStatus(status: LessonStatus, message: string) {
@@ -68,6 +79,10 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
               <DropdownMenuItem onSelect={() => setEditOpen(true)}>
                 <Pencil className="h-4 w-4" />
                 Редактировать
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setAttendanceOpen(true)}>
+                <UserCheck className="h-4 w-4" />
+                Присутствующие
               </DropdownMenuItem>
               {lesson.status !== "COMPLETED" ? (
                 <DropdownMenuItem
@@ -150,6 +165,12 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
             variant="destructive"
             successMessage="Занятие удалено"
             action={deleteLessonAction.bind(null, lesson.id)}
+          />
+          <AttendanceDialog
+            lessonId={lesson.id}
+            lessonTitle={lesson.title}
+            open={attendanceOpen}
+            onOpenChange={setAttendanceOpen}
           />
         </>
       ) : null}

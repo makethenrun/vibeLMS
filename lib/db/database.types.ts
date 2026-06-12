@@ -106,6 +106,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      lesson_attendance: {
+        Row: {
+          lesson_id: string;
+          student_id: string;
+          created_at: string;
+        };
+        Insert: {
+          lesson_id: string;
+          student_id: string;
+          created_at?: string;
+        };
+        Update: {
+          lesson_id?: string;
+          student_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       lessons: {
         Row: {
           id: string;

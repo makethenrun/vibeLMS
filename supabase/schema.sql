@@ -88,6 +88,19 @@ create index if not exists lessons_group_id_idx on public.lessons (group_id);
 create index if not exists lessons_start_time_idx on public.lessons (start_time);
 
 -- ---------------------------------------------------------------------------
+-- lesson_attendance (a row means the student was present at the lesson)
+-- ---------------------------------------------------------------------------
+create table if not exists public.lesson_attendance (
+  lesson_id  uuid not null references public.lessons (id) on delete cascade,
+  student_id uuid not null references public.students (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (lesson_id, student_id)
+);
+
+create index if not exists lesson_attendance_lesson_id_idx on public.lesson_attendance (lesson_id);
+create index if not exists lesson_attendance_student_id_idx on public.lesson_attendance (student_id);
+
+-- ---------------------------------------------------------------------------
 -- materials (shared library)
 -- ---------------------------------------------------------------------------
 create table if not exists public.materials (
@@ -199,6 +212,7 @@ alter table public.students             enable row level security;
 alter table public.groups               enable row level security;
 alter table public.group_members        enable row level security;
 alter table public.lessons              enable row level security;
+alter table public.lesson_attendance    enable row level security;
 alter table public.materials            enable row level security;
 alter table public.homework             enable row level security;
 alter table public.homework_submissions enable row level security;
