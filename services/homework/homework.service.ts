@@ -9,6 +9,7 @@ import type {
   HomeworkListItem,
   HomeworkSubmission,
   HomeworkType,
+  QuizAttemptSummary,
   QuizQuestion,
   QuizQuestionForStudent,
   StudentHomeworkItem,
@@ -211,6 +212,7 @@ export interface CreateHomeworkInput {
   type: HomeworkType;
   deadline?: string;
   attachmentUrl?: string;
+  maxAttempts?: number | null;
   questions: CreateHomeworkQuestion[];
 }
 
@@ -223,6 +225,7 @@ export async function createHomework(db: Db, input: CreateHomeworkInput): Promis
       type: input.type,
       deadline: normalizeDeadline(input.deadline),
       attachment_url: input.type === "FILE" ? normalizeUrl(input.attachmentUrl) : null,
+      max_attempts: input.type === "QUIZ" ? (input.maxAttempts ?? null) : null,
     })
     .select("id")
     .single();
@@ -290,6 +293,7 @@ export async function duplicateHomework(
     type: homework.type,
     deadline: homework.deadline ?? undefined,
     attachmentUrl: homework.attachment_url ?? undefined,
+    maxAttempts: homework.max_attempts,
     questions,
   });
 }
@@ -398,6 +402,8 @@ export interface StudentHomeworkDetail {
   submission: HomeworkSubmission | null;
   /** Per-question score fraction (0..1) of the existing submission (QUIZ only). */
   submissionResults: number[] | null;
+  attempts: QuizAttemptSummary[];
+  maxAttempts: number | null;
 }
 
 export async function getStudentHomeworkDetail(
@@ -472,6 +478,21 @@ export async function getStudentHomeworkDetail(
     );
   }
 
+  let attempts: QuizAttemptSummary[] = [];
+  if (homework.type === "QUIZ") {
+    const { data: attemptRows } = await db
+      .from("quiz_attempts")
+      .select("attempt_no, score, created_at")
+      .eq("homework_id", homeworkId)
+      .eq("student_id", studentId)
+      .order("attempt_no", { ascending: true });
+    attempts = (attemptRows ?? []).map((row) => ({
+      attemptNo: row.attempt_no,
+      score: row.score,
+      createdAt: row.created_at,
+    }));
+  }
+
   return {
     homework,
     lessonTitle: lesson.title,
@@ -479,6 +500,8 @@ export async function getStudentHomeworkDetail(
     questions,
     submission: submission ?? null,
     submissionResults,
+    attempts,
+    maxAttempts: homework.max_attempts,
   };
 }
 
@@ -515,8 +538,26 @@ export async function submitFileHomework(
 export async function submitQuiz(
   db: Db,
   params: { homeworkId: string; studentId: string; answers: string[][] },
-): Promise<{ score: number; results: number[] }> {
+): Promise<{
+  score: number;
+  results: number[];
+  attemptsUsed: number;
+  maxAttempts: number | null;
+}> {
   await assertStudentCanAccess(db, params.homeworkId, params.studentId);
+
+  const homework = await getHomework(db, params.homeworkId);
+  if (!homework) throw new Error("Задание не найдено");
+
+  const { count } = await db
+    .from("quiz_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("homework_id", params.homeworkId)
+    .eq("student_id", params.studentId);
+  const attemptsUsed = count ?? 0;
+  if (homework.max_attempts !== null && attemptsUsed >= homework.max_attempts) {
+    throw new Error("Достигнут лимит попыток");
+  }
 
   const { data: quiz } = await db
     .from("quizzes")
@@ -541,17 +582,51 @@ export async function submitQuiz(
       ? Math.round((totalFraction / questionList.length) * 10000) / 100
       : 0;
 
+  const newAttemptNo = attemptsUsed + 1;
+  const answersJson = JSON.stringify(params.answers);
+
+  const { error: attemptError } = await db.from("quiz_attempts").insert({
+    homework_id: params.homeworkId,
+    student_id: params.studentId,
+    attempt_no: newAttemptNo,
+    answers: answersJson,
+    score,
+  });
+  if (attemptError) throw new Error(attemptError.message);
+
+  // Update the "current" submission (keeps status + any tutor comment intact).
   const { error } = await db.from("homework_submissions").upsert(
     {
       homework_id: params.homeworkId,
       student_id: params.studentId,
-      answer: JSON.stringify(params.answers),
+      answer: answersJson,
       score,
-      comment: null,
     },
     { onConflict: "homework_id,student_id" },
   );
   if (error) throw new Error(error.message);
 
-  return { score, results };
+  return { score, results, attemptsUsed: newAttemptNo, maxAttempts: homework.max_attempts };
+}
+
+export interface TutorQuizAttempt {
+  studentId: string;
+  attemptNo: number;
+  score: number | null;
+  createdAt: string;
+}
+
+/** All quiz attempts for a homework (tutor view), ordered by attempt number. */
+export async function listQuizAttempts(db: Db, homeworkId: string): Promise<TutorQuizAttempt[]> {
+  const { data } = await db
+    .from("quiz_attempts")
+    .select("student_id, attempt_no, score, created_at")
+    .eq("homework_id", homeworkId)
+    .order("attempt_no", { ascending: true });
+  return (data ?? []).map((row) => ({
+    studentId: row.student_id,
+    attemptNo: row.attempt_no,
+    score: row.score,
+    createdAt: row.created_at,
+  }));
 }

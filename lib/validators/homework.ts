@@ -53,6 +53,7 @@ export const homeworkSchema = z
       .max(1000)
       .optional()
       .or(z.literal("")),
+    maxAttempts: z.number().int().min(1).max(50).nullable().default(null),
     questions: z.array(quizQuestionSchema).default([]),
   })
   .superRefine((data, ctx) => {
@@ -136,11 +137,22 @@ export const homeworkFormSchema = z
       .max(1000)
       .optional()
       .or(z.literal("")),
+    maxAttemptsText: z.string().default(""),
     questions: z.array(homeworkQuestionFormSchema).default([]),
   })
   .superRefine((data, ctx) => {
     if (data.deadline && Number.isNaN(Date.parse(data.deadline))) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Некорректная дата", path: ["deadline"] });
+    }
+    if (data.maxAttemptsText.trim() !== "") {
+      const value = Number(data.maxAttemptsText);
+      if (!Number.isInteger(value) || value < 1 || value > 50) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Введите целое число от 1 до 50",
+          path: ["maxAttemptsText"],
+        });
+      }
     }
     if (data.type === "QUIZ" && data.questions.length < 1) {
       ctx.addIssue({

@@ -7,8 +7,8 @@ import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
-import { cn } from "@/lib/utils";
-import type { QuizQuestionForStudent } from "@/types";
+import { cn, formatDateTime } from "@/lib/utils";
+import type { QuizAttemptSummary, QuizQuestionForStudent } from "@/types";
 import { submitQuizAction } from "../actions";
 
 interface QuizFormProps {
@@ -17,6 +17,8 @@ interface QuizFormProps {
   initialAnswers: string[][];
   lastScore: number | null;
   initialResults: number[] | null;
+  attempts: QuizAttemptSummary[];
+  maxAttempts: number | null;
 }
 
 export function QuizForm({
@@ -25,6 +27,8 @@ export function QuizForm({
   initialAnswers,
   lastScore,
   initialResults,
+  attempts,
+  maxAttempts,
 }: QuizFormProps) {
   const router = useRouter();
   const [view, setView] = useState<"form" | "results">(initialResults ? "results" : "form");
@@ -36,7 +40,11 @@ export function QuizForm({
   );
   const [results, setResults] = useState<number[] | null>(initialResults);
   const [score, setScore] = useState<number | null>(lastScore);
+  const [attemptList, setAttemptList] = useState<QuizAttemptSummary[]>(attempts);
   const [submitting, setSubmitting] = useState(false);
+
+  const attemptsUsed = attemptList.length;
+  const canAttempt = maxAttempts === null || attemptsUsed < maxAttempts;
 
   function setText(index: number, value: string) {
     setAnswers((previous) => {
@@ -65,6 +73,14 @@ export function QuizForm({
       setScore(result.data.score);
       setResults(result.data.results);
       setSubmittedAnswers(answers.map((selected) => [...selected]));
+      setAttemptList((previous) => [
+        ...previous,
+        {
+          attemptNo: result.data.attemptsUsed,
+          score: result.data.score,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
       setView("results");
       toast.success(`Тест проверен: ${result.data.score} из 100`);
       router.refresh();
@@ -77,6 +93,13 @@ export function QuizForm({
     setAnswers(questions.map(() => []));
     setView("form");
   }
+
+  const attemptsLine =
+    maxAttempts !== null
+      ? `Использовано попыток: ${attemptsUsed} из ${maxAttempts}`
+      : attemptsUsed > 0
+        ? `Использовано попыток: ${attemptsUsed}`
+        : null;
 
   if (view === "results") {
     return (
@@ -122,15 +145,42 @@ export function QuizForm({
           })}
         </div>
 
-        <LoadingButton type="button" variant="outline" onClick={retake}>
-          Пройти заново
-        </LoadingButton>
+        {attemptList.length > 0 ? (
+          <div className="rounded-md border p-3 text-sm">
+            <p className="mb-1 font-medium">История попыток</p>
+            <ul className="space-y-1">
+              {attemptList.map((attempt) => (
+                <li
+                  key={attempt.attemptNo}
+                  className="flex items-center justify-between text-muted-foreground"
+                >
+                  <span>
+                    Попытка {attempt.attemptNo} · {formatDateTime(attempt.createdAt)}
+                  </span>
+                  <span className="font-medium text-foreground">{attempt.score ?? "—"}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {canAttempt ? (
+          <LoadingButton type="button" variant="outline" onClick={retake}>
+            Пройти заново
+          </LoadingButton>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Попытки исчерпаны ({attemptsUsed} из {maxAttempts}).
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {attemptsLine ? <p className="text-xs text-muted-foreground">{attemptsLine}</p> : null}
+
       {questions.map((question, index) => {
         const options = question.options ?? [];
         const isChoice = options.length > 0;
@@ -173,9 +223,15 @@ export function QuizForm({
         );
       })}
 
-      <LoadingButton type="submit" loading={submitting}>
-        Отправить ответы
-      </LoadingButton>
+      {canAttempt ? (
+        <LoadingButton type="submit" loading={submitting}>
+          Отправить ответы
+        </LoadingButton>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Попытки исчерпаны ({attemptsUsed} из {maxAttempts}).
+        </p>
+      )}
     </form>
   );
 }

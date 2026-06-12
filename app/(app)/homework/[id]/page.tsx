@@ -15,8 +15,10 @@ import {
   getStudentHomeworkDetail,
   getTutorHomeworkDetail,
   gradeQuestion,
+  listQuizAttempts,
   listSubmissions,
   parseQuizAnswers,
+  type TutorQuizAttempt,
 } from "@/services/homework/homework.service";
 import type { QuizQuestion } from "@/types";
 import { FileSubmission } from "./file-submission";
@@ -100,6 +102,16 @@ function QuizBreakdown({ questions, answer }: { questions: QuizQuestion[]; answe
   );
 }
 
+function TutorAttempts({ attempts }: { attempts: TutorQuizAttempt[] }) {
+  if (attempts.length <= 1) return null;
+  return (
+    <p className="text-xs text-muted-foreground">
+      Попытки:{" "}
+      {attempts.map((attempt) => `№${attempt.attemptNo} — ${attempt.score ?? "—"}`).join(", ")}
+    </p>
+  );
+}
+
 export default async function HomeworkDetailPage({
   params,
 }: {
@@ -113,6 +125,13 @@ export default async function HomeworkDetailPage({
     const detail = await getTutorHomeworkDetail(db, id);
     if (!detail) notFound();
     const submissions = await listSubmissions(db, id);
+    const attempts = detail.homework.type === "QUIZ" ? await listQuizAttempts(db, id) : [];
+    const attemptsByStudent = new Map<string, TutorQuizAttempt[]>();
+    for (const attempt of attempts) {
+      const list = attemptsByStudent.get(attempt.studentId) ?? [];
+      list.push(attempt);
+      attemptsByStudent.set(attempt.studentId, list);
+    }
 
     return (
       <div className="space-y-6">
@@ -203,6 +222,10 @@ export default async function HomeworkDetailPage({
                     <QuizBreakdown questions={detail.questions} answer={submission.answer} />
                   ) : null}
 
+                  {detail.homework.type === "QUIZ" ? (
+                    <TutorAttempts attempts={attemptsByStudent.get(submission.student_id) ?? []} />
+                  ) : null}
+
                   <GradeForm
                     submissionId={submission.id}
                     homeworkId={detail.homework.id}
@@ -282,6 +305,8 @@ export default async function HomeworkDetailPage({
               initialAnswers={initialAnswers}
               lastScore={submission?.score ?? null}
               initialResults={detail.submissionResults}
+              attempts={detail.attempts}
+              maxAttempts={detail.maxAttempts}
             />
           ) : (
             <FileSubmission

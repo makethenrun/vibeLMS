@@ -123,6 +123,8 @@ create table if not exists public.homework (
   deadline       timestamptz,
   -- For FILE homework: optional task file (uploaded or chosen from materials).
   attachment_url text,
+  -- For QUIZ homework: max number of attempts (NULL = unlimited).
+  max_attempts   integer,
   created_at     timestamptz not null default now()
 );
 
@@ -178,6 +180,22 @@ create table if not exists public.quiz_questions (
 create index if not exists quiz_questions_quiz_id_idx on public.quiz_questions (quiz_id);
 
 -- ---------------------------------------------------------------------------
+-- quiz_attempts (full history of a student's quiz attempts)
+-- ---------------------------------------------------------------------------
+create table if not exists public.quiz_attempts (
+  id          uuid primary key default gen_random_uuid(),
+  homework_id uuid not null references public.homework (id) on delete cascade,
+  student_id  uuid not null references public.students (id) on delete cascade,
+  attempt_no  integer not null,
+  answers     text,
+  score       numeric(5, 2),
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists quiz_attempts_homework_student_idx
+  on public.quiz_attempts (homework_id, student_id);
+
+-- ---------------------------------------------------------------------------
 -- payments
 -- ---------------------------------------------------------------------------
 create table if not exists public.payments (
@@ -222,5 +240,6 @@ alter table public.homework             enable row level security;
 alter table public.homework_submissions enable row level security;
 alter table public.quizzes              enable row level security;
 alter table public.quiz_questions       enable row level security;
+alter table public.quiz_attempts        enable row level security;
 alter table public.payments             enable row level security;
 alter table public.settings             enable row level security;

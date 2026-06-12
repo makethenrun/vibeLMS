@@ -190,6 +190,7 @@ export interface Database {
           type: HomeworkType;
           deadline: string | null;
           attachment_url: string | null;
+          max_attempts: number | null;
           created_at: string;
         };
         Insert: {
@@ -199,6 +200,7 @@ export interface Database {
           type: HomeworkType;
           deadline?: string | null;
           attachment_url?: string | null;
+          max_attempts?: number | null;
           created_at?: string;
         };
         Update: {
@@ -208,6 +210,37 @@ export interface Database {
           type?: HomeworkType;
           deadline?: string | null;
           attachment_url?: string | null;
+          max_attempts?: number | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      quiz_attempts: {
+        Row: {
+          id: string;
+          homework_id: string;
+          student_id: string;
+          attempt_no: number;
+          answers: string | null;
+          score: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          homework_id: string;
+          student_id: string;
+          attempt_no: number;
+          answers?: string | null;
+          score?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          homework_id?: string;
+          student_id?: string;
+          attempt_no?: number;
+          answers?: string | null;
+          score?: number | null;
           created_at?: string;
         };
         Relationships: [];

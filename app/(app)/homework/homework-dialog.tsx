@@ -61,6 +61,7 @@ const DEFAULTS: HomeworkFormInput = {
   type: "FILE",
   deadline: "",
   attachmentUrl: "",
+  maxAttemptsText: "",
   questions: [],
 };
 
@@ -108,6 +109,10 @@ function toServerPayload(values: HomeworkFormInput): HomeworkInput {
             };
           })
         : [],
+    maxAttempts:
+      values.type === "QUIZ" && values.maxAttemptsText.trim() !== ""
+        ? Number(values.maxAttemptsText)
+        : null,
   };
 }
 
@@ -327,6 +332,28 @@ export function HomeworkDialog({
 
             {type === "QUIZ" ? (
               <div className="space-y-3 rounded-lg border p-3">
+                <FormField
+                  control={form.control}
+                  name="maxAttemptsText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Максимум попыток</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={50}
+                          placeholder="Без ограничений"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Оставьте пустым — без ограничения попыток.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">Вопросы теста</p>
                   <Button

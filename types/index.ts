@@ -55,6 +55,12 @@ export interface AttendanceRosterItem {
   present: boolean;
 }
 
+export interface QuizAttemptSummary {
+  attemptNo: number;
+  score: number | null;
+  createdAt: string;
+}
+
 /** Homework as seen by a student, including their own submission (if any). */
 export interface StudentHomeworkItem extends Homework {
   lessonTitle: string;

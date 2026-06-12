@@ -41,6 +41,7 @@ export async function createHomeworkAction(input: HomeworkInput): Promise<Action
         type: parsed.data.type,
         deadline: parsed.data.deadline,
         attachmentUrl: parsed.data.attachmentUrl,
+        maxAttempts: parsed.data.maxAttempts,
         questions: parsed.data.questions,
       });
     }
@@ -137,7 +138,14 @@ export async function submitFileAction(
 export async function submitQuizAction(
   homeworkId: string,
   input: QuizSubmissionInput,
-): Promise<ActionResult<{ score: number; results: number[] }>> {
+): Promise<
+  ActionResult<{
+    score: number;
+    results: number[];
+    attemptsUsed: number;
+    maxAttempts: number | null;
+  }>
+> {
   const student = await getStudentOrNull();
   if (!student) return fail("Недостаточно прав");
 
@@ -146,14 +154,14 @@ export async function submitQuizAction(
 
   const db = createServerSupabaseClient();
   try {
-    const { score, results } = await submitQuiz(db, {
+    const { score, results, attemptsUsed, maxAttempts } = await submitQuiz(db, {
       homeworkId,
       studentId: student.studentId,
       answers: parsed.data.answers,
     });
     revalidatePath(`/homework/${homeworkId}`);
     revalidatePath("/homework");
-    return ok({ score, results });
+    return ok({ score, results, attemptsUsed, maxAttempts });
   } catch (error) {
     return fail(getErrorMessage(error));
   }
