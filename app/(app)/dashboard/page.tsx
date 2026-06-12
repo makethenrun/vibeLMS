@@ -74,13 +74,24 @@ export default async function DashboardPage() {
         <PageHeader title="Дашборд" description="Обзор вашей школы" />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Учеников" value={data.stats.studentCount} icon={UsersRound} />
-          <StatCard label="Групп" value={data.stats.groupCount} icon={UsersRound} />
-          <StatCard label="Занятий на неделе" value={data.stats.lessonsThisWeek} icon={CalendarClock} />
+          <StatCard
+            label="Учеников"
+            value={data.stats.studentCount}
+            icon={UsersRound}
+            href="/students"
+          />
+          <StatCard label="Групп" value={data.stats.groupCount} icon={UsersRound} href="/groups" />
+          <StatCard
+            label="Занятий на неделе"
+            value={data.stats.lessonsThisWeek}
+            icon={CalendarClock}
+            href="/lessons"
+          />
           <StatCard
             label="ДЗ на проверке"
             value={data.stats.pendingSubmissions}
             icon={ClipboardList}
+            href="/homework?status=pending"
           />
         </div>
 

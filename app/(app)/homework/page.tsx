@@ -60,6 +60,15 @@ export default async function HomeworkPage({
       fileUrl: material.file_url,
     }));
 
+    const { status } = await searchParams;
+    const filter = status === "pending" ? "pending" : "all";
+    const visibleHomework =
+      filter === "pending" ? homework.filter((item) => item.pendingCount > 0) : homework;
+    const tutorTabs = [
+      { key: "all", label: "Все", href: "/homework" },
+      { key: "pending", label: "На проверке", href: "/homework?status=pending" },
+    ] as const;
+
     const addButton = (
       <Button disabled={lessons.length === 0}>
         <Plus className="h-4 w-4" />
@@ -94,45 +103,77 @@ export default async function HomeworkPage({
             description="Создайте задание типа «Файл» или «Тест»."
           />
         ) : (
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Название</TableHead>
-                  <TableHead className="hidden md:table-cell">Занятие</TableHead>
-                  <TableHead>Тип</TableHead>
-                  <TableHead className="hidden lg:table-cell">Дедлайн</TableHead>
-                  <TableHead>Ответы</TableHead>
-                  <TableHead className="w-[60px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {homework.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      <Link href={`/homework/${item.id}`} className="hover:underline">
-                        {item.title}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground md:table-cell">
-                      {item.lessonTitle} · {item.groupName}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={item.type === "QUIZ" ? "default" : "secondary"}>
-                        {HOMEWORK_TYPE_LABELS[item.type]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground lg:table-cell">
-                      {item.deadline ? formatDateTime(item.deadline) : "—"}
-                    </TableCell>
-                    <TableCell>{item.submissionCount}</TableCell>
-                    <TableCell className="text-right">
-                      <HomeworkActions id={item.id} title={item.title} lessons={lessons} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {tutorTabs.map((tab) => (
+                <Button
+                  key={tab.key}
+                  asChild
+                  size="sm"
+                  variant={filter === tab.key ? "secondary" : "outline"}
+                >
+                  <Link href={tab.href}>{tab.label}</Link>
+                </Button>
+              ))}
+            </div>
+
+            {visibleHomework.length === 0 ? (
+              <EmptyState
+                icon={ClipboardList}
+                title="Нет заданий на проверке"
+                description="Все сданные работы оценены."
+              />
+            ) : (
+              <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Название</TableHead>
+                      <TableHead className="hidden md:table-cell">Занятие</TableHead>
+                      <TableHead>Тип</TableHead>
+                      <TableHead className="hidden lg:table-cell">Дедлайн</TableHead>
+                      <TableHead>Ответы</TableHead>
+                      <TableHead className="w-[60px]" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleHomework.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                          <Link href={`/homework/${item.id}`} className="hover:underline">
+                            {item.title}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="hidden text-muted-foreground md:table-cell">
+                          {item.lessonTitle} · {item.groupName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.type === "QUIZ" ? "default" : "secondary"}>
+                            {HOMEWORK_TYPE_LABELS[item.type]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden text-muted-foreground lg:table-cell">
+                          {item.deadline ? formatDateTime(item.deadline) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span>{item.submissionCount}</span>
+                            {item.pendingCount > 0 ? (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                {item.pendingCount} на проверке
+                              </span>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <HomeworkActions id={item.id} title={item.title} lessons={lessons} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         )}
       </div>

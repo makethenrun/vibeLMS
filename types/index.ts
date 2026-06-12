@@ -47,6 +47,8 @@ export interface HomeworkListItem extends Homework {
   groupId: string;
   groupName: string;
   submissionCount: number;
+  /** Submissions that are submitted but not yet graded (score IS NULL). */
+  pendingCount: number;
 }
 
 export interface AttendanceRosterItem {

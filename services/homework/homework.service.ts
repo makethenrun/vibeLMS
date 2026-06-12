@@ -130,14 +130,21 @@ export async function listHomeworkForTutor(db: Db): Promise<HomeworkListItem[]> 
   const homeworkIds = homework.map((row) => row.id);
   const { data: submissions } = await db
     .from("homework_submissions")
-    .select("homework_id")
+    .select("homework_id, score")
     .in("homework_id", homeworkIds);
   const submissionCount = new Map<string, number>();
+  const pendingCount = new Map<string, number>();
   for (const submission of submissions ?? []) {
     submissionCount.set(
       submission.homework_id,
       (submissionCount.get(submission.homework_id) ?? 0) + 1,
     );
+    if (submission.score === null) {
+      pendingCount.set(
+        submission.homework_id,
+        (pendingCount.get(submission.homework_id) ?? 0) + 1,
+      );
+    }
   }
 
   return homework.map((row) => {
@@ -149,6 +156,7 @@ export async function listHomeworkForTutor(db: Db): Promise<HomeworkListItem[]> 
       groupId,
       groupName: groupId ? (groupNameById.get(groupId) ?? "—") : "—",
       submissionCount: submissionCount.get(row.id) ?? 0,
+      pendingCount: pendingCount.get(row.id) ?? 0,
     };
   });
 }
