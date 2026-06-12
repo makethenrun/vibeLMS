@@ -251,14 +251,20 @@ export default async function HomeworkDetailPage({
           <CardHeader>
             <CardTitle className="text-base">Результат</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1 text-sm">
+          <CardContent className="text-sm">
             <p>
               Оценка: <span className="font-semibold">{submission.score}</span>
             </p>
-            {submission.comment ? (
-              <p className="text-muted-foreground">Комментарий: {submission.comment}</p>
-            ) : null}
           </CardContent>
+        </Card>
+      ) : null}
+
+      {submission?.comment ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Комментарий преподавателя</CardTitle>
+          </CardHeader>
+          <CardContent className="whitespace-pre-wrap text-sm">{submission.comment}</CardContent>
         </Card>
       ) : null}
 

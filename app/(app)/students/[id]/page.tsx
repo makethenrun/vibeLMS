@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,10 @@ import {
 } from "@/components/ui/table";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
+import { HOMEWORK_TYPE_LABELS } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { listGroupsForStudent } from "@/services/groups/groups.service";
+import { listHomeworkForStudent } from "@/services/homework/homework.service";
 import { getStudentPaidTotal, listPaymentsForStudent } from "@/services/payments/payments.service";
 import { getStudent } from "@/services/students/students.service";
 import { StudentActions } from "./student-actions";
@@ -34,10 +37,11 @@ export default async function StudentDetailPage({
   const student = await getStudent(db, id);
   if (!student) notFound();
 
-  const [groups, payments, paidTotal] = await Promise.all([
+  const [groups, payments, paidTotal, homework] = await Promise.all([
     listGroupsForStudent(db, id),
     listPaymentsForStudent(db, id),
     getStudentPaidTotal(db, id),
+    listHomeworkForStudent(db, id),
   ]);
 
   return (
@@ -123,6 +127,56 @@ export default async function StudentDetailPage({
                       <TableCell>{formatDate(payment.payment_date)}</TableCell>
                       <TableCell className="font-medium">{formatCurrency(Number(payment.amount))}</TableCell>
                       <TableCell className="text-muted-foreground">{payment.comment ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Оценки по заданиям</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {homework.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Заданий пока нет.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Задание</TableHead>
+                    <TableHead className="hidden md:table-cell">Занятие</TableHead>
+                    <TableHead>Тип</TableHead>
+                    <TableHead>Результат</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {homework.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        <Link href={`/homework/${item.id}`} className="hover:underline">
+                          {item.title}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground md:table-cell">
+                        {item.lessonTitle}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={item.type === "QUIZ" ? "default" : "secondary"}>
+                          {HOMEWORK_TYPE_LABELS[item.type]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {!item.submission ? (
+                          <Badge variant="outline">Не сдано</Badge>
+                        ) : item.submission.score !== null ? (
+                          <Badge variant="success">{item.submission.score}</Badge>
+                        ) : (
+                          <Badge variant="secondary">На проверке</Badge>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

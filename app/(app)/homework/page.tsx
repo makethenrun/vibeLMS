@@ -40,7 +40,11 @@ function StudentSubmissionBadge({ item }: { item: StudentHomeworkItem }) {
   return <Badge variant="secondary">На проверке</Badge>;
 }
 
-export default async function HomeworkPage() {
+export default async function HomeworkPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const user = await requireUser();
   const db = createServerSupabaseClient();
 
@@ -136,17 +140,44 @@ export default async function HomeworkPage() {
   }
 
   const student = await getCurrentStudent();
-  const homework = student ? await listHomeworkForStudent(db, student.studentId) : [];
+  const allHomework = student ? await listHomeworkForStudent(db, student.studentId) : [];
+
+  const { status } = await searchParams;
+  const filter = status === "done" ? "done" : status === "pending" ? "pending" : "all";
+  const homework = allHomework.filter((item) => {
+    if (filter === "done") return item.submission !== null;
+    if (filter === "pending") return item.submission === null;
+    return true;
+  });
+
+  const tabs = [
+    { key: "all", label: "Все", href: "/homework" },
+    { key: "pending", label: "Невыполненные", href: "/homework?status=pending" },
+    { key: "done", label: "Выполненные", href: "/homework?status=done" },
+  ] as const;
 
   return (
     <div className="space-y-6">
       <PageHeader title="Домашние задания" description="Ваши задания и тесты." />
 
+      <div className="flex flex-wrap items-center gap-2">
+        {tabs.map((tab) => (
+          <Button
+            key={tab.key}
+            asChild
+            size="sm"
+            variant={filter === tab.key ? "secondary" : "outline"}
+          >
+            <Link href={tab.href}>{tab.label}</Link>
+          </Button>
+        ))}
+      </div>
+
       {homework.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="Заданий пока нет"
-          description="Здесь появятся задания по вашим занятиям."
+          title="Заданий нет"
+          description="В этой категории заданий пока нет."
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
