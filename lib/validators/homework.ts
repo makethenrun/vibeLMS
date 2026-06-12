@@ -4,20 +4,38 @@ import { z } from "zod";
 export const quizQuestionSchema = z
   .object({
     question: z.string().trim().min(1, "Введите вопрос").max(500, "Максимум 500 символов"),
-    correctAnswer: z.string().trim().min(1, "Введите ответ").max(300, "Максимум 300 символов"),
+    // Free-text answer — used when there are no options.
+    correctAnswer: z.string().trim().max(300, "Максимум 300 символов").default(""),
     // Empty => free-text question; non-empty => multiple-choice options.
     options: z.array(z.string().trim().min(1).max(300)).max(8).default([]),
+    // Correct option(s) for a CHOICE question.
+    correctAnswers: z.array(z.string().trim().min(1).max(300)).max(8).default([]),
+    grading: z.enum(["STRICT", "PARTIAL"]).default("STRICT"),
   })
   .superRefine((data, ctx) => {
     if (data.options.length > 0) {
-      const normalized = data.options.map((option) => option.toLowerCase());
-      if (!normalized.includes(data.correctAnswer.toLowerCase())) {
+      if (data.correctAnswers.length < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Правильный ответ должен совпадать с одним из вариантов",
-          path: ["correctAnswer"],
+          message: "Отметьте правильный вариант",
+          path: ["correctAnswers"],
+        });
+        return;
+      }
+      const optionSet = new Set(data.options.map((option) => option.toLowerCase()));
+      if (!data.correctAnswers.every((answer) => optionSet.has(answer.toLowerCase()))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Правильные варианты должны быть среди вариантов ответа",
+          path: ["correctAnswers"],
         });
       }
+    } else if (data.correctAnswer.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Введите правильный ответ",
+        path: ["correctAnswer"],
+      });
     }
   });
 export type QuizQuestionInput = z.infer<typeof quizQuestionSchema>;
@@ -56,33 +74,51 @@ export const homeworkQuestionFormSchema = z
   .object({
     question: z.string().trim().min(1, "Введите вопрос").max(500, "Максимум 500 символов"),
     kind: z.enum(["TEXT", "CHOICE"]),
-    correctAnswer: z
-      .string()
-      .trim()
-      .min(1, "Укажите правильный ответ")
-      .max(300, "Максимум 300 символов"),
+    // For TEXT: the answer. For CHOICE: correct options, one per line.
+    correctText: z.string().max(2000).default(""),
     optionsText: z.string().max(2000).default(""),
+    grading: z.enum(["STRICT", "PARTIAL"]).default("STRICT"),
   })
   .superRefine((data, ctx) => {
-    if (data.kind !== "CHOICE") return;
-    const options = data.optionsText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line !== "");
+    if (data.kind === "TEXT") {
+      if (data.correctText.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Укажите правильный ответ",
+          path: ["correctText"],
+        });
+      }
+      return;
+    }
+    const splitLines = (value: string) =>
+      value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+    const options = splitLines(data.optionsText);
+    const correct = splitLines(data.correctText);
     if (options.length < 2) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Добавьте минимум 2 варианта (по одному на строку)",
         path: ["optionsText"],
       });
-    } else if (
-      !options.some((option) => option.toLowerCase() === data.correctAnswer.trim().toLowerCase())
-    ) {
+    }
+    if (correct.length < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Правильный ответ должен совпадать с одним из вариантов",
-        path: ["correctAnswer"],
+        message: "Укажите хотя бы один правильный вариант",
+        path: ["correctText"],
       });
+    } else {
+      const optionSet = new Set(options.map((option) => option.toLowerCase()));
+      if (!correct.every((value) => optionSet.has(value.toLowerCase()))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Каждый правильный вариант должен быть в списке вариантов",
+          path: ["correctText"],
+        });
+      }
     }
   });
 export type HomeworkQuestionFormInput = z.infer<typeof homeworkQuestionFormSchema>;
@@ -122,7 +158,8 @@ export const fileSubmissionSchema = z.object({
 export type FileSubmissionInput = z.infer<typeof fileSubmissionSchema>;
 
 export const quizSubmissionSchema = z.object({
-  answers: z.array(z.string().max(500)).min(1, "Ответьте на вопросы"),
+  // Each question maps to the list of selected options (free-text => one item).
+  answers: z.array(z.array(z.string().max(500))).min(1, "Ответьте на вопросы"),
 });
 export type QuizSubmissionInput = z.infer<typeof quizSubmissionSchema>;
 

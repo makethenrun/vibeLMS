@@ -4,6 +4,7 @@ import type { Db } from "@/lib/db/supabase";
 import { getStudentGroupIds } from "@/services/groups/groups.service";
 import type { GradeSubmissionInput } from "@/lib/validators";
 import type {
+  GradingMode,
   Homework,
   HomeworkListItem,
   HomeworkSubmission,
@@ -29,22 +30,60 @@ function normalizeUrl(url: string | undefined): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-/** Parses a stored quiz answer (JSON array) into a fixed-length string array. */
-function parseStoredAnswers(answer: string | null, count: number): string[] {
+export interface GradableQuestion {
+  correct_answer: string;
+  correct_answers: string[] | null;
+  options: string[] | null;
+  grading: string;
+}
+
+/**
+ * Parses a stored quiz answer into selected options per question.
+ * Back-compatible with the old format (a flat array of strings).
+ */
+export function parseQuizAnswers(answer: string | null, count: number): string[][] {
+  let parsed: unknown = null;
   if (answer) {
     try {
-      const parsed: unknown = JSON.parse(answer);
-      if (Array.isArray(parsed)) {
-        return Array.from({ length: count }, (_, index) => {
-          const value = parsed[index];
-          return typeof value === "string" ? value : "";
-        });
-      }
+      parsed = JSON.parse(answer);
     } catch {
-      // answer is not a JSON array — fall through to empty answers
+      parsed = null;
     }
   }
-  return Array.from({ length: count }, () => "");
+  const list = Array.isArray(parsed) ? parsed : [];
+  return Array.from({ length: count }, (_, index) => {
+    const value = list[index];
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === "string");
+    }
+    if (typeof value === "string") return value === "" ? [] : [value];
+    return [];
+  });
+}
+
+/** Grades one question against the selected answers — returns a 0..1 fraction. */
+export function gradeQuestion(question: GradableQuestion, selected: string[]): number {
+  const isChoice = (question.options?.length ?? 0) > 0;
+  if (!isChoice) {
+    const given = normalizeAnswer(selected[0] ?? "");
+    return given !== "" && given === normalizeAnswer(question.correct_answer) ? 1 : 0;
+  }
+
+  const correctSource =
+    question.correct_answers && question.correct_answers.length > 0
+      ? question.correct_answers
+      : [question.correct_answer];
+  const correctSet = [...new Set(correctSource.map(normalizeAnswer).filter((value) => value !== ""))];
+  if (correctSet.length === 0) return 0;
+
+  const selectedSet = [...new Set(selected.map(normalizeAnswer).filter((value) => value !== ""))];
+  const correctSelected = selectedSet.filter((value) => correctSet.includes(value)).length;
+  const wrongSelected = selectedSet.length - correctSelected;
+
+  if (question.grading === "PARTIAL") {
+    return Math.max(0, correctSelected - wrongSelected) / correctSet.length;
+  }
+  return correctSelected === correctSet.length && wrongSelected === 0 ? 1 : 0;
 }
 
 export async function getHomework(db: Db, id: string): Promise<Homework | null> {
@@ -161,7 +200,9 @@ export async function getTutorHomeworkDetail(
 export interface CreateHomeworkQuestion {
   question: string;
   correctAnswer: string;
+  correctAnswers: string[];
   options: string[];
+  grading: GradingMode;
 }
 
 export interface CreateHomeworkInput {
@@ -200,6 +241,8 @@ export async function createHomework(db: Db, input: CreateHomeworkInput): Promis
       question: question.question,
       correct_answer: question.correctAnswer,
       options: question.options.length > 0 ? question.options : null,
+      correct_answers: question.correctAnswers.length > 0 ? question.correctAnswers : null,
+      grading: question.grading,
       position: index,
     }));
     const { error: questionsError } = await db.from("quiz_questions").insert(questionRows);
@@ -228,13 +271,15 @@ export async function duplicateHomework(
     if (quiz) {
       const { data: rows } = await db
         .from("quiz_questions")
-        .select("question, correct_answer, options, position")
+        .select("question, correct_answer, correct_answers, options, grading, position")
         .eq("quiz_id", quiz.id)
         .order("position", { ascending: true });
       questions = (rows ?? []).map((row) => ({
         question: row.question,
         correctAnswer: row.correct_answer,
+        correctAnswers: row.correct_answers ?? [],
         options: row.options ?? [],
+        grading: row.grading,
       }));
     }
   }
@@ -351,8 +396,8 @@ export interface StudentHomeworkDetail {
   groupName: string;
   questions: QuizQuestionForStudent[];
   submission: HomeworkSubmission | null;
-  /** Per-question correctness of the existing submission (QUIZ only), else null. */
-  submissionResults: boolean[] | null;
+  /** Per-question score fraction (0..1) of the existing submission (QUIZ only). */
+  submissionResults: number[] | null;
 }
 
 export async function getStudentHomeworkDetail(
@@ -381,9 +426,9 @@ export async function getStudentHomeworkDetail(
     .maybeSingle();
 
   let questions: QuizQuestionForStudent[] = [];
-  // Correct answers are kept server-side (never sent to the student) and used
-  // only to compute per-question correctness booleans.
-  let correctAnswers: string[] = [];
+  // Correct answers/options are kept server-side (never sent to the student)
+  // and are used only to compute per-question scores.
+  let gradable: GradableQuestion[] = [];
   if (homework.type === "QUIZ") {
     const { data: quiz } = await db
       .from("quizzes")
@@ -393,7 +438,7 @@ export async function getStudentHomeworkDetail(
     if (quiz) {
       const { data: rows } = await db
         .from("quiz_questions")
-        .select("id, question, position, options, correct_answer")
+        .select("id, question, position, options, correct_answer, correct_answers, grading")
         .eq("quiz_id", quiz.id)
         .order("position", { ascending: true });
       const list = rows ?? [];
@@ -403,7 +448,12 @@ export async function getStudentHomeworkDetail(
         position: row.position,
         options: row.options,
       }));
-      correctAnswers = list.map((row) => row.correct_answer);
+      gradable = list.map((row) => ({
+        correct_answer: row.correct_answer,
+        correct_answers: row.correct_answers,
+        options: row.options,
+        grading: row.grading,
+      }));
     }
   }
 
@@ -414,13 +464,12 @@ export async function getStudentHomeworkDetail(
     .eq("student_id", studentId)
     .maybeSingle();
 
-  let submissionResults: boolean[] | null = null;
-  if (submission && homework.type === "QUIZ" && correctAnswers.length > 0) {
-    const studentAnswers = parseStoredAnswers(submission.answer, correctAnswers.length);
-    submissionResults = correctAnswers.map((correctAnswer, index) => {
-      const answer = normalizeAnswer(studentAnswers[index] ?? "");
-      return answer !== "" && answer === normalizeAnswer(correctAnswer);
-    });
+  let submissionResults: number[] | null = null;
+  if (submission && homework.type === "QUIZ" && gradable.length > 0) {
+    const studentAnswers = parseQuizAnswers(submission.answer, gradable.length);
+    submissionResults = gradable.map((question, index) =>
+      gradeQuestion(question, studentAnswers[index] ?? []),
+    );
   }
 
   return {
@@ -465,8 +514,8 @@ export async function submitFileHomework(
 
 export async function submitQuiz(
   db: Db,
-  params: { homeworkId: string; studentId: string; answers: string[] },
-): Promise<{ score: number; results: boolean[] }> {
+  params: { homeworkId: string; studentId: string; answers: string[][] },
+): Promise<{ score: number; results: number[] }> {
   await assertStudentCanAccess(db, params.homeworkId, params.studentId);
 
   const { data: quiz } = await db
@@ -478,21 +527,18 @@ export async function submitQuiz(
 
   const { data: questions } = await db
     .from("quiz_questions")
-    .select("id, correct_answer, position")
+    .select("id, correct_answer, correct_answers, options, grading, position")
     .eq("quiz_id", quiz.id)
     .order("position", { ascending: true });
   const questionList = questions ?? [];
 
-  let correct = 0;
-  const results: boolean[] = questionList.map((question, index) => {
-    const answer = normalizeAnswer(params.answers[index] ?? "");
-    const ok = answer !== "" && answer === normalizeAnswer(question.correct_answer);
-    if (ok) correct += 1;
-    return ok;
-  });
+  const results: number[] = questionList.map((question, index) =>
+    gradeQuestion(question, params.answers[index] ?? []),
+  );
+  const totalFraction = results.reduce((sum, fraction) => sum + fraction, 0);
   const score =
     questionList.length > 0
-      ? Math.round((correct / questionList.length) * 10000) / 100
+      ? Math.round((totalFraction / questionList.length) * 10000) / 100
       : 0;
 
   const { error } = await db.from("homework_submissions").upsert(

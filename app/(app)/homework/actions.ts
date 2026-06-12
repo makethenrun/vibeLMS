@@ -137,7 +137,7 @@ export async function submitFileAction(
 export async function submitQuizAction(
   homeworkId: string,
   input: QuizSubmissionInput,
-): Promise<ActionResult<{ score: number; results: boolean[] }>> {
+): Promise<ActionResult<{ score: number; results: number[] }>> {
   const student = await getStudentOrNull();
   if (!student) return fail("Недостаточно прав");
 

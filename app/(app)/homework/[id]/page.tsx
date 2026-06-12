@@ -14,7 +14,9 @@ import { cn, formatDateTime } from "@/lib/utils";
 import {
   getStudentHomeworkDetail,
   getTutorHomeworkDetail,
+  gradeQuestion,
   listSubmissions,
+  parseQuizAnswers,
 } from "@/services/homework/homework.service";
 import type { QuizQuestion } from "@/types";
 import { FileSubmission } from "./file-submission";
@@ -23,26 +25,14 @@ import { QuizForm } from "./quiz-form";
 
 export const metadata: Metadata = { title: "Задание" };
 
-function parseAnswers(answer: string | null, count: number): string[] {
-  if (answer) {
-    try {
-      const parsed: unknown = JSON.parse(answer);
-      if (Array.isArray(parsed)) {
-        return Array.from({ length: count }, (_, index) => {
-          const value = parsed[index];
-          return typeof value === "string" ? value : "";
-        });
-      }
-    } catch {
-      // answer is not a JSON array — fall through to empty answers
-    }
-  }
-  return Array.from({ length: count }, () => "");
-}
-
-function isCorrect(given: string, correctAnswer: string): boolean {
-  const normalizedGiven = given.trim().toLowerCase();
-  return normalizedGiven !== "" && normalizedGiven === correctAnswer.trim().toLowerCase();
+function correctAnswerText(question: QuizQuestion): string {
+  const isChoice = (question.options?.length ?? 0) > 0;
+  if (!isChoice) return question.correct_answer;
+  const correct =
+    question.correct_answers && question.correct_answers.length > 0
+      ? question.correct_answers
+      : [question.correct_answer];
+  return correct.join(", ");
 }
 
 function AttachmentCard({ url }: { url: string }) {
@@ -63,35 +53,45 @@ function AttachmentCard({ url }: { url: string }) {
   );
 }
 
-/** Per-question correctness breakdown of a quiz submission (tutor view). */
+/** Per-question score breakdown of a quiz submission (tutor view). */
 function QuizBreakdown({ questions, answer }: { questions: QuizQuestion[]; answer: string | null }) {
-  const studentAnswers = parseAnswers(answer, questions.length);
+  const studentAnswers = parseQuizAnswers(answer, questions.length);
   return (
     <div className="space-y-1.5">
       {questions.map((question, index) => {
-        const given = studentAnswers[index] ?? "";
-        const correct = isCorrect(given, question.correct_answer);
+        const selected = studentAnswers[index] ?? [];
+        const fraction = gradeQuestion(question, selected);
+        const full = fraction >= 1;
+        const none = fraction <= 0;
+        const percent = Math.round(fraction * 100);
+        const given = selected.join(", ");
         return (
           <div
             key={question.id}
             className={cn(
               "rounded-md border p-2 text-sm",
-              correct ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50",
+              full
+                ? "border-emerald-200 bg-emerald-50"
+                : none
+                  ? "border-red-200 bg-red-50"
+                  : "border-amber-200 bg-amber-50",
             )}
           >
             <div className="flex items-start justify-between gap-2">
               <p className="font-medium">
                 {index + 1}. {question.question}
               </p>
-              {correct ? (
+              {full ? (
                 <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-              ) : (
+              ) : none ? (
                 <X className="h-4 w-4 shrink-0 text-red-600" />
+              ) : (
+                <span className="shrink-0 text-xs font-semibold text-amber-600">{percent}%</span>
               )}
             </div>
             <p className="text-muted-foreground">Ответ ученика: {given || "—"}</p>
-            {!correct ? (
-              <p className="text-muted-foreground">Правильно: {question.correct_answer}</p>
+            {!full ? (
+              <p className="text-muted-foreground">Правильно: {correctAnswerText(question)}</p>
             ) : null}
           </div>
         );
@@ -152,8 +152,13 @@ export default async function HomeworkDetailPage({
                       </p>
                     ) : null}
                     <p className="text-muted-foreground">
-                      Правильный ответ: {question.correct_answer}
+                      Правильный ответ: {correctAnswerText(question)}
                     </p>
+                    {question.options && question.options.length > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Оценка: {question.grading === "PARTIAL" ? "частичная" : "строгая"}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ol>
@@ -219,7 +224,7 @@ export default async function HomeworkDetailPage({
   if (!detail) notFound();
 
   const submission = detail.submission;
-  const initialAnswers = parseAnswers(submission?.answer ?? null, detail.questions.length);
+  const initialAnswers = parseQuizAnswers(submission?.answer ?? null, detail.questions.length);
 
   return (
     <div className="space-y-6">

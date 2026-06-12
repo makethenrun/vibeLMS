@@ -6,6 +6,7 @@ export type {
   LessonStatus,
   MaterialType,
   HomeworkType,
+  GradingMode,
 } from "@/lib/db/database.types";
 
 type Tables = Database["public"]["Tables"];

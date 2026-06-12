@@ -67,9 +67,17 @@ const DEFAULTS: HomeworkFormInput = {
 const EMPTY_QUESTION = {
   question: "",
   kind: "TEXT" as const,
-  correctAnswer: "",
+  correctText: "",
   optionsText: "",
+  grading: "STRICT" as const,
 };
+
+function splitLines(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
 
 function toServerPayload(values: HomeworkFormInput): HomeworkInput {
   return {
@@ -80,17 +88,25 @@ function toServerPayload(values: HomeworkFormInput): HomeworkInput {
     attachmentUrl: values.type === "FILE" ? values.attachmentUrl : "",
     questions:
       values.type === "QUIZ"
-        ? values.questions.map((question) => ({
-            question: question.question,
-            correctAnswer: question.correctAnswer,
-            options:
-              question.kind === "CHOICE"
-                ? question.optionsText
-                    .split("\n")
-                    .map((line) => line.trim())
-                    .filter((line) => line !== "")
-                : [],
-          }))
+        ? values.questions.map((question) => {
+            if (question.kind === "CHOICE") {
+              const correctAnswers = splitLines(question.correctText);
+              return {
+                question: question.question,
+                correctAnswer: correctAnswers[0] ?? "",
+                correctAnswers,
+                options: splitLines(question.optionsText),
+                grading: question.grading,
+              };
+            }
+            return {
+              question: question.question,
+              correctAnswer: question.correctText.trim(),
+              correctAnswers: [],
+              options: [],
+              grading: question.grading,
+            };
+          })
         : [],
   };
 }
@@ -378,43 +394,80 @@ export function HomeworkDialog({
                         )}
                       />
                       {kind === "CHOICE" ? (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name={`questions.${index}.optionsText`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder={"Вариант 1\nВариант 2\nВариант 3"}
+                                    rows={3}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>Варианты — по одному на строку.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`questions.${index}.correctText`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder={"Правильный вариант\n(можно несколько)"}
+                                    rows={2}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Правильные варианты — по одному на строку (точно как в списке).
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`questions.${index}.grading`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <Select value={field.value} onValueChange={field.onChange}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="STRICT">
+                                      Строгая оценка (всё или ничего)
+                                    </SelectItem>
+                                    <SelectItem value="PARTIAL">Частичная оценка</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      ) : (
                         <FormField
                           control={form.control}
-                          name={`questions.${index}.optionsText`}
+                          name={`questions.${index}.correctText`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
-                                <Textarea
-                                  placeholder={"Вариант 1\nВариант 2\nВариант 3"}
-                                  rows={3}
-                                  {...field}
-                                />
+                                <Input placeholder="Правильный ответ" {...field} />
                               </FormControl>
-                              <FormDescription>Варианты — по одному на строку.</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      ) : null}
-                      <FormField
-                        control={form.control}
-                        name={`questions.${index}.correctAnswer`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                placeholder={
-                                  kind === "CHOICE"
-                                    ? "Правильный вариант (как в списке)"
-                                    : "Правильный ответ"
-                                }
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      )}
                     </div>
                   );
                 })}

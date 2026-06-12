@@ -167,6 +167,10 @@ create table if not exists public.quiz_questions (
   correct_answer text not null,
   -- NULL/empty => free-text question; non-empty => multiple-choice options.
   options        text[],
+  -- For CHOICE questions: the set of correct option(s).
+  correct_answers text[],
+  -- Grading for multi-choice: STRICT (all-or-nothing) or PARTIAL (per option).
+  grading        text not null default 'STRICT',
   position       integer not null default 0,
   created_at     timestamptz not null default now()
 );

@@ -12,6 +12,7 @@ export type Json =
   | Json[];
 
 export type UserRole = "TUTOR" | "STUDENT";
+export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";
 export type HomeworkType = "FILE" | "QUIZ";
@@ -266,6 +267,8 @@ export interface Database {
           question: string;
           correct_answer: string;
           options: string[] | null;
+          correct_answers: string[] | null;
+          grading: GradingMode;
           position: number;
           created_at: string;
         };
@@ -275,6 +278,8 @@ export interface Database {
           question: string;
           correct_answer: string;
           options?: string[] | null;
+          correct_answers?: string[] | null;
+          grading?: GradingMode;
           position?: number;
           created_at?: string;
         };
@@ -284,6 +289,8 @@ export interface Database {
           question?: string;
           correct_answer?: string;
           options?: string[] | null;
+          correct_answers?: string[] | null;
+          grading?: GradingMode;
           position?: number;
           created_at?: string;
         };
