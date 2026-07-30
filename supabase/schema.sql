@@ -101,9 +101,9 @@ create index if not exists lesson_attendance_lesson_id_idx on public.lesson_atte
 create index if not exists lesson_attendance_student_id_idx on public.lesson_attendance (student_id);
 
 -- ---------------------------------------------------------------------------
--- materials (shared library)
+-- files (shared file library — used as homework attachments)
 -- ---------------------------------------------------------------------------
-create table if not exists public.materials (
+create table if not exists public.files (
   id            uuid primary key default gen_random_uuid(),
   title         text not null,
   file_url      text not null,
@@ -111,6 +111,58 @@ create table if not exists public.materials (
                 check (material_type in ('PDF', 'DOCX', 'JPG', 'PNG', 'WEBP', 'VIDEO_LINK')),
   created_at    timestamptz not null default now()
 );
+
+-- ---------------------------------------------------------------------------
+-- materials constructor: materials → sections → lessons → modules → items
+-- Strict 5-level hierarchy; each level ordered by `position`; cascade delete
+-- downward. Leaf `material_items.content` is typed JSONB (validated in app).
+-- ---------------------------------------------------------------------------
+create table if not exists public.materials (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  description text,
+  cover_url   text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create table if not exists public.material_sections (
+  id          uuid primary key default gen_random_uuid(),
+  material_id uuid not null references public.materials (id) on delete cascade,
+  title       text not null,
+  position    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists material_sections_material_id_idx on public.material_sections (material_id);
+
+create table if not exists public.material_lessons (
+  id          uuid primary key default gen_random_uuid(),
+  section_id  uuid not null references public.material_sections (id) on delete cascade,
+  title       text not null,
+  position    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists material_lessons_section_id_idx on public.material_lessons (section_id);
+
+create table if not exists public.material_modules (
+  id          uuid primary key default gen_random_uuid(),
+  lesson_id   uuid not null references public.material_lessons (id) on delete cascade,
+  title       text not null,
+  position    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists material_modules_lesson_id_idx on public.material_modules (lesson_id);
+
+create table if not exists public.material_items (
+  id         uuid primary key default gen_random_uuid(),
+  module_id  uuid not null references public.material_modules (id) on delete cascade,
+  position   integer not null default 0,
+  type       text not null check (type in ('INFO','CHOICE','GAPS','FREE','MATCH')),
+  content    jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists material_items_module_id_idx on public.material_items (module_id);
 
 -- ---------------------------------------------------------------------------
 -- homework
@@ -240,7 +292,12 @@ alter table public.groups               enable row level security;
 alter table public.group_members        enable row level security;
 alter table public.lessons              enable row level security;
 alter table public.lesson_attendance    enable row level security;
+alter table public.files                enable row level security;
 alter table public.materials            enable row level security;
+alter table public.material_sections    enable row level security;
+alter table public.material_lessons     enable row level security;
+alter table public.material_modules     enable row level security;
+alter table public.material_items       enable row level security;
 alter table public.homework             enable row level security;
 alter table public.homework_submissions enable row level security;
 alter table public.quizzes              enable row level security;
