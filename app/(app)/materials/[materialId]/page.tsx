@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Layers, Pencil } from "lucide-react";
 
+import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
-import { listSections } from "@/services/materials/sections.service";
+import { getMaterialTree } from "@/services/materials/material-tree.service";
 import { Breadcrumbs } from "../_components/breadcrumbs";
+import { MaterialTree } from "../_components/material-tree";
+import { Workspace } from "../_components/workspace";
 import { MaterialFormDialog } from "../material-form-dialog";
-import { SectionList } from "./section-list";
 
 export const metadata: Metadata = { title: "Материал" };
 
@@ -26,7 +28,7 @@ export default async function MaterialOverviewPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const sections = await listSections(db, materialId);
+  const tree = await getMaterialTree(db, materialId);
 
   return (
     <div className="space-y-6">
@@ -38,7 +40,7 @@ export default async function MaterialOverviewPage({
       />
       <PageHeader
         title={material.title}
-        description={material.description ?? "Разделы материала."}
+        description={material.description ?? "Структура материала."}
         actions={
           <MaterialFormDialog
             material={material}
@@ -51,7 +53,13 @@ export default async function MaterialOverviewPage({
           />
         }
       />
-      <SectionList materialId={material.id} sections={sections} />
+      <Workspace tree={<MaterialTree materialId={material.id} tree={tree} />}>
+        <EmptyState
+          icon={Layers}
+          title="Выберите урок"
+          description="Выберите урок в дереве справа или создайте новый раздел и урок."
+        />
+      </Workspace>
     </div>
   );
 }

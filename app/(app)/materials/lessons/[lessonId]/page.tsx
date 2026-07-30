@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
-import { lessonCrumbs } from "@/services/materials/breadcrumbs.service";
-import { listModules } from "@/services/materials/modules.service";
+import { lessonContext } from "@/services/materials/breadcrumbs.service";
+import { getMaterialTree } from "@/services/materials/material-tree.service";
+import { listItems } from "@/services/materials/items.service";
 import { Breadcrumbs } from "../../_components/breadcrumbs";
-import { ModuleList } from "./module-list";
+import { ItemList } from "../../_components/item-list";
+import { MaterialTree } from "../../_components/material-tree";
+import { Workspace } from "../../_components/workspace";
 
 export const metadata: Metadata = { title: "Урок" };
 
@@ -20,16 +23,21 @@ export default async function LessonPage({
   const { lessonId } = await params;
 
   const db = createServerSupabaseClient();
-  const crumb = await lessonCrumbs(db, lessonId);
-  if (!crumb) notFound();
+  const ctx = await lessonContext(db, lessonId);
+  if (!ctx) notFound();
 
-  const modules = await listModules(db, lessonId);
+  const [tree, items] = await Promise.all([
+    getMaterialTree(db, ctx.materialId),
+    listItems(db, lessonId),
+  ]);
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs crumbs={crumb.crumbs} />
-      <PageHeader title={crumb.title} description="Модули урока." />
-      <ModuleList lessonId={lessonId} modules={modules} />
+      <Breadcrumbs crumbs={ctx.crumbs} />
+      <PageHeader title={ctx.title} description="Упражнения и обучающая информация урока." />
+      <Workspace tree={<MaterialTree materialId={ctx.materialId} activeLessonId={lessonId} tree={tree} />}>
+        <ItemList lessonId={lessonId} items={items} />
+      </Workspace>
     </div>
   );
 }

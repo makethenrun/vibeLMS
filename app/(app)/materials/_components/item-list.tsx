@@ -16,7 +16,7 @@ import type {
   MatchContent,
 } from "@/lib/validators";
 import type { ItemRow, MaterialItemType } from "@/types";
-import { deleteItemAction, moveItemAction, updateItemAction } from "../../actions";
+import { deleteItemAction, moveItemAction, updateItemAction } from "../actions";
 import { AddItemMenu } from "./add-item-menu";
 import { ChoiceEditor } from "./item-editors/choice-editor";
 import { FreeEditor } from "./item-editors/free-editor";
@@ -32,12 +32,12 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   MATCH: "Сопоставление пар",
 };
 
-export function ItemList({ moduleId, items }: { moduleId: string; items: ItemRow[] }) {
+export function ItemList({ lessonId, items }: { lessonId: string; items: ItemRow[] }) {
   const router = useRouter();
 
   function makeOnSave(itemId: string) {
     return async (content: ItemContent) => {
-      const result = await updateItemAction(itemId, moduleId, content);
+      const result = await updateItemAction(itemId, lessonId, content);
       if (result.success) {
         toast.success("Сохранено");
         router.refresh();
@@ -48,7 +48,7 @@ export function ItemList({ moduleId, items }: { moduleId: string; items: ItemRow
   }
 
   async function move(itemId: string, direction: "up" | "down") {
-    const result = await moveItemAction(itemId, moduleId, direction);
+    const result = await moveItemAction(itemId, lessonId, direction);
     if (result.success) router.refresh();
     else toast.error(result.error);
   }
@@ -112,7 +112,7 @@ export function ItemList({ moduleId, items }: { moduleId: string; items: ItemRow
                   confirmLabel="Удалить"
                   variant="destructive"
                   successMessage="Элемент удалён"
-                  action={() => deleteItemAction(item.id, moduleId)}
+                  action={() => deleteItemAction(item.id, lessonId)}
                 />
               </div>
             </CardHeader>
@@ -121,7 +121,7 @@ export function ItemList({ moduleId, items }: { moduleId: string; items: ItemRow
         ))
       )}
 
-      <AddItemMenu moduleId={moduleId} />
+      <AddItemMenu lessonId={lessonId} />
     </div>
   );
 }
