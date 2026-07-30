@@ -15,6 +15,7 @@ export type UserRole = "TUTOR" | "STUDENT";
 export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";
+export type MaterialItemType = "INFO" | "CHOICE" | "GAPS" | "FREE" | "MATCH";
 export type HomeworkType = "FILE" | "QUIZ";
 
 export interface Database {
@@ -158,7 +159,7 @@ export interface Database {
         };
         Relationships: [];
       };
-      materials: {
+      files: {
         Row: {
           id: string;
           title: string;
@@ -179,6 +180,135 @@ export interface Database {
           file_url?: string;
           material_type?: MaterialType;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      materials: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          cover_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          cover_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string | null;
+          cover_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      material_sections: {
+        Row: {
+          id: string;
+          material_id: string;
+          title: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          material_id: string;
+          title: string;
+          position?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          material_id?: string;
+          title?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      material_lessons: {
+        Row: {
+          id: string;
+          section_id: string;
+          title: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          section_id: string;
+          title: string;
+          position?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          section_id?: string;
+          title?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      material_modules: {
+        Row: {
+          id: string;
+          lesson_id: string;
+          title: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          lesson_id: string;
+          title: string;
+          position?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          lesson_id?: string;
+          title?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      material_items: {
+        Row: {
+          id: string;
+          module_id: string;
+          position: number;
+          type: MaterialItemType;
+          content: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          module_id: string;
+          position?: number;
+          type: MaterialItemType;
+          content?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          module_id?: string;
+          position?: number;
+          type?: MaterialItemType;
+          content?: Json;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
