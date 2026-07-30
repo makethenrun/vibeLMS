@@ -25,7 +25,7 @@ import {
   listHomeworkForTutor,
 } from "@/services/homework/homework.service";
 import { listLessonOptions } from "@/services/lessons/lessons.service";
-import { listMaterials } from "@/services/materials/materials.service";
+import { listFiles } from "@/services/files/files.service";
 import type { StudentHomeworkItem } from "@/types";
 import { HomeworkActions } from "./homework-actions";
 import { HomeworkDialog } from "./homework-dialog";
@@ -49,15 +49,15 @@ export default async function HomeworkPage({
   const db = createServerSupabaseClient();
 
   if (user.role === "TUTOR") {
-    const [homework, lessons, materials] = await Promise.all([
+    const [homework, lessons, files] = await Promise.all([
       listHomeworkForTutor(db),
       listLessonOptions(db),
-      listMaterials(db),
+      listFiles(db),
     ]);
-    const materialOptions = materials.map((material) => ({
-      id: material.id,
-      title: material.title,
-      fileUrl: material.file_url,
+    const materialOptions = files.map((file) => ({
+      id: file.id,
+      title: file.title,
+      fileUrl: file.file_url,
     }));
 
     const { status } = await searchParams;

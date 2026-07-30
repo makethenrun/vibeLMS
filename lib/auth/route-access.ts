@@ -7,6 +7,7 @@ export const AUTH_ROUTES = ["/login", "/register"] as const;
 export const TUTOR_ONLY_PREFIXES = [
   "/students",
   "/groups",
+  "/materials",
   "/payments",
   "/statistics",
   "/settings",
