@@ -5,6 +5,7 @@ export type {
   UserRole,
   LessonStatus,
   MaterialType,
+  MaterialItemType,
   HomeworkType,
   GradingMode,
 } from "@/lib/db/database.types";
@@ -17,7 +18,12 @@ export type Student = Tables["students"]["Row"];
 export type Group = Tables["groups"]["Row"];
 export type GroupMember = Tables["group_members"]["Row"];
 export type Lesson = Tables["lessons"]["Row"];
-export type Material = Tables["materials"]["Row"];
+export type FileRecord = Tables["files"]["Row"];
+export type MaterialRow = Tables["materials"]["Row"];
+export type SectionRow = Tables["material_sections"]["Row"];
+export type LessonRow = Tables["material_lessons"]["Row"];
+export type ModuleRow = Tables["material_modules"]["Row"];
+export type ItemRow = Tables["material_items"]["Row"];
 export type Homework = Tables["homework"]["Row"];
 export type HomeworkSubmission = Tables["homework_submissions"]["Row"];
 export type Quiz = Tables["quizzes"]["Row"];
@@ -28,6 +34,16 @@ export type Settings = Tables["settings"]["Row"];
 // --- Composite / view models ----------------------------------------------
 export interface StudentWithAccount extends Student {
   login: string | null;
+}
+
+// --- Materials constructor view models -------------------------------------
+export interface MaterialWithCounts extends MaterialRow {
+  sectionCount: number;
+}
+
+export interface Breadcrumb {
+  label: string;
+  href: string;
 }
 
 export interface GroupWithCount extends Group {

@@ -35,15 +35,15 @@ import { FileUpload } from "@/components/shared/file-upload";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { ACCEPTED_FILE_EXTENSIONS, MATERIAL_TYPE_OPTIONS } from "@/lib/constants";
 import { applyFieldErrors } from "@/lib/utils/form";
-import { materialSchema, type MaterialInput } from "@/lib/validators";
-import { createMaterialAction } from "./actions";
+import { fileSchema, type FileInput } from "@/lib/validators";
+import { createFileAction } from "./actions";
 
-const DEFAULTS: MaterialInput = { title: "", materialType: "PDF", fileUrl: "" };
+const DEFAULTS: FileInput = { title: "", materialType: "PDF", fileUrl: "" };
 
-export function MaterialDialog({ trigger }: { trigger: ReactNode }) {
+export function FileDialog({ trigger }: { trigger: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const form = useForm<MaterialInput>({
-    resolver: zodResolver(materialSchema),
+  const form = useForm<FileInput>({
+    resolver: zodResolver(fileSchema),
     defaultValues: DEFAULTS,
   });
 
@@ -55,10 +55,10 @@ export function MaterialDialog({ trigger }: { trigger: ReactNode }) {
   const isLink = materialType === "VIDEO_LINK";
   const accept = materialType !== "VIDEO_LINK" ? ACCEPTED_FILE_EXTENSIONS[materialType] : undefined;
 
-  async function onSubmit(values: MaterialInput) {
-    const result = await createMaterialAction(values);
+  async function onSubmit(values: FileInput) {
+    const result = await createFileAction(values);
     if (result.success) {
-      toast.success("Материал добавлен");
+      toast.success("Файл добавлен");
       setOpen(false);
       return;
     }
@@ -71,7 +71,7 @@ export function MaterialDialog({ trigger }: { trigger: ReactNode }) {
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Новый материал</DialogTitle>
+          <DialogTitle>Новый файл</DialogTitle>
           <DialogDescription>Загрузите файл или добавьте ссылку на видео.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
