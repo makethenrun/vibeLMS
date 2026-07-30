@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(git mv *)",
+      "Bash(git -c user.name=makethenrun -c user.email=ac456421@gmail.com commit -m 'chore: add vitest test runner *)",
+      "Bash(git -c user.name=makethenrun -c user.email=ac456421@gmail.com commit -m 'feat\\(db\\): materials constructor tables + files split *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
