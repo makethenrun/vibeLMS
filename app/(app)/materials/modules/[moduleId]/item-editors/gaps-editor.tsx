@@ -1,0 +1,134 @@
+"use client";
+
+import { useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+
+import { LoadingButton } from "@/components/shared/loading-button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { itemContentSchema, type GapsContent, type ItemContent } from "@/lib/validators";
+
+interface EditorProps {
+  content: GapsContent;
+  onSave: (content: ItemContent) => Promise<void>;
+}
+
+interface BlankDraft {
+  index: number;
+  answersText: string;
+  optionsText: string;
+}
+
+function toDraft(content: GapsContent): BlankDraft[] {
+  return content.blanks.map((b) => ({
+    index: b.index,
+    answersText: b.answers.join(", "),
+    optionsText: b.options ? b.options.join(", ") : "",
+  }));
+}
+
+function parseList(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+export function GapsEditor({ content, onSave }: EditorProps) {
+  const [text, setText] = useState(content.text);
+  const [blanks, setBlanks] = useState<BlankDraft[]>(toDraft(content));
+  const [saving, setSaving] = useState(false);
+
+  function syncFromText() {
+    const indices = [...new Set([...text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1])))].sort(
+      (a, b) => a - b,
+    );
+    setBlanks((prev) => {
+      const byIndex = new Map(prev.map((b) => [b.index, b]));
+      return indices.map(
+        (index) => byIndex.get(index) ?? { index, answersText: "", optionsText: "" },
+      );
+    });
+  }
+
+  function updateBlank(index: number, patch: Partial<BlankDraft>) {
+    setBlanks((prev) => prev.map((b) => (b.index === index ? { ...b, ...patch } : b)));
+  }
+
+  async function handleSave() {
+    const candidate = {
+      type: "GAPS" as const,
+      text,
+      blanks: blanks.map((b) => {
+        const options = parseList(b.optionsText);
+        return {
+          index: b.index,
+          answers: parseList(b.answersText),
+          options: options.length > 0 ? options : null,
+        };
+      }),
+    };
+    const parsed = itemContentSchema.safeParse(candidate);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Проверьте упражнение");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(parsed.data);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Текст с пропусками</label>
+        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
+        <p className="text-xs text-muted-foreground">
+          Отмечайте пропуски маркерами <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> и т.д.
+        </p>
+      </div>
+
+      <Button size="sm" variant="outline" onClick={syncFromText}>
+        <RefreshCw className="h-4 w-4" />
+        Обновить пропуски из текста
+      </Button>
+
+      <div className="space-y-2">
+        {blanks.map((blank) => (
+          <div key={blank.index} className="rounded-md border p-2">
+            <p className="mb-2 text-sm font-medium">Пропуск {"{{"}{blank.index}{"}}"}</p>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Ответы (через запятую)</label>
+                <Input
+                  value={blank.answersText}
+                  onChange={(e) => updateBlank(blank.index, { answersText: e.target.value })}
+                  placeholder="went, go (past)"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Словесный банк (необязательно, через запятую)
+                </label>
+                <Input
+                  value={blank.optionsText}
+                  onChange={(e) => updateBlank(blank.index, { optionsText: e.target.value })}
+                  placeholder="went, seen, saw"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <LoadingButton size="sm" loading={saving} onClick={handleSave}>
+        Сохранить
+      </LoadingButton>
+    </div>
+  );
+}
