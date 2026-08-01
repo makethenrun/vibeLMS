@@ -24,14 +24,14 @@ const TYPE_LABELS: { type: MaterialItemType; label: string }[] = [
   { type: "MATCH", label: "Сопоставление пар" },
 ];
 
-export function AddItemMenu({ lessonId }: { lessonId: string }) {
+export function AddItemMenu({ moduleId }: { moduleId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   async function addItem(type: MaterialItemType) {
     setBusy(true);
     try {
-      const result = await createItemAction(lessonId, defaultContentFor(type));
+      const result = await createItemAction(moduleId, defaultContentFor(type));
       if (result.success) {
         toast.success("Элемент добавлен");
         router.refresh();
@@ -46,7 +46,7 @@ export function AddItemMenu({ lessonId }: { lessonId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button disabled={busy}>
+        <Button size="sm" variant="outline" disabled={busy}>
           <Plus className="h-4 w-4" />
           Добавить элемент
         </Button>
