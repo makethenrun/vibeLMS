@@ -18,21 +18,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type {
   AudioContent,
+  CarouselContent,
   FreeContent,
   GapsContent,
+  ImageContent,
   InfoContent,
   ItemContent,
+  LinkContent,
   MatchContent,
   QuizContent,
+  VideoContent,
 } from "@/lib/validators";
 import type { Group, ItemRow, MaterialItemType } from "@/types";
 import { deleteItemAction, moveItemAction, setItemPinsAction, updateItemAction, updateItemMetaAction } from "../actions";
 import { AudioEditor } from "./item-editors/audio-editor";
+import { CarouselEditor } from "./item-editors/carousel-editor";
 import { FreeEditor } from "./item-editors/free-editor";
 import { GapsEditor } from "./item-editors/gaps-editor";
+import { ImageEditor } from "./item-editors/image-editor";
 import { InfoEditor } from "./item-editors/info-editor";
+import { LinkEditor } from "./item-editors/link-editor";
 import { MatchEditor } from "./item-editors/match-editor";
 import { QuizEditor } from "./item-editors/quiz-editor";
+import { VideoEditor } from "./item-editors/video-editor";
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Обучающая информация",
@@ -40,7 +48,11 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   GAPS: "Заполнить пропуски",
   FREE: "Свободный ответ",
   MATCH: "Сопоставление пар",
-  AUDIO: "Аудирование",
+  AUDIO: "Аудио",
+  VIDEO: "Видео",
+  IMAGE: "Изображение",
+  CAROUSEL: "Карусель изображений",
+  LINK: "Ссылка",
 };
 
 interface ItemCardProps {
@@ -111,6 +123,14 @@ export function ItemCard({
         return <QuizEditor content={item.content as unknown as QuizContent} onSave={onSave} />;
       case "AUDIO":
         return <AudioEditor content={item.content as unknown as AudioContent} onSave={onSave} />;
+      case "VIDEO":
+        return <VideoEditor content={item.content as unknown as VideoContent} onSave={onSave} />;
+      case "IMAGE":
+        return <ImageEditor content={item.content as unknown as ImageContent} onSave={onSave} />;
+      case "CAROUSEL":
+        return <CarouselEditor content={item.content as unknown as CarouselContent} onSave={onSave} />;
+      case "LINK":
+        return <LinkEditor content={item.content as unknown as LinkContent} onSave={onSave} />;
       case "GAPS":
         return <GapsEditor content={item.content as unknown as GapsContent} onSave={onSave} />;
       case "FREE":

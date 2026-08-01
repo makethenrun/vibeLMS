@@ -32,17 +32,15 @@ describe("itemContentSchema", () => {
     expect(itemContentSchema.safeParse({ type: "QUIZ", questions: [] }).success).toBe(false);
   });
 
-  it("accepts an AUDIO with url and questions", () => {
-    const r = itemContentSchema.safeParse({
-      type: "AUDIO",
-      audioUrl: "https://example.com/a.mp3",
-      questions: [{ question: "q", options: ["a", "b"], correctAnswers: ["a"], correctAnswer: "", grading: "STRICT" }],
-    });
-    expect(r.success).toBe(true);
+  it("accepts an audio-only AUDIO item", () => {
+    expect(itemContentSchema.safeParse({ type: "AUDIO", audioUrl: "https://example.com/a.mp3" }).success).toBe(true);
   });
 
-  it("accepts an AUDIO with empty url (draft) and no questions", () => {
-    expect(itemContentSchema.safeParse({ type: "AUDIO", audioUrl: "", questions: [] }).success).toBe(true);
+  it("accepts VIDEO / IMAGE / CAROUSEL / LINK", () => {
+    expect(itemContentSchema.safeParse({ type: "VIDEO", url: "https://youtu.be/x" }).success).toBe(true);
+    expect(itemContentSchema.safeParse({ type: "IMAGE", url: "https://ex.com/i.png", caption: null }).success).toBe(true);
+    expect(itemContentSchema.safeParse({ type: "CAROUSEL", images: [{ url: "https://ex.com/i.png", caption: "1" }] }).success).toBe(true);
+    expect(itemContentSchema.safeParse({ type: "LINK", url: "https://ex.com", label: "Открыть" }).success).toBe(true);
   });
 
   it("accepts GAPS with matching blank indices", () => {
@@ -85,7 +83,7 @@ describe("itemContentSchema", () => {
   });
 
   it("defaultContentFor returns valid content for each type", () => {
-    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO"] as const) {
+    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO", "VIDEO", "IMAGE", "CAROUSEL", "LINK"] as const) {
       expect(itemContentSchema.safeParse(defaultContentFor(t)).success).toBe(true);
     }
   });

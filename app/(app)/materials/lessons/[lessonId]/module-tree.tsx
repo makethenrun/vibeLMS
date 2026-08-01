@@ -27,7 +27,11 @@ const ITEM_LABELS: Record<MaterialItemType, string> = {
   GAPS: "Заполнить пропуски",
   FREE: "Свободный ответ",
   MATCH: "Сопоставление пар",
-  AUDIO: "Аудирование",
+  AUDIO: "Аудио",
+  VIDEO: "Видео",
+  IMAGE: "Изображение",
+  CAROUSEL: "Карусель изображений",
+  LINK: "Ссылка",
 };
 
 interface ModuleTreeProps {
