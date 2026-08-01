@@ -5,14 +5,26 @@ import { revalidatePath } from "next/cache";
 import { getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
-import { itemContentSchema, materialSchema, titleSchema, type MaterialInput } from "@/lib/validators";
+import { itemContentSchema, itemMetaSchema, materialSchema, titleSchema, type MaterialInput } from "@/lib/validators";
 import * as materials from "@/services/materials/materials.service";
 import * as sections from "@/services/materials/sections.service";
 import * as lessons from "@/services/materials/lessons.service";
 import * as modules from "@/services/materials/modules.service";
 import * as items from "@/services/materials/items.service";
+import { setMaterialGroups } from "@/services/materials/material-groups.service";
+import { setItemPins } from "@/services/materials/item-pins.service";
+import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
 
 type Dir = "up" | "down";
+
+export interface PickerOption {
+  id: string;
+  title: string;
+}
+export interface PickerLessonGroup {
+  sectionTitle: string;
+  lessons: PickerOption[];
+}
 
 async function requireTutorResult(): Promise<ActionResult | null> {
   const tutor = await getTutorOrNull();
@@ -295,4 +307,90 @@ export async function moveItemAction(id: string, direction: Dir): Promise<Action
   }
   revalidatePath("/materials", "layout");
   return ok();
+}
+
+export async function updateItemMetaAction(id: string, meta: unknown): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const parsed = itemMetaSchema.safeParse(meta);
+  if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
+  const db = createServerSupabaseClient();
+  try {
+    await items.updateItemMeta(db, id, parsed.data);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+export async function setItemPinsAction(itemId: string, groupIds: string[]): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await setItemPins(db, itemId, groupIds);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+export async function importItemsAction(itemIds: string[], targetModuleId: string): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  if (itemIds.length === 0) return fail("Не выбрано ни одного упражнения");
+  const db = createServerSupabaseClient();
+  try {
+    await items.copyItemsToModule(db, itemIds, targetModuleId);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+// --- Material groups access -------------------------------------------------
+
+export async function setMaterialGroupsAction(materialId: string, groupIds: string[]): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await setMaterialGroups(db, materialId, groupIds);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath(`/materials/${materialId}`);
+  return ok();
+}
+
+// --- Import target pickers (data fetchers) ----------------------------------
+
+export async function pickerMaterialsAction(): Promise<PickerOption[]> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return [];
+  const db = createServerSupabaseClient();
+  const list = await materials.listMaterials(db);
+  return list.map((m) => ({ id: m.id, title: m.title }));
+}
+
+export async function pickerLessonsAction(materialId: string): Promise<PickerLessonGroup[]> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return [];
+  const db = createServerSupabaseClient();
+  const tree = await getSectionsWithLessons(db, materialId);
+  return tree.map((s) => ({
+    sectionTitle: s.title,
+    lessons: s.lessons.map((l) => ({ id: l.id, title: l.title })),
+  }));
+}
+
+export async function pickerModulesAction(lessonId: string): Promise<PickerOption[]> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return [];
+  const db = createServerSupabaseClient();
+  const list = await modules.listModules(db, lessonId);
+  return list.map((m) => ({ id: m.id, title: m.title }));
 }

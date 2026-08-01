@@ -1,10 +1,14 @@
 import {
   BarChart3,
+  Bot,
+  BookA,
   CalendarDays,
   ClipboardList,
   FileText,
+  Keyboard,
   LayoutDashboard,
   Library,
+  Search,
   Settings,
   Users,
   UsersRound,
@@ -20,6 +24,20 @@ export interface NavItem {
   icon: LucideIcon;
   roles: UserRole[];
 }
+
+export interface ExternalLink {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+/** External tool links shown at the bottom of the sidebar (open in a new tab). */
+export const EXTERNAL_LINKS: ExternalLink[] = [
+  { label: "DeepSeek", href: "https://chat.deepseek.com", icon: Bot },
+  { label: "Baidu", href: "https://www.baidu.com", icon: Search },
+  { label: "БКРС", href: "https://bkrs.info", icon: BookA },
+  { label: "Pinyin TypeIt", href: "https://pinyin.typeit.org", icon: Keyboard },
+];
 
 const BOTH: UserRole[] = ["TUTOR", "STUDENT"];
 const TUTOR_ONLY: UserRole[] = ["TUTOR"];
