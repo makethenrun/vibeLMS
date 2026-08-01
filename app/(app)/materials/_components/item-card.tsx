@@ -28,6 +28,7 @@ import type {
   LinkContent,
   MatchContent,
   QuizContent,
+  SentenceTaskContent,
   VideoContent,
 } from "@/lib/validators";
 import type { Group, ItemRow, MaterialItemType } from "@/types";
@@ -42,6 +43,7 @@ import { InfoEditor } from "./item-editors/info-editor";
 import { LinkEditor } from "./item-editors/link-editor";
 import { MatchEditor } from "./item-editors/match-editor";
 import { QuizEditor } from "./item-editors/quiz-editor";
+import { SentenceTaskEditor } from "./item-editors/sentence-task-editor";
 import { VideoEditor } from "./item-editors/video-editor";
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
@@ -56,6 +58,7 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   CAROUSEL: "Карусель изображений",
   LINK: "Ссылка",
   IMAGE_TASK: "Упражнение с изображениями",
+  SENTENCE_TASK: "Работа с предложениями",
 };
 
 interface ItemCardProps {
@@ -136,6 +139,8 @@ export function ItemCard({
         return <LinkEditor content={item.content as unknown as LinkContent} onSave={onSave} />;
       case "IMAGE_TASK":
         return <ImageTaskEditor content={item.content as unknown as ImageTaskContent} onSave={onSave} />;
+      case "SENTENCE_TASK":
+        return <SentenceTaskEditor content={item.content as unknown as SentenceTaskContent} onSave={onSave} />;
       case "GAPS":
         return <GapsEditor content={item.content as unknown as GapsContent} onSave={onSave} />;
       case "FREE":

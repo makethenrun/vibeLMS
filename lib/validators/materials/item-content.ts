@@ -73,6 +73,28 @@ export const linkContentSchema = z.object({
   label: z.string().trim().max(200).nullable(),
 });
 
+export const sentenceTaskContentSchema = z.object({
+  type: z.literal("SENTENCE_TASK"),
+  variant: z
+    .enum(["WORD_ORDER", "SORT_COLUMNS", "SENTENCE_ORDER", "WORD_FROM_LETTERS", "MATCH_PAIRS"])
+    .default("WORD_ORDER"),
+  prompt: z.string().trim().max(1000).nullable().default(null),
+  // WORD_ORDER: the sentence tokens in correct order.
+  words: z.array(z.string().trim().max(200)).max(50).default([]),
+  // SENTENCE_ORDER: sentences in correct order.
+  sentences: z.array(z.string().trim().max(500)).max(30).default([]),
+  // WORD_FROM_LETTERS: the target word, plus optional distractor letters.
+  word: z.string().trim().max(100).default(""),
+  extraLetters: z.string().trim().max(100).default(""),
+  // SORT_COLUMNS: each column has a title and the items that belong in it.
+  columns: z
+    .array(z.object({ title: z.string().trim().max(200), items: z.array(z.string().trim().max(200)).max(30) }))
+    .max(6)
+    .default([]),
+  // MATCH_PAIRS: pairs to match (moved here from the standalone MATCH format).
+  pairs: z.array(z.object({ left: z.string().trim().max(300), right: z.string().trim().max(300) })).max(30).default([]),
+});
+
 export const imageTaskContentSchema = z.object({
   type: z.literal("IMAGE_TASK"),
   variant: z
@@ -132,6 +154,7 @@ export const itemContentSchema = z
     carouselContentSchema,
     linkContentSchema,
     imageTaskContentSchema,
+    sentenceTaskContentSchema,
     gapsContentSchema,
     freeContentSchema,
     matchContentSchema,
@@ -188,6 +211,8 @@ export type CarouselContent = z.infer<typeof carouselContentSchema>;
 export type LinkContent = z.infer<typeof linkContentSchema>;
 export type ImageTaskContent = z.infer<typeof imageTaskContentSchema>;
 export type ImageTaskVariant = ImageTaskContent["variant"];
+export type SentenceTaskContent = z.infer<typeof sentenceTaskContentSchema>;
+export type SentenceTaskVariant = SentenceTaskContent["variant"];
 export type GapsContent = z.infer<typeof gapsContentSchema>;
 export type FreeContent = z.infer<typeof freeContentSchema>;
 export type MatchContent = z.infer<typeof matchContentSchema>;
@@ -215,6 +240,18 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
       return { type: "LINK", url: "", label: null };
     case "IMAGE_TASK":
       return { type: "IMAGE_TASK", variant: "TYPE_WORD", prompt: null, pairs: [], distractors: [], images: [] };
+    case "SENTENCE_TASK":
+      return {
+        type: "SENTENCE_TASK",
+        variant: "WORD_ORDER",
+        prompt: null,
+        words: [],
+        sentences: [],
+        word: "",
+        extraLetters: "",
+        columns: [],
+        pairs: [],
+      };
     case "GAPS":
       return { type: "GAPS", mode: "INPUT", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }], bank: [] };
     case "FREE":

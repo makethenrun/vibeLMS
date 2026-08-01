@@ -89,6 +89,22 @@ describe("itemContentSchema", () => {
     }).success).toBe(true);
   });
 
+  it("accepts SENTENCE_TASK variants", () => {
+    expect(itemContentSchema.safeParse({
+      type: "SENTENCE_TASK", variant: "WORD_ORDER", prompt: null,
+      words: ["I", "like", "tea"], sentences: [], word: "", extraLetters: "", columns: [], pairs: [],
+    }).success).toBe(true);
+    expect(itemContentSchema.safeParse({
+      type: "SENTENCE_TASK", variant: "SORT_COLUMNS", prompt: "Разбейте",
+      words: [], sentences: [], word: "", extraLetters: "",
+      columns: [{ title: "Verbs", items: ["run", "eat"] }, { title: "Nouns", items: ["cat"] }], pairs: [],
+    }).success).toBe(true);
+    expect(itemContentSchema.safeParse({
+      type: "SENTENCE_TASK", variant: "MATCH_PAIRS", prompt: null,
+      words: [], sentences: [], word: "", extraLetters: "", columns: [], pairs: [{ left: "dog", right: "собака" }],
+    }).success).toBe(true);
+  });
+
   it("accepts VIDEO / IMAGE / CAROUSEL / LINK", () => {
     expect(itemContentSchema.safeParse({ type: "VIDEO", url: "https://youtu.be/x" }).success).toBe(true);
     expect(itemContentSchema.safeParse({ type: "IMAGE", url: "https://ex.com/i.png", caption: null }).success).toBe(true);
@@ -136,7 +152,7 @@ describe("itemContentSchema", () => {
   });
 
   it("defaultContentFor returns valid content for each type", () => {
-    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO", "VIDEO", "IMAGE", "CAROUSEL", "LINK", "IMAGE_TASK"] as const) {
+    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO", "VIDEO", "IMAGE", "CAROUSEL", "LINK", "IMAGE_TASK", "SENTENCE_TASK"] as const) {
       expect(itemContentSchema.safeParse(defaultContentFor(t)).success).toBe(true);
     }
   });
