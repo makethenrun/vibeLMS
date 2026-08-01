@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Layers, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 
-import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
-import { listSections } from "@/services/materials/sections.service";
+import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
 import { Breadcrumbs } from "../_components/breadcrumbs";
 import { Workspace } from "../_components/workspace";
 import { MaterialFormDialog } from "../material-form-dialog";
-import { SectionsPanel } from "./sections-panel";
+import { MaterialCover } from "./material-cover";
+import { SectionTree } from "./section-tree";
 
 export const metadata: Metadata = { title: "Материал" };
 
@@ -28,7 +28,7 @@ export default async function MaterialOverviewPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const sections = await listSections(db, materialId);
+  const sections = await getSectionsWithLessons(db, materialId);
 
   return (
     <div className="space-y-6">
@@ -40,7 +40,7 @@ export default async function MaterialOverviewPage({
       />
       <PageHeader
         title={material.title}
-        description={material.description ?? "Разделы материала."}
+        description="Обложка, описание и структура материала."
         actions={
           <MaterialFormDialog
             material={material}
@@ -53,15 +53,8 @@ export default async function MaterialOverviewPage({
           />
         }
       />
-      <Workspace
-        tree={<SectionsPanel materialId={material.id} sections={sections} />}
-        treeTitle="Разделы"
-      >
-        <EmptyState
-          icon={Layers}
-          title="Выберите раздел"
-          description="Выберите раздел справа или создайте новый."
-        />
+      <Workspace tree={<SectionTree materialId={material.id} sections={sections} />} treeTitle="Разделы">
+        <MaterialCover material={material} />
       </Workspace>
     </div>
   );

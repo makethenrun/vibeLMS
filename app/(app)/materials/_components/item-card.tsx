@@ -8,27 +8,30 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type {
-  ChoiceContent,
+  AudioContent,
   FreeContent,
   GapsContent,
   InfoContent,
   ItemContent,
   MatchContent,
+  QuizContent,
 } from "@/lib/validators";
 import type { ItemRow, MaterialItemType } from "@/types";
 import { deleteItemAction, moveItemAction, updateItemAction } from "../actions";
-import { ChoiceEditor } from "./item-editors/choice-editor";
+import { AudioEditor } from "./item-editors/audio-editor";
 import { FreeEditor } from "./item-editors/free-editor";
 import { GapsEditor } from "./item-editors/gaps-editor";
 import { InfoEditor } from "./item-editors/info-editor";
 import { MatchEditor } from "./item-editors/match-editor";
+import { QuizEditor } from "./item-editors/quiz-editor";
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Обучающая информация",
-  CHOICE: "Выбор ответа",
+  QUIZ: "Тест",
   GAPS: "Заполнить пропуски",
   FREE: "Свободный ответ",
   MATCH: "Сопоставление пар",
+  AUDIO: "Аудирование",
 };
 
 interface ItemCardProps {
@@ -60,8 +63,10 @@ export function ItemCard({ item, canUp, canDown }: ItemCardProps) {
     switch (item.type) {
       case "INFO":
         return <InfoEditor content={item.content as unknown as InfoContent} onSave={onSave} />;
-      case "CHOICE":
-        return <ChoiceEditor content={item.content as unknown as ChoiceContent} onSave={onSave} />;
+      case "QUIZ":
+        return <QuizEditor content={item.content as unknown as QuizContent} onSave={onSave} />;
+      case "AUDIO":
+        return <AudioEditor content={item.content as unknown as AudioContent} onSave={onSave} />;
       case "GAPS":
         return <GapsEditor content={item.content as unknown as GapsContent} onSave={onSave} />;
       case "FREE":
@@ -74,7 +79,7 @@ export function ItemCard({ item, canUp, canDown }: ItemCardProps) {
   }
 
   return (
-    <Card>
+    <Card id={`item-${item.id}`} className="scroll-mt-20">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b py-2">
         <span className="text-sm font-medium">{TYPE_LABELS[item.type]}</span>
         <div className="flex items-center gap-1">

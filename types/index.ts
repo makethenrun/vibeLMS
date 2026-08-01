@@ -51,6 +51,11 @@ export interface ModuleWithItems extends ModuleRow {
   items: ItemRow[];
 }
 
+/** A section together with its ordered lessons — the material navigation tree. */
+export interface SectionWithLessons extends SectionRow {
+  lessons: LessonRow[];
+}
+
 export interface GroupWithCount extends Group {
   memberCount: number;
 }

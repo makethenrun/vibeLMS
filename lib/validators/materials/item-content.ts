@@ -3,20 +3,49 @@ import type { MaterialItemType } from "@/lib/db/database.types";
 
 const nonEmpty = z.string().trim().min(1, "Заполните поле");
 
-// Discriminated-union members must be plain ZodObjects (no .superRefine), so
-// cross-field checks live in a single .superRefine on the union below.
+// --- Shared question mechanic (mirrors the homework quiz) --------------------
+// A question is free-text when `options` is empty, otherwise multiple-choice.
+export const materialQuestionSchema = z
+  .object({
+    question: z.string().trim().min(1, "Введите вопрос").max(500),
+    correctAnswer: z.string().trim().max(300).default(""),
+    options: z.array(nonEmpty.max(300)).max(8).default([]),
+    correctAnswers: z.array(nonEmpty.max(300)).max(8).default([]),
+    grading: z.enum(["STRICT", "PARTIAL"]).default("STRICT"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.options.length > 0) {
+      if (data.correctAnswers.length < 1) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Отметьте правильный вариант", path: ["correctAnswers"] });
+        return;
+      }
+      const optionSet = new Set(data.options.map((o) => o.toLowerCase()));
+      if (!data.correctAnswers.every((a) => optionSet.has(a.toLowerCase()))) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Правильные варианты должны быть среди вариантов", path: ["correctAnswers"] });
+      }
+    } else if (data.correctAnswer.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Введите правильный ответ", path: ["correctAnswer"] });
+    }
+  });
+export type MaterialQuestion = z.infer<typeof materialQuestionSchema>;
+
+// --- Item content types -----------------------------------------------------
+// Discriminated-union members must be plain ZodObjects (no top-level
+// .superRefine); cross-field checks live in the union's .superRefine below.
 export const infoContentSchema = z.object({
   type: z.literal("INFO"),
   doc: z.record(z.unknown()), // Tiptap JSON document
 });
 
-export const choiceContentSchema = z.object({
-  type: z.literal("CHOICE"),
-  question: nonEmpty.max(1000),
-  options: z.array(nonEmpty.max(500)).min(2, "Минимум 2 варианта").max(10),
-  correct: z.array(z.number().int().nonnegative()).min(1, "Отметьте правильный ответ"),
-  multiple: z.boolean(),
-  grading: z.enum(["STRICT", "PARTIAL"]),
+export const quizContentSchema = z.object({
+  type: z.literal("QUIZ"),
+  questions: z.array(materialQuestionSchema).min(1, "Добавьте хотя бы один вопрос"),
+});
+
+export const audioContentSchema = z.object({
+  type: z.literal("AUDIO"),
+  audioUrl: z.string().trim().max(1000),
+  questions: z.array(materialQuestionSchema).default([]),
 });
 
 const blankSchema = z.object({
@@ -46,20 +75,13 @@ export const matchContentSchema = z.object({
 export const itemContentSchema = z
   .discriminatedUnion("type", [
     infoContentSchema,
-    choiceContentSchema,
+    quizContentSchema,
+    audioContentSchema,
     gapsContentSchema,
     freeContentSchema,
     matchContentSchema,
   ])
   .superRefine((v, ctx) => {
-    if (v.type === "CHOICE") {
-      if (v.correct.some((i) => i >= v.options.length)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Правильный ответ вне списка", path: ["correct"] });
-      }
-      if (!v.multiple && v.correct.length !== 1) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Для одиночного выбора ровно один ответ", path: ["correct"] });
-      }
-    }
     if (v.type === "GAPS") {
       const placeholders = [...v.text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
       const blankIndices = new Set(v.blanks.map((b) => b.index));
@@ -77,18 +99,25 @@ export const itemContentSchema = z
   });
 
 export type InfoContent = z.infer<typeof infoContentSchema>;
-export type ChoiceContent = z.infer<typeof choiceContentSchema>;
+export type QuizContent = z.infer<typeof quizContentSchema>;
+export type AudioContent = z.infer<typeof audioContentSchema>;
 export type GapsContent = z.infer<typeof gapsContentSchema>;
 export type FreeContent = z.infer<typeof freeContentSchema>;
 export type MatchContent = z.infer<typeof matchContentSchema>;
 export type ItemContent = z.infer<typeof itemContentSchema>;
 
+function defaultQuestion(): MaterialQuestion {
+  return { question: "Вопрос", options: ["Вариант 1", "Вариант 2"], correctAnswers: ["Вариант 1"], correctAnswer: "", grading: "STRICT" };
+}
+
 export function defaultContentFor(type: MaterialItemType): ItemContent {
   switch (type) {
     case "INFO":
       return { type: "INFO", doc: { type: "doc", content: [{ type: "paragraph" }] } };
-    case "CHOICE":
-      return { type: "CHOICE", question: "Вопрос", options: ["Вариант 1", "Вариант 2"], correct: [0], multiple: false, grading: "STRICT" };
+    case "QUIZ":
+      return { type: "QUIZ", questions: [defaultQuestion()] };
+    case "AUDIO":
+      return { type: "AUDIO", audioUrl: "", questions: [] };
     case "GAPS":
       return { type: "GAPS", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }] };
     case "FREE":
