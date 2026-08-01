@@ -5,6 +5,8 @@ import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import TextStyle from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
 
 import { cn } from "@/lib/utils";
 import { RichTextToolbar } from "./rich-text-toolbar";
@@ -22,6 +24,8 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
       StarterKit,
       Link.configure({ openOnClick: false, autolink: true }),
       Image,
+      TextStyle,
+      FontFamily,
     ],
     content: value as JSONContent,
     editorProps: {

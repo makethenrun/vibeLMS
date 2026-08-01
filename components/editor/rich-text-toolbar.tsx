@@ -11,11 +11,24 @@ import {
   List,
   ListOrdered,
   Loader2,
+  Type,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+
+const FONTS: { label: string; value: string | null }[] = [
+  { label: "Стандартный", value: null },
+  { label: "Serif (Georgia)", value: "Georgia, 'Times New Roman', serif" },
+  { label: "SimSun 宋体", value: "SimSun, 宋体, serif" },
+];
 
 interface UploadResponse {
   url?: string;
@@ -84,6 +97,28 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
         onClick={toggleLink} aria-label="Ссылка">
         <Link2 className="h-4 w-4" />
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="sm" variant="ghost" className="h-8 gap-1 px-2" aria-label="Шрифт">
+            <Type className="h-4 w-4" />
+            Шрифт
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {FONTS.map((font) => (
+            <DropdownMenuItem
+              key={font.label}
+              style={font.value ? { fontFamily: font.value } : undefined}
+              onSelect={() => {
+                if (font.value) editor.chain().focus().setFontFamily(font.value).run();
+                else editor.chain().focus().unsetFontFamily().run();
+              }}
+            >
+              {font.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button type="button" size="icon" variant="ghost" className="h-8 w-8"
         onClick={() => inputRef.current?.click()} aria-label="Вставить изображение">
         {uploadingRef.current ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}

@@ -45,7 +45,30 @@ export const quizContentSchema = z.object({
 export const audioContentSchema = z.object({
   type: z.literal("AUDIO"),
   audioUrl: z.string().trim().max(1000),
-  questions: z.array(materialQuestionSchema).default([]),
+});
+
+export const videoContentSchema = z.object({
+  type: z.literal("VIDEO"),
+  url: z.string().trim().max(1000),
+});
+
+export const imageContentSchema = z.object({
+  type: z.literal("IMAGE"),
+  url: z.string().trim().max(1000),
+  caption: z.string().trim().max(500).nullable(),
+});
+
+export const carouselContentSchema = z.object({
+  type: z.literal("CAROUSEL"),
+  images: z
+    .array(z.object({ url: nonEmpty.max(1000), caption: z.string().trim().max(500).nullable() }))
+    .max(20),
+});
+
+export const linkContentSchema = z.object({
+  type: z.literal("LINK"),
+  url: z.string().trim().max(1000),
+  label: z.string().trim().max(200).nullable(),
 });
 
 const blankSchema = z.object({
@@ -77,6 +100,10 @@ export const itemContentSchema = z
     infoContentSchema,
     quizContentSchema,
     audioContentSchema,
+    videoContentSchema,
+    imageContentSchema,
+    carouselContentSchema,
+    linkContentSchema,
     gapsContentSchema,
     freeContentSchema,
     matchContentSchema,
@@ -101,6 +128,10 @@ export const itemContentSchema = z
 export type InfoContent = z.infer<typeof infoContentSchema>;
 export type QuizContent = z.infer<typeof quizContentSchema>;
 export type AudioContent = z.infer<typeof audioContentSchema>;
+export type VideoContent = z.infer<typeof videoContentSchema>;
+export type ImageContent = z.infer<typeof imageContentSchema>;
+export type CarouselContent = z.infer<typeof carouselContentSchema>;
+export type LinkContent = z.infer<typeof linkContentSchema>;
 export type GapsContent = z.infer<typeof gapsContentSchema>;
 export type FreeContent = z.infer<typeof freeContentSchema>;
 export type MatchContent = z.infer<typeof matchContentSchema>;
@@ -117,7 +148,15 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "QUIZ":
       return { type: "QUIZ", questions: [defaultQuestion()] };
     case "AUDIO":
-      return { type: "AUDIO", audioUrl: "", questions: [] };
+      return { type: "AUDIO", audioUrl: "" };
+    case "VIDEO":
+      return { type: "VIDEO", url: "" };
+    case "IMAGE":
+      return { type: "IMAGE", url: "", caption: null };
+    case "CAROUSEL":
+      return { type: "CAROUSEL", images: [] };
+    case "LINK":
+      return { type: "LINK", url: "", label: null };
     case "GAPS":
       return { type: "GAPS", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }] };
     case "FREE":
