@@ -157,7 +157,7 @@ create table if not exists public.material_items (
   id          uuid primary key default gen_random_uuid(),
   module_id   uuid not null references public.material_modules (id) on delete cascade,
   position    integer not null default 0,
-  type        text not null check (type in ('INFO','QUIZ','GAPS','FREE','MATCH','AUDIO','VIDEO','IMAGE','CAROUSEL','LINK')),
+  type        text not null check (type in ('INFO','QUIZ','GAPS','FREE','MATCH','AUDIO','VIDEO','IMAGE','CAROUSEL','LINK','IMAGE_TASK')),
   title       text,
   note        text,
   note_hidden boolean not null default false,

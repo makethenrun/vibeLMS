@@ -73,6 +73,27 @@ export const linkContentSchema = z.object({
   label: z.string().trim().max(200).nullable(),
 });
 
+export const imageTaskContentSchema = z.object({
+  type: z.literal("IMAGE_TASK"),
+  variant: z
+    .enum(["DRAG_IMAGE_TO_WORD", "DRAG_WORD_TO_IMAGE", "TYPE_WORD", "SELECT_WORD", "SELECT_IMAGES"])
+    .default("TYPE_WORD"),
+  prompt: z.string().trim().max(1000).nullable().default(null),
+  // Image↔word pairs (used by every variant except SELECT_IMAGES). Empty
+  // strings are tolerated as drafts; the editor filters them before saving.
+  pairs: z
+    .array(z.object({ imageUrl: z.string().trim().max(1000), word: z.string().trim().max(300) }))
+    .max(30)
+    .default([]),
+  // Extra option words for SELECT_WORD (distractors beyond the pair words).
+  distractors: z.array(z.string().trim().max(300)).max(30).default([]),
+  // Images with a correct flag for SELECT_IMAGES.
+  images: z
+    .array(z.object({ imageUrl: z.string().trim().max(1000), correct: z.boolean() }))
+    .max(30)
+    .default([]),
+});
+
 const blankSchema = z.object({
   index: z.number().int().positive(),
   answers: z.array(nonEmpty.max(200)).min(1, "Укажите ответ"),
@@ -110,6 +131,7 @@ export const itemContentSchema = z
     imageContentSchema,
     carouselContentSchema,
     linkContentSchema,
+    imageTaskContentSchema,
     gapsContentSchema,
     freeContentSchema,
     matchContentSchema,
@@ -164,6 +186,8 @@ export type VideoContent = z.infer<typeof videoContentSchema>;
 export type ImageContent = z.infer<typeof imageContentSchema>;
 export type CarouselContent = z.infer<typeof carouselContentSchema>;
 export type LinkContent = z.infer<typeof linkContentSchema>;
+export type ImageTaskContent = z.infer<typeof imageTaskContentSchema>;
+export type ImageTaskVariant = ImageTaskContent["variant"];
 export type GapsContent = z.infer<typeof gapsContentSchema>;
 export type FreeContent = z.infer<typeof freeContentSchema>;
 export type MatchContent = z.infer<typeof matchContentSchema>;
@@ -189,6 +213,8 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
       return { type: "CAROUSEL", images: [] };
     case "LINK":
       return { type: "LINK", url: "", label: null };
+    case "IMAGE_TASK":
+      return { type: "IMAGE_TASK", variant: "TYPE_WORD", prompt: null, pairs: [], distractors: [], images: [] };
     case "GAPS":
       return { type: "GAPS", mode: "INPUT", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }], bank: [] };
     case "FREE":

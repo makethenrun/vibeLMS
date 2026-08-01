@@ -78,6 +78,17 @@ describe("itemContentSchema", () => {
     expect(itemContentSchema.safeParse({ type: "AUDIO", audioUrl: "https://example.com/a.mp3" }).success).toBe(true);
   });
 
+  it("accepts an IMAGE_TASK (pairs variant) and select-images variant", () => {
+    expect(itemContentSchema.safeParse({
+      type: "IMAGE_TASK", variant: "TYPE_WORD", prompt: null,
+      pairs: [{ imageUrl: "https://ex.com/a.png", word: "apple" }], distractors: [], images: [],
+    }).success).toBe(true);
+    expect(itemContentSchema.safeParse({
+      type: "IMAGE_TASK", variant: "SELECT_IMAGES", prompt: "Выберите",
+      pairs: [], distractors: [], images: [{ imageUrl: "https://ex.com/a.png", correct: true }],
+    }).success).toBe(true);
+  });
+
   it("accepts VIDEO / IMAGE / CAROUSEL / LINK", () => {
     expect(itemContentSchema.safeParse({ type: "VIDEO", url: "https://youtu.be/x" }).success).toBe(true);
     expect(itemContentSchema.safeParse({ type: "IMAGE", url: "https://ex.com/i.png", caption: null }).success).toBe(true);
@@ -125,7 +136,7 @@ describe("itemContentSchema", () => {
   });
 
   it("defaultContentFor returns valid content for each type", () => {
-    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO", "VIDEO", "IMAGE", "CAROUSEL", "LINK"] as const) {
+    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO", "VIDEO", "IMAGE", "CAROUSEL", "LINK", "IMAGE_TASK"] as const) {
       expect(itemContentSchema.safeParse(defaultContentFor(t)).success).toBe(true);
     }
   });
