@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/db/database.types";
-import { NAV_ITEMS } from "./nav-config";
+import { EXTERNAL_LINKS, NAV_ITEMS } from "./nav-config";
 
 interface SidebarNavProps {
   role: UserRole;
@@ -48,6 +48,31 @@ export function SidebarNav({ role, className, onNavigate }: SidebarNavProps) {
             </span>
             <span className="whitespace-nowrap pr-3">{item.label}</span>
           </Link>
+        );
+      })}
+
+      <span className="my-2 h-px bg-sidebar-border/60" aria-hidden />
+
+      {EXTERNAL_LINKS.map((item) => {
+        const Icon = item.icon;
+        return (
+          <a
+            key={item.href}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+            title={item.label}
+            className={cn(
+              "group/nav flex h-10 items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-200",
+              "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            )}
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <Icon className="h-5 w-5 transition-transform duration-200 group-hover/nav:scale-110" />
+            </span>
+            <span className="whitespace-nowrap pr-3">{item.label}</span>
+          </a>
         );
       })}
     </nav>

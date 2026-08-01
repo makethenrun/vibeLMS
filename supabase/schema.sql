@@ -154,15 +154,36 @@ create table if not exists public.material_modules (
 create index if not exists material_modules_lesson_id_idx on public.material_modules (lesson_id);
 
 create table if not exists public.material_items (
-  id         uuid primary key default gen_random_uuid(),
-  module_id  uuid not null references public.material_modules (id) on delete cascade,
-  position   integer not null default 0,
-  type       text not null check (type in ('INFO','QUIZ','GAPS','FREE','MATCH','AUDIO')),
-  content    jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id          uuid primary key default gen_random_uuid(),
+  module_id   uuid not null references public.material_modules (id) on delete cascade,
+  position    integer not null default 0,
+  type        text not null check (type in ('INFO','QUIZ','GAPS','FREE','MATCH','AUDIO')),
+  title       text,
+  note        text,
+  note_hidden boolean not null default false,
+  content     jsonb not null default '{}'::jsonb,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
 );
 create index if not exists material_items_module_id_idx on public.material_items (module_id);
+
+-- Groups that have access to a material.
+create table if not exists public.material_groups (
+  material_id uuid not null references public.materials (id) on delete cascade,
+  group_id    uuid not null references public.groups (id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (material_id, group_id)
+);
+create index if not exists material_groups_group_id_idx on public.material_groups (group_id);
+
+-- Exercises pinned / highlighted for a specific group.
+create table if not exists public.material_item_pins (
+  item_id    uuid not null references public.material_items (id) on delete cascade,
+  group_id   uuid not null references public.groups (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (item_id, group_id)
+);
+create index if not exists material_item_pins_group_id_idx on public.material_item_pins (group_id);
 
 -- ---------------------------------------------------------------------------
 -- homework
@@ -298,6 +319,8 @@ alter table public.material_sections    enable row level security;
 alter table public.material_lessons     enable row level security;
 alter table public.material_modules     enable row level security;
 alter table public.material_items       enable row level security;
+alter table public.material_groups      enable row level security;
+alter table public.material_item_pins   enable row level security;
 alter table public.homework             enable row level security;
 alter table public.homework_submissions enable row level security;
 alter table public.quizzes              enable row level security;

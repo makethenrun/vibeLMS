@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/utils/action-result";
 import type { MaterialItemType, ModuleWithItems } from "@/types";
 import {
@@ -29,7 +30,13 @@ const ITEM_LABELS: Record<MaterialItemType, string> = {
   AUDIO: "Аудирование",
 };
 
-export function ModuleTree({ lessonId, modules }: { lessonId: string; modules: ModuleWithItems[] }) {
+interface ModuleTreeProps {
+  lessonId: string;
+  modules: ModuleWithItems[];
+  activeModuleId?: string;
+}
+
+export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [newModule, setNewModule] = useState("");
@@ -92,7 +99,13 @@ export function ModuleTree({ lessonId, modules }: { lessonId: string; modules: M
                   >
                     {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
-                  <Link href={`#module-${module.id}`} className="flex-1 truncate rounded px-2 py-1 font-medium hover:bg-accent">
+                  <Link
+                    href={`/materials/lessons/${lessonId}?m=${module.id}`}
+                    className={cn(
+                      "flex-1 truncate rounded px-2 py-1 font-medium hover:bg-accent",
+                      module.id === activeModuleId && "bg-accent",
+                    )}
+                  >
                     {module.title}
                   </Link>
                   <RowMenu
@@ -115,10 +128,10 @@ export function ModuleTree({ lessonId, modules }: { lessonId: string; modules: M
                       module.items.map((item, iIndex) => (
                         <li key={item.id} className="flex items-center gap-1">
                           <Link
-                            href={`#item-${item.id}`}
+                            href={`/materials/lessons/${lessonId}?m=${module.id}#item-${item.id}`}
                             className="flex-1 truncate rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                           >
-                            {ITEM_LABELS[item.type]}
+                            {item.title || ITEM_LABELS[item.type]}
                           </Link>
                           <RowMenu
                             busy={busy}

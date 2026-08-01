@@ -8,9 +8,12 @@ import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
+import { listMaterialGroupIds } from "@/services/materials/material-groups.service";
+import { listGroups } from "@/services/groups/groups.service";
 import { Breadcrumbs } from "../_components/breadcrumbs";
 import { Workspace } from "../_components/workspace";
 import { MaterialFormDialog } from "../material-form-dialog";
+import { GroupsAccess } from "./groups-access";
 import { MaterialCover } from "./material-cover";
 import { SectionTree } from "./section-tree";
 
@@ -28,7 +31,11 @@ export default async function MaterialOverviewPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const sections = await getSectionsWithLessons(db, materialId);
+  const [sections, groups, selectedGroupIds] = await Promise.all([
+    getSectionsWithLessons(db, materialId),
+    listGroups(db),
+    listMaterialGroupIds(db, materialId),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -54,7 +61,10 @@ export default async function MaterialOverviewPage({
         }
       />
       <Workspace tree={<SectionTree materialId={material.id} sections={sections} />} treeTitle="Разделы">
-        <MaterialCover material={material} />
+        <div className="space-y-6">
+          <MaterialCover material={material} />
+          <GroupsAccess materialId={material.id} groups={groups} selectedIds={selectedGroupIds} />
+        </div>
       </Workspace>
     </div>
   );

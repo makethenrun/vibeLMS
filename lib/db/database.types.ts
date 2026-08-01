@@ -288,6 +288,9 @@ export interface Database {
           module_id: string;
           position: number;
           type: MaterialItemType;
+          title: string | null;
+          note: string | null;
+          note_hidden: boolean;
           content: Json;
           created_at: string;
           updated_at: string;
@@ -297,6 +300,9 @@ export interface Database {
           module_id: string;
           position?: number;
           type: MaterialItemType;
+          title?: string | null;
+          note?: string | null;
+          note_hidden?: boolean;
           content?: Json;
           created_at?: string;
           updated_at?: string;
@@ -306,10 +312,25 @@ export interface Database {
           module_id?: string;
           position?: number;
           type?: MaterialItemType;
+          title?: string | null;
+          note?: string | null;
+          note_hidden?: boolean;
           content?: Json;
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      material_groups: {
+        Row: { material_id: string; group_id: string; created_at: string };
+        Insert: { material_id: string; group_id: string; created_at?: string };
+        Update: { material_id?: string; group_id?: string; created_at?: string };
+        Relationships: [];
+      };
+      material_item_pins: {
+        Row: { item_id: string; group_id: string; created_at: string };
+        Insert: { item_id: string; group_id: string; created_at?: string };
+        Update: { item_id?: string; group_id?: string; created_at?: string };
         Relationships: [];
       };
       homework: {
