@@ -24,6 +24,7 @@ const TYPE_LABELS: { type: MaterialItemType; label: string }[] = [
   { type: "IMAGE", label: "Изображение" },
   { type: "CAROUSEL", label: "Карусель изображений" },
   { type: "LINK", label: "Ссылка" },
+  { type: "IMAGE_TASK", label: "Упражнение с изображениями" },
   { type: "GAPS", label: "Заполнить пропуски" },
   { type: "FREE", label: "Свободный ответ" },
   { type: "MATCH", label: "Сопоставление пар" },

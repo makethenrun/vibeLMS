@@ -32,6 +32,7 @@ const ITEM_LABELS: Record<MaterialItemType, string> = {
   IMAGE: "Изображение",
   CAROUSEL: "Карусель изображений",
   LINK: "Ссылка",
+  IMAGE_TASK: "Упражнение с изображениями",
 };
 
 interface ModuleTreeProps {

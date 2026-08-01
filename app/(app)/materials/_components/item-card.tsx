@@ -22,6 +22,7 @@ import type {
   FreeContent,
   GapsContent,
   ImageContent,
+  ImageTaskContent,
   InfoContent,
   ItemContent,
   LinkContent,
@@ -36,6 +37,7 @@ import { CarouselEditor } from "./item-editors/carousel-editor";
 import { FreeEditor } from "./item-editors/free-editor";
 import { GapsEditor } from "./item-editors/gaps-editor";
 import { ImageEditor } from "./item-editors/image-editor";
+import { ImageTaskEditor } from "./item-editors/image-task-editor";
 import { InfoEditor } from "./item-editors/info-editor";
 import { LinkEditor } from "./item-editors/link-editor";
 import { MatchEditor } from "./item-editors/match-editor";
@@ -53,6 +55,7 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   IMAGE: "Изображение",
   CAROUSEL: "Карусель изображений",
   LINK: "Ссылка",
+  IMAGE_TASK: "Упражнение с изображениями",
 };
 
 interface ItemCardProps {
@@ -131,6 +134,8 @@ export function ItemCard({
         return <CarouselEditor content={item.content as unknown as CarouselContent} onSave={onSave} />;
       case "LINK":
         return <LinkEditor content={item.content as unknown as LinkContent} onSave={onSave} />;
+      case "IMAGE_TASK":
+        return <ImageTaskEditor content={item.content as unknown as ImageTaskContent} onSave={onSave} />;
       case "GAPS":
         return <GapsEditor content={item.content as unknown as GapsContent} onSave={onSave} />;
       case "FREE":
