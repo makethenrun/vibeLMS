@@ -18,7 +18,8 @@ interface RowMenuProps {
   deleteLabel: string;
   onUp: () => void;
   onDown: () => void;
-  onRename: () => void;
+  /** Omit to hide the "Переименовать" action (e.g. for items without a title). */
+  onRename?: () => void;
   onDelete: () => void;
 }
 
@@ -49,10 +50,12 @@ export function RowMenu({
           Вниз
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onRename}>
-          <Pencil className="h-4 w-4" />
-          Переименовать
-        </DropdownMenuItem>
+        {onRename ? (
+          <DropdownMenuItem onSelect={onRename}>
+            <Pencil className="h-4 w-4" />
+            Переименовать
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem variant="destructive" onSelect={onDelete}>
           <Trash2 className="h-4 w-4" />
           {deleteLabel}

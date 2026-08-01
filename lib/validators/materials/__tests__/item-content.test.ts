@@ -2,32 +2,47 @@ import { describe, expect, it } from "vitest";
 import { itemContentSchema, defaultContentFor } from "@/lib/validators/materials/item-content";
 
 describe("itemContentSchema", () => {
-  it("accepts a valid CHOICE", () => {
+  it("accepts a QUIZ with a choice question", () => {
     const r = itemContentSchema.safeParse({
-      type: "CHOICE",
-      question: "2+2?",
-      options: ["3", "4"],
-      correct: [1],
-      multiple: false,
-      grading: "STRICT",
+      type: "QUIZ",
+      questions: [
+        { question: "2+2?", options: ["3", "4"], correctAnswers: ["4"], correctAnswer: "", grading: "STRICT" },
+      ],
     });
     expect(r.success).toBe(true);
   });
 
-  it("rejects CHOICE with a correct index out of range", () => {
+  it("accepts a QUIZ with a free-text question", () => {
     const r = itemContentSchema.safeParse({
-      type: "CHOICE", question: "q", options: ["a", "b"],
-      correct: [5], multiple: false, grading: "STRICT",
+      type: "QUIZ",
+      questions: [{ question: "Столица?", options: [], correctAnswers: [], correctAnswer: "Москва", grading: "STRICT" }],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects a QUIZ choice question whose correct answer isn't an option", () => {
+    const r = itemContentSchema.safeParse({
+      type: "QUIZ",
+      questions: [{ question: "q", options: ["a", "b"], correctAnswers: ["z"], correctAnswer: "", grading: "STRICT" }],
     });
     expect(r.success).toBe(false);
   });
 
-  it("rejects CHOICE with no correct answer", () => {
+  it("rejects a QUIZ with zero questions", () => {
+    expect(itemContentSchema.safeParse({ type: "QUIZ", questions: [] }).success).toBe(false);
+  });
+
+  it("accepts an AUDIO with url and questions", () => {
     const r = itemContentSchema.safeParse({
-      type: "CHOICE", question: "q", options: ["a", "b"],
-      correct: [], multiple: false, grading: "STRICT",
+      type: "AUDIO",
+      audioUrl: "https://example.com/a.mp3",
+      questions: [{ question: "q", options: ["a", "b"], correctAnswers: ["a"], correctAnswer: "", grading: "STRICT" }],
     });
-    expect(r.success).toBe(false);
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts an AUDIO with empty url (draft) and no questions", () => {
+    expect(itemContentSchema.safeParse({ type: "AUDIO", audioUrl: "", questions: [] }).success).toBe(true);
   });
 
   it("accepts GAPS with matching blank indices", () => {
@@ -58,8 +73,7 @@ describe("itemContentSchema", () => {
   });
 
   it("rejects MATCH with zero pairs", () => {
-    const r = itemContentSchema.safeParse({ type: "MATCH", prompt: null, pairs: [] });
-    expect(r.success).toBe(false);
+    expect(itemContentSchema.safeParse({ type: "MATCH", prompt: null, pairs: [] }).success).toBe(false);
   });
 
   it("accepts FREE with optional sample", () => {
@@ -71,7 +85,7 @@ describe("itemContentSchema", () => {
   });
 
   it("defaultContentFor returns valid content for each type", () => {
-    for (const t of ["INFO", "CHOICE", "GAPS", "FREE", "MATCH"] as const) {
+    for (const t of ["INFO", "QUIZ", "GAPS", "FREE", "MATCH", "AUDIO"] as const) {
       expect(itemContentSchema.safeParse(defaultContentFor(t)).success).toBe(true);
     }
   });

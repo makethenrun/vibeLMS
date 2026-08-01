@@ -18,7 +18,8 @@ import { createItemAction } from "../actions";
 
 const TYPE_LABELS: { type: MaterialItemType; label: string }[] = [
   { type: "INFO", label: "Обучающая информация" },
-  { type: "CHOICE", label: "Выбор ответа" },
+  { type: "QUIZ", label: "Тест" },
+  { type: "AUDIO", label: "Аудирование" },
   { type: "GAPS", label: "Заполнить пропуски" },
   { type: "FREE", label: "Свободный ответ" },
   { type: "MATCH", label: "Сопоставление пар" },

@@ -157,7 +157,7 @@ create table if not exists public.material_items (
   id         uuid primary key default gen_random_uuid(),
   module_id  uuid not null references public.material_modules (id) on delete cascade,
   position   integer not null default 0,
-  type       text not null check (type in ('INFO','CHOICE','GAPS','FREE','MATCH')),
+  type       text not null check (type in ('INFO','QUIZ','GAPS','FREE','MATCH','AUDIO')),
   content    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

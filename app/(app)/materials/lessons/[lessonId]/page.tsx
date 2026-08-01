@@ -9,7 +9,7 @@ import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { Breadcrumbs } from "../../_components/breadcrumbs";
 import { LessonEditor } from "../../_components/lesson-editor";
 import { Workspace } from "../../_components/workspace";
-import { ModulesPanel } from "./modules-panel";
+import { ModuleTree } from "./module-tree";
 
 export const metadata: Metadata = { title: "Урок" };
 
@@ -31,10 +31,7 @@ export default async function LessonPage({
     <div className="space-y-6">
       <Breadcrumbs crumbs={ctx.crumbs} />
       <PageHeader title={ctx.title} description="Модули, упражнения и обучающая информация урока." />
-      <Workspace
-        tree={<ModulesPanel lessonId={lessonId} modules={modules} />}
-        treeTitle="Модули"
-      >
+      <Workspace tree={<ModuleTree lessonId={lessonId} modules={modules} />} treeTitle="Модули">
         <LessonEditor lessonId={lessonId} modules={modules} />
       </Workspace>
     </div>
