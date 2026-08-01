@@ -39,6 +39,8 @@ export const infoContentSchema = z.object({
 
 export const quizContentSchema = z.object({
   type: z.literal("QUIZ"),
+  // null = no timer; otherwise the student's time limit in seconds.
+  timerSeconds: z.number().int().positive().max(7200).nullable().default(null),
   questions: z.array(materialQuestionSchema).min(1, "Добавьте хотя бы один вопрос"),
 });
 
@@ -79,8 +81,12 @@ const blankSchema = z.object({
 
 export const gapsContentSchema = z.object({
   type: z.literal("GAPS"),
+  // INPUT: student types · SELECT: per-blank dropdown · DRAG: shared word bank.
+  mode: z.enum(["INPUT", "SELECT", "DRAG"]).default("INPUT"),
   text: nonEmpty.max(4000),
   blanks: z.array(blankSchema).min(1, "Добавьте хотя бы один пропуск"),
+  // Shared pool of draggable words (answers + distractors) for DRAG mode.
+  bank: z.array(nonEmpty.max(200)).max(30).default([]),
 });
 
 export const freeContentSchema = z.object({
@@ -122,6 +128,32 @@ export const itemContentSchema = z
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ответ ${b.index} без пропуска в тексте`, path: ["blanks"] });
         }
       }
+
+      if (v.mode === "SELECT") {
+        for (const b of v.blanks) {
+          if (!b.options || b.options.length < 2) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Пропуск ${b.index}: укажите минимум 2 варианта`, path: ["blanks"] });
+          } else {
+            const set = new Set(b.options.map((o) => o.toLowerCase()));
+            if (!b.answers.every((a) => set.has(a.toLowerCase()))) {
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Пропуск ${b.index}: ответ должен быть среди вариантов`, path: ["blanks"] });
+            }
+          }
+        }
+      }
+
+      if (v.mode === "DRAG") {
+        if (v.bank.length === 0) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Добавьте слова в банк для перетаскивания", path: ["bank"] });
+        } else {
+          const set = new Set(v.bank.map((w) => w.toLowerCase()));
+          for (const b of v.blanks) {
+            if (!b.answers.every((a) => set.has(a.toLowerCase()))) {
+              ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Пропуск ${b.index}: все ответы должны быть в банке слов`, path: ["bank"] });
+            }
+          }
+        }
+      }
     }
   });
 
@@ -146,7 +178,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "INFO":
       return { type: "INFO", doc: { type: "doc", content: [{ type: "paragraph" }] } };
     case "QUIZ":
-      return { type: "QUIZ", questions: [defaultQuestion()] };
+      return { type: "QUIZ", timerSeconds: null, questions: [defaultQuestion()] };
     case "AUDIO":
       return { type: "AUDIO", audioUrl: "" };
     case "VIDEO":
@@ -158,7 +190,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "LINK":
       return { type: "LINK", url: "", label: null };
     case "GAPS":
-      return { type: "GAPS", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }] };
+      return { type: "GAPS", mode: "INPUT", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }], bank: [] };
     case "FREE":
       return { type: "FREE", prompt: "Задание", sampleAnswer: null };
     case "MATCH":

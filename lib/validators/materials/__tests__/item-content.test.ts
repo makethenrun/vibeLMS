@@ -32,6 +32,48 @@ describe("itemContentSchema", () => {
     expect(itemContentSchema.safeParse({ type: "QUIZ", questions: [] }).success).toBe(false);
   });
 
+  it("accepts a QUIZ with a timer", () => {
+    const r = itemContentSchema.safeParse({
+      type: "QUIZ",
+      timerSeconds: 300,
+      questions: [{ question: "q", options: [], correctAnswers: [], correctAnswer: "a", grading: "STRICT" }],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts GAPS SELECT when answers are within per-blank options", () => {
+    const r = itemContentSchema.safeParse({
+      type: "GAPS", mode: "SELECT", text: "a {{1}}",
+      blanks: [{ index: 1, answers: ["went"], options: ["went", "goed"] }], bank: [],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects GAPS SELECT when a blank has no options", () => {
+    const r = itemContentSchema.safeParse({
+      type: "GAPS", mode: "SELECT", text: "a {{1}}",
+      blanks: [{ index: 1, answers: ["went"], options: null }], bank: [],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts GAPS DRAG when every answer is in the bank", () => {
+    const r = itemContentSchema.safeParse({
+      type: "GAPS", mode: "DRAG", text: "a {{1}} b {{2}}",
+      blanks: [{ index: 1, answers: ["went"], options: null }, { index: 2, answers: ["saw"], options: null }],
+      bank: ["went", "saw", "run"],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects GAPS DRAG when an answer is missing from the bank", () => {
+    const r = itemContentSchema.safeParse({
+      type: "GAPS", mode: "DRAG", text: "a {{1}}",
+      blanks: [{ index: 1, answers: ["went"], options: null }], bank: ["saw"],
+    });
+    expect(r.success).toBe(false);
+  });
+
   it("accepts an audio-only AUDIO item", () => {
     expect(itemContentSchema.safeParse({ type: "AUDIO", audioUrl: "https://example.com/a.mp3" }).success).toBe(true);
   });
