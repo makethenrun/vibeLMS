@@ -15,7 +15,7 @@ export type UserRole = "TUTOR" | "STUDENT";
 export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";
-export type MaterialItemType = "INFO" | "QUIZ" | "GAPS" | "FREE" | "MATCH" | "AUDIO" | "VIDEO" | "IMAGE" | "CAROUSEL" | "LINK" | "IMAGE_TASK";
+export type MaterialItemType = "INFO" | "QUIZ" | "GAPS" | "FREE" | "MATCH" | "AUDIO" | "VIDEO" | "IMAGE" | "CAROUSEL" | "LINK" | "IMAGE_TASK" | "SENTENCE_TASK";
 export type HomeworkType = "FILE" | "QUIZ";
 
 export interface Database {

@@ -25,9 +25,9 @@ const TYPE_LABELS: { type: MaterialItemType; label: string }[] = [
   { type: "CAROUSEL", label: "Карусель изображений" },
   { type: "LINK", label: "Ссылка" },
   { type: "IMAGE_TASK", label: "Упражнение с изображениями" },
+  { type: "SENTENCE_TASK", label: "Работа с предложениями" },
   { type: "GAPS", label: "Заполнить пропуски" },
   { type: "FREE", label: "Свободный ответ" },
-  { type: "MATCH", label: "Сопоставление пар" },
 ];
 
 export function AddItemMenu({ moduleId }: { moduleId: string }) {
