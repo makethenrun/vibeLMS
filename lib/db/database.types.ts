@@ -258,10 +258,34 @@ export interface Database {
         };
         Relationships: [];
       };
-      material_items: {
+      material_modules: {
         Row: {
           id: string;
           lesson_id: string;
+          title: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          lesson_id: string;
+          title: string;
+          position?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          lesson_id?: string;
+          title?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      material_items: {
+        Row: {
+          id: string;
+          module_id: string;
           position: number;
           type: MaterialItemType;
           content: Json;
@@ -270,7 +294,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          lesson_id: string;
+          module_id: string;
           position?: number;
           type: MaterialItemType;
           content?: Json;
@@ -279,7 +303,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          lesson_id?: string;
+          module_id?: string;
           position?: number;
           type?: MaterialItemType;
           content?: Json;

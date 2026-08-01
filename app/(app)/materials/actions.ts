@@ -9,6 +9,7 @@ import { itemContentSchema, materialSchema, titleSchema, type MaterialInput } fr
 import * as materials from "@/services/materials/materials.service";
 import * as sections from "@/services/materials/sections.service";
 import * as lessons from "@/services/materials/lessons.service";
+import * as modules from "@/services/materials/modules.service";
 import * as items from "@/services/materials/items.service";
 
 type Dir = "up" | "down";
@@ -180,16 +181,16 @@ export async function moveLessonAction(id: string, direction: Dir): Promise<Acti
   return ok();
 }
 
-// --- Items (attached directly to a lesson) ----------------------------------
+// --- Modules -----------------------------------------------------------------
 
-export async function createItemAction(lessonId: string, content: unknown): Promise<ActionResult> {
+export async function createModuleAction(lessonId: string, title: string): Promise<ActionResult> {
   const denied = await requireTutorResult();
   if (denied) return denied;
-  const parsed = itemContentSchema.safeParse(content);
-  if (!parsed.success) return fail("Проверьте упражнение", parsed.error.flatten().fieldErrors);
+  const parsed = titleSchema.safeParse({ title });
+  if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    await items.createItem(db, lessonId, parsed.data);
+    await modules.createModule(db, lessonId, parsed.data.title);
   } catch (e) {
     return fail(getErrorMessage(e));
   }
@@ -197,7 +198,65 @@ export async function createItemAction(lessonId: string, content: unknown): Prom
   return ok();
 }
 
-export async function updateItemAction(id: string, lessonId: string, content: unknown): Promise<ActionResult> {
+export async function updateModuleAction(id: string, title: string): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const parsed = titleSchema.safeParse({ title });
+  if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
+  const db = createServerSupabaseClient();
+  try {
+    await modules.updateModule(db, id, parsed.data.title);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+export async function deleteModuleAction(id: string): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await modules.deleteModule(db, id);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+export async function moveModuleAction(id: string, direction: Dir): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await modules.moveModule(db, id, direction);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+// --- Items (attached to a module) -------------------------------------------
+
+export async function createItemAction(moduleId: string, content: unknown): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const parsed = itemContentSchema.safeParse(content);
+  if (!parsed.success) return fail("Проверьте упражнение", parsed.error.flatten().fieldErrors);
+  const db = createServerSupabaseClient();
+  try {
+    await items.createItem(db, moduleId, parsed.data);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  return ok();
+}
+
+export async function updateItemAction(id: string, content: unknown): Promise<ActionResult> {
   const denied = await requireTutorResult();
   if (denied) return denied;
   const parsed = itemContentSchema.safeParse(content);
@@ -208,11 +267,11 @@ export async function updateItemAction(id: string, lessonId: string, content: un
   } catch (e) {
     return fail(getErrorMessage(e));
   }
-  revalidatePath(`/materials/lessons/${lessonId}`);
+  revalidatePath("/materials", "layout");
   return ok();
 }
 
-export async function deleteItemAction(id: string, lessonId: string): Promise<ActionResult> {
+export async function deleteItemAction(id: string): Promise<ActionResult> {
   const denied = await requireTutorResult();
   if (denied) return denied;
   const db = createServerSupabaseClient();
@@ -221,11 +280,11 @@ export async function deleteItemAction(id: string, lessonId: string): Promise<Ac
   } catch (e) {
     return fail(getErrorMessage(e));
   }
-  revalidatePath(`/materials/lessons/${lessonId}`);
+  revalidatePath("/materials", "layout");
   return ok();
 }
 
-export async function moveItemAction(id: string, lessonId: string, direction: Dir): Promise<ActionResult> {
+export async function moveItemAction(id: string, direction: Dir): Promise<ActionResult> {
   const denied = await requireTutorResult();
   if (denied) return denied;
   const db = createServerSupabaseClient();
@@ -234,6 +293,6 @@ export async function moveItemAction(id: string, lessonId: string, direction: Di
   } catch (e) {
     return fail(getErrorMessage(e));
   }
-  revalidatePath(`/materials/lessons/${lessonId}`);
+  revalidatePath("/materials", "layout");
   return ok();
 }

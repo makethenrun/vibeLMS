@@ -12,22 +12,22 @@ function toJson(content: ItemContent): Json {
   return content as unknown as Json;
 }
 
-export async function listItems(db: Db, lessonId: string): Promise<ItemRow[]> {
+export async function listItems(db: Db, moduleId: string): Promise<ItemRow[]> {
   const { data, error } = await db
     .from("material_items")
     .select("*")
-    .eq("lesson_id", lessonId)
+    .eq("module_id", moduleId)
     .order("position", { ascending: true });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
-export async function createItem(db: Db, lessonId: string, content: ItemContent): Promise<ItemRow> {
-  const existing = await listItems(db, lessonId);
+export async function createItem(db: Db, moduleId: string, content: ItemContent): Promise<ItemRow> {
+  const existing = await listItems(db, moduleId);
   const position = existing.length === 0 ? 0 : Math.max(...existing.map((i) => i.position)) + 1;
   const { data, error } = await db
     .from("material_items")
-    .insert({ lesson_id: lessonId, type: content.type, content: toJson(content), position })
+    .insert({ module_id: moduleId, type: content.type, content: toJson(content), position })
     .select()
     .single();
   if (error) throw new Error(error.message);
@@ -50,11 +50,11 @@ export async function deleteItem(db: Db, id: string): Promise<void> {
 export async function moveItem(db: Db, id: string, direction: "up" | "down"): Promise<void> {
   const { data: row } = await db
     .from("material_items")
-    .select("lesson_id")
+    .select("module_id")
     .eq("id", id)
     .maybeSingle();
   if (!row) return;
-  const siblings = await listItems(db, row.lesson_id);
+  const siblings = await listItems(db, row.module_id);
   const changes = swapForMove(siblings, id, direction);
   for (const c of changes) {
     const { error } = await db.from("material_items").update({ position: c.position }).eq("id", c.id);

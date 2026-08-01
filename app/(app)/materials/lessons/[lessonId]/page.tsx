@@ -5,12 +5,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
-import { getMaterialTree } from "@/services/materials/material-tree.service";
-import { listItems } from "@/services/materials/items.service";
+import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { Breadcrumbs } from "../../_components/breadcrumbs";
-import { ItemList } from "../../_components/item-list";
-import { MaterialTree } from "../../_components/material-tree";
+import { LessonEditor } from "../../_components/lesson-editor";
 import { Workspace } from "../../_components/workspace";
+import { ModulesPanel } from "./modules-panel";
 
 export const metadata: Metadata = { title: "Урок" };
 
@@ -26,17 +25,17 @@ export default async function LessonPage({
   const ctx = await lessonContext(db, lessonId);
   if (!ctx) notFound();
 
-  const [tree, items] = await Promise.all([
-    getMaterialTree(db, ctx.materialId),
-    listItems(db, lessonId),
-  ]);
+  const modules = await getLessonModules(db, lessonId);
 
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={ctx.crumbs} />
-      <PageHeader title={ctx.title} description="Упражнения и обучающая информация урока." />
-      <Workspace tree={<MaterialTree materialId={ctx.materialId} activeLessonId={lessonId} tree={tree} />}>
-        <ItemList lessonId={lessonId} items={items} />
+      <PageHeader title={ctx.title} description="Модули, упражнения и обучающая информация урока." />
+      <Workspace
+        tree={<ModulesPanel lessonId={lessonId} modules={modules} />}
+        treeTitle="Модули"
+      >
+        <LessonEditor lessonId={lessonId} modules={modules} />
       </Workspace>
     </div>
   );

@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
-import { getMaterialTree } from "@/services/materials/material-tree.service";
+import { listSections } from "@/services/materials/sections.service";
 import { Breadcrumbs } from "../_components/breadcrumbs";
-import { MaterialTree } from "../_components/material-tree";
 import { Workspace } from "../_components/workspace";
 import { MaterialFormDialog } from "../material-form-dialog";
+import { SectionsPanel } from "./sections-panel";
 
 export const metadata: Metadata = { title: "Материал" };
 
@@ -28,7 +28,7 @@ export default async function MaterialOverviewPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const tree = await getMaterialTree(db, materialId);
+  const sections = await listSections(db, materialId);
 
   return (
     <div className="space-y-6">
@@ -40,7 +40,7 @@ export default async function MaterialOverviewPage({
       />
       <PageHeader
         title={material.title}
-        description={material.description ?? "Структура материала."}
+        description={material.description ?? "Разделы материала."}
         actions={
           <MaterialFormDialog
             material={material}
@@ -53,11 +53,14 @@ export default async function MaterialOverviewPage({
           />
         }
       />
-      <Workspace tree={<MaterialTree materialId={material.id} tree={tree} />}>
+      <Workspace
+        tree={<SectionsPanel materialId={material.id} sections={sections} />}
+        treeTitle="Разделы"
+      >
         <EmptyState
           icon={Layers}
-          title="Выберите урок"
-          description="Выберите урок в дереве справа или создайте новый раздел и урок."
+          title="Выберите раздел"
+          description="Выберите раздел справа или создайте новый."
         />
       </Workspace>
     </div>
