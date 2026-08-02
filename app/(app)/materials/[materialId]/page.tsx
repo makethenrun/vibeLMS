@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { BarChart3, Pencil } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -49,15 +50,23 @@ export default async function MaterialOverviewPage({
         title={material.title}
         description="Обложка, описание и структура материала."
         actions={
-          <MaterialFormDialog
-            material={material}
-            trigger={
-              <Button variant="outline">
-                <Pencil className="h-4 w-4" />
-                Редактировать
-              </Button>
-            }
-          />
+          <>
+            <Button asChild variant="outline">
+              <Link href={`/materials/${material.id}/results`}>
+                <BarChart3 className="h-4 w-4" />
+                Результаты
+              </Link>
+            </Button>
+            <MaterialFormDialog
+              material={material}
+              trigger={
+                <Button variant="outline">
+                  <Pencil className="h-4 w-4" />
+                  Редактировать
+                </Button>
+              }
+            />
+          </>
         }
       />
       <Workspace tree={<SectionTree materialId={material.id} sections={sections} />} treeTitle="Разделы">

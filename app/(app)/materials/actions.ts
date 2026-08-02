@@ -14,6 +14,7 @@ import * as items from "@/services/materials/items.service";
 import { setMaterialGroups } from "@/services/materials/material-groups.service";
 import { setItemPins } from "@/services/materials/item-pins.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
+import { gradeSubmission } from "@/services/materials/submissions.service";
 
 type Dir = "up" | "down";
 
@@ -352,6 +353,25 @@ export async function importItemsAction(itemIds: string[], targetModuleId: strin
 }
 
 // --- Material groups access -------------------------------------------------
+
+export async function gradeSubmissionAction(
+  studentId: string,
+  itemId: string,
+  score: number,
+  materialId: string,
+): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  if (!Number.isFinite(score) || score < 0 || score > 100) return fail("Балл должен быть от 0 до 100");
+  const db = createServerSupabaseClient();
+  try {
+    await gradeSubmission(db, studentId, itemId, Math.round(score));
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath(`/materials/${materialId}/results`);
+  return ok();
+}
 
 export async function setMaterialGroupsAction(materialId: string, groupIds: string[]): Promise<ActionResult> {
   const denied = await requireTutorResult();
