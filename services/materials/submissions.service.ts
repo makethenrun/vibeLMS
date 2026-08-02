@@ -19,6 +19,29 @@ export async function upsertSubmission(
   if (error) throw new Error(error.message);
 }
 
+/** All submissions (every student) for a set of items, keyed by "studentId:itemId". */
+export async function getSubmissionsByStudentItem(
+  db: Db,
+  itemIds: string[],
+): Promise<Record<string, ItemSubmissionRow>> {
+  if (itemIds.length === 0) return {};
+  const { data, error } = await db.from("material_item_submissions").select("*").in("item_id", itemIds);
+  if (error) throw new Error(error.message);
+  const map: Record<string, ItemSubmissionRow> = {};
+  for (const row of data ?? []) map[`${row.student_id}:${row.item_id}`] = row;
+  return map;
+}
+
+/** Tutor sets a score for a student's submission (manual grading). */
+export async function gradeSubmission(db: Db, studentId: string, itemId: string, score: number): Promise<void> {
+  const { error } = await db
+    .from("material_item_submissions")
+    .update({ score })
+    .eq("student_id", studentId)
+    .eq("item_id", itemId);
+  if (error) throw new Error(error.message);
+}
+
 /** Map of item id → the student's submission, for a set of items. */
 export async function getSubmissionsForItems(
   db: Db,
