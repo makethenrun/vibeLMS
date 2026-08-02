@@ -24,6 +24,7 @@ export type SectionRow = Tables["material_sections"]["Row"];
 export type LessonRow = Tables["material_lessons"]["Row"];
 export type ModuleRow = Tables["material_modules"]["Row"];
 export type ItemRow = Tables["material_items"]["Row"];
+export type ItemSubmissionRow = Tables["material_item_submissions"]["Row"];
 export type Homework = Tables["homework"]["Row"];
 export type HomeworkSubmission = Tables["homework_submissions"]["Row"];
 export type Quiz = Tables["quizzes"]["Row"];
