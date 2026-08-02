@@ -13,9 +13,12 @@ import type {
   FreeContent,
   GapsContent,
   ImageContent,
+  ImageTaskContent,
   InfoContent,
   LinkContent,
+  MatchContent,
   QuizContent,
+  SentenceTaskContent,
   VideoContent,
 } from "@/lib/validators";
 import type { ItemRow, ItemSubmissionRow, MaterialItemType } from "@/types";
@@ -23,6 +26,10 @@ import { FreeSolve } from "./free-solve";
 import { GapsSolve } from "./gaps-solve";
 import { InfoView } from "./info-view";
 import { QuizSolve } from "./quiz-solve";
+import { GapsDragSolve } from "./solves/gaps-drag-solve";
+import { ImageTaskSolve } from "./solves/image-task-solve";
+import { MatchPairsSolve } from "./solves/match-pairs-solve";
+import { SentenceSolve } from "./solves/sentence-solve";
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Обучающая информация",
@@ -79,9 +86,15 @@ export function StudentItem({ item, submission }: { item: ItemRow; submission?: 
         return <QuizSolve itemId={item.id} content={item.content as unknown as QuizContent} initialScore={initialScore} />;
       case "GAPS": {
         const c = item.content as unknown as GapsContent;
-        if (c.mode === "DRAG") return <p className="text-sm text-muted-foreground">{NOT_YET_INTERACTIVE}</p>;
+        if (c.mode === "DRAG") return <GapsDragSolve itemId={item.id} content={c} initialScore={initialScore} />;
         return <GapsSolve itemId={item.id} content={c} initialScore={initialScore} />;
       }
+      case "IMAGE_TASK":
+        return <ImageTaskSolve itemId={item.id} content={item.content as unknown as ImageTaskContent} initialScore={initialScore} />;
+      case "SENTENCE_TASK":
+        return <SentenceSolve itemId={item.id} content={item.content as unknown as SentenceTaskContent} initialScore={initialScore} />;
+      case "MATCH":
+        return <MatchPairsSolve itemId={item.id} pairs={(item.content as unknown as MatchContent).pairs} initialScore={initialScore} />;
       case "FREE": {
         const answer = (submission?.answer ?? {}) as { text?: string };
         return (

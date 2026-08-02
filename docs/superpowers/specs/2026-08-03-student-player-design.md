@@ -42,3 +42,25 @@ null, submitted_at`, `unique(student_id, item_id)`. RLS enable / no policies.
 
 Нав: пункт «Обучение» для роли STUDENT → `/learn`. `route-access` разрешает
 `/learn` ученику.
+
+---
+
+## P2 (done 2026-08-03) — drag-and-drop (@dnd-kit)
+
+Все drag-форматы стали интерактивными для ученика, с авто-проверкой и
+сохранением. Проверка — в `lib/materials/scoring.ts` (`scoreImageTask`,
+`scoreSentenceTask`, MATCH), юнит-тесты.
+
+- **GAPS DRAG** — банк слов → перетаскивание в поля (`AssignBoard`).
+- **SENTENCE_TASK**: WORD_ORDER/SENTENCE_ORDER (`SortableChips`), WORD_FROM_LETTERS
+  (буквы в позиции, `AssignBoard`), SORT_COLUMNS (`ColumnsBoard`, мульти-контейнер),
+  MATCH_PAIRS (`AssignBoard`).
+- **MATCH** (старый тип) — через `MatchPairsSolve`.
+- **IMAGE_TASK**: TYPE_WORD (ввод), SELECT_WORD (выпадашка из слов+distractors),
+  SELECT_IMAGES (клик по картинкам), DRAG_* (перетаскивание слов на картинки,
+  `AssignBoard`).
+
+DnD-примитивы: `_components/dnd/{sortable-chips,assign-board,columns-board}.tsx`;
+решалки: `_components/solves/*`. @dnd-kit (core/sortable/utilities).
+
+Остаётся **P3** — экран результатов для репетитора + ручная проверка FREE.
