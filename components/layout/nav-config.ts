@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ClipboardList,
   FileText,
+  GraduationCap,
   Keyboard,
   LayoutDashboard,
   Library,
@@ -41,6 +42,7 @@ export const EXTERNAL_LINKS: ExternalLink[] = [
 
 const BOTH: UserRole[] = ["TUTOR", "STUDENT"];
 const TUTOR_ONLY: UserRole[] = ["TUTOR"];
+const STUDENT_ONLY: UserRole[] = ["STUDENT"];
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard, roles: BOTH },
@@ -48,6 +50,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Группы", href: "/groups", icon: UsersRound, roles: TUTOR_ONLY },
   { label: "Занятия", href: "/lessons", icon: CalendarDays, roles: BOTH },
   { label: "Материалы", href: "/materials", icon: Library, roles: TUTOR_ONLY },
+  { label: "Обучение", href: "/learn", icon: GraduationCap, roles: STUDENT_ONLY },
   { label: "Файлы", href: "/files", icon: FileText, roles: BOTH },
   { label: "Домашние задания", href: "/homework", icon: ClipboardList, roles: BOTH },
   { label: "Оплаты", href: "/payments", icon: Wallet, roles: TUTOR_ONLY },

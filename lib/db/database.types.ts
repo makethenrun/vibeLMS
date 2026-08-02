@@ -333,6 +333,33 @@ export interface Database {
         Update: { item_id?: string; group_id?: string; created_at?: string };
         Relationships: [];
       };
+      material_item_submissions: {
+        Row: {
+          id: string;
+          student_id: string;
+          item_id: string;
+          answer: Json;
+          score: number | null;
+          submitted_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          item_id: string;
+          answer?: Json;
+          score?: number | null;
+          submitted_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          item_id?: string;
+          answer?: Json;
+          score?: number | null;
+          submitted_at?: string;
+        };
+        Relationships: [];
+      };
       homework: {
         Row: {
           id: string;
