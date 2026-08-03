@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Eye } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
@@ -41,7 +44,18 @@ export default async function LessonPage({
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={ctx.crumbs} />
-      <PageHeader title={ctx.title} description="Один модуль на странице; переключайтесь в списке справа." />
+      <PageHeader
+        title={ctx.title}
+        description="Один модуль на странице; переключайтесь в списке справа."
+        actions={
+          <Button asChild variant="outline">
+            <Link href={`/materials/lessons/${lessonId}/preview`}>
+              <Eye className="h-4 w-4" />
+              Просмотр как ученик
+            </Link>
+          </Button>
+        }
+      />
       <Workspace
         tree={<ModuleTree lessonId={lessonId} modules={modules} activeModuleId={active?.id} />}
         treeTitle="Модули"

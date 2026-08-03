@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/shared/loading-button";
+import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { SortableChips, type Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
@@ -19,10 +20,12 @@ function shuffle<T>(arr: T[]): T[] {
 
 export function OrderSolve({
   itemId,
+  content,
   tokens,
   initialScore,
 }: {
   itemId: string;
+  content: ItemContent;
   tokens: string[];
   initialScore: number | null | undefined;
 }) {
@@ -31,7 +34,7 @@ export function OrderSolve({
   const [chips, setChips] = useState<Chip[]>(initial);
 
   async function onSubmit() {
-    await submit({ order: chips.map((c) => c.label) } as unknown as Json);
+    await submit({ order: chips.map((c) => c.label) } as unknown as Json, content);
   }
 
   return (

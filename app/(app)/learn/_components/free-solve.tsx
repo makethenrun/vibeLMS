@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { FreeContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { submitItemAction } from "../actions";
 import { ScoreBadge } from "./score-badge";
+import { useSubmit } from "./use-submit";
 
 interface FreeSolveProps {
   itemId: string;
@@ -18,30 +18,15 @@ interface FreeSolveProps {
 }
 
 export function FreeSolve({ itemId, content, initialAnswer, initialScore }: FreeSolveProps) {
+  const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const [text, setText] = useState(initialAnswer);
-  const [score, setScore] = useState<number | null | undefined>(initialScore);
-  const [saving, setSaving] = useState(false);
-  const [sent, setSent] = useState(initialScore !== undefined);
 
-  async function submit() {
+  async function onSubmit() {
     if (text.trim() === "") {
       toast.error("Введите ответ");
       return;
     }
-    setSaving(true);
-    try {
-      const answer: Json = { text } as unknown as Json;
-      const result = await submitItemAction(itemId, answer);
-      if (result.success) {
-        setScore(result.data.score);
-        setSent(true);
-        toast.success("Ответ отправлен");
-      } else {
-        toast.error(result.error);
-      }
-    } finally {
-      setSaving(false);
-    }
+    await submit({ text } as unknown as Json, content);
   }
 
   return (
@@ -50,10 +35,8 @@ export function FreeSolve({ itemId, content, initialAnswer, initialScore }: Free
         <p className="text-sm">{content.prompt}</p>
         <ScoreBadge score={score} />
       </div>
-      <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ваш ответ" />
-      <LoadingButton size="sm" loading={saving} onClick={submit}>
-        {sent ? "Обновить ответ" : "Отправить"}
-      </LoadingButton>
+      <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ваш ответ" disabled={locked} />
+      {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Отправить</LoadingButton> : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/shared/loading-button";
+import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { AssignBoard } from "../dnd/assign-board";
 import type { Chip } from "../dnd/sortable-chips";
@@ -20,10 +21,12 @@ function shuffle<T>(arr: T[]): T[] {
 
 export function MatchPairsSolve({
   itemId,
+  content,
   pairs,
   initialScore,
 }: {
   itemId: string;
+  content: ItemContent;
   pairs: { left: string; right: string }[];
   initialScore: number | null | undefined;
 }) {
@@ -40,7 +43,7 @@ export function MatchPairsSolve({
       const chipId = value[`l${i}`];
       match[String(i)] = chipId ? chipLabel.get(chipId) ?? "" : "";
     });
-    await submit({ match } as unknown as Json);
+    await submit({ match } as unknown as Json, content);
   }
 
   return (

@@ -93,8 +93,10 @@ export function StudentItem({ item, submission }: { item: ItemRow; submission?: 
         return <ImageTaskSolve itemId={item.id} content={item.content as unknown as ImageTaskContent} initialScore={initialScore} />;
       case "SENTENCE_TASK":
         return <SentenceSolve itemId={item.id} content={item.content as unknown as SentenceTaskContent} initialScore={initialScore} />;
-      case "MATCH":
-        return <MatchPairsSolve itemId={item.id} pairs={(item.content as unknown as MatchContent).pairs} initialScore={initialScore} />;
+      case "MATCH": {
+        const c = item.content as unknown as MatchContent;
+        return <MatchPairsSolve itemId={item.id} content={c} pairs={c.pairs} initialScore={initialScore} />;
+      }
       case "FREE": {
         const answer = (submission?.answer ?? {}) as { text?: string };
         return (
@@ -112,7 +114,7 @@ export function StudentItem({ item, submission }: { item: ItemRow; submission?: 
   }
 
   return (
-    <Card>
+    <Card id={`item-${item.id}`} className="scroll-mt-20">
       <CardHeader className="border-b py-2">
         <CardTitle className="text-sm font-medium">
           {item.title || TYPE_LABELS[item.type]}

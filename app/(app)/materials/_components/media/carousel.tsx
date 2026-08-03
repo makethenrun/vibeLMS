@@ -21,7 +21,7 @@ export function Carousel({ images }: { images: CarouselImage[] }) {
     <div className="space-y-2">
       <div className="relative overflow-hidden rounded-lg border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={current.url} alt={current.caption ?? "Изображение"} className="mx-auto max-h-80 object-contain" />
+        <img src={current.url} alt={current.caption ?? "Изображение"} className="mx-auto aspect-square w-full max-w-[300px] rounded-2xl object-cover" />
         {images.length > 1 ? (
           <>
             <Button

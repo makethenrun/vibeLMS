@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +8,8 @@ import { LoadingButton } from "@/components/shared/loading-button";
 import { cn } from "@/lib/utils";
 import type { QuizContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { submitItemAction } from "../actions";
 import { ScoreBadge } from "./score-badge";
+import { useSubmit } from "./use-submit";
 
 interface QuizSolveProps {
   itemId: string;
@@ -30,42 +29,28 @@ function fmt(seconds: number): string {
 }
 
 export function QuizSolve({ itemId, content, initialScore }: QuizSolveProps) {
+  const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const hasTimer = content.timerSeconds !== null;
   const [started, setStarted] = useState(!hasTimer);
   const [remaining, setRemaining] = useState(content.timerSeconds ?? 0);
   const [answers, setAnswers] = useState<Answer[]>(content.questions.map(() => ({ selected: [], text: "" })));
-  const [score, setScore] = useState<number | null | undefined>(initialScore);
-  const [saving, setSaving] = useState(false);
   const submittedRef = useRef(score !== undefined);
 
-  const submit = useCallback(async () => {
+  const doSubmit = useCallback(async () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
-    setSaving(true);
-    try {
-      const answer: Json = { questions: answers } as unknown as Json;
-      const result = await submitItemAction(itemId, answer);
-      if (result.success) {
-        setScore(result.data.score);
-        toast.success("Ответ отправлен");
-      } else {
-        submittedRef.current = false;
-        toast.error(result.error);
-      }
-    } finally {
-      setSaving(false);
-    }
-  }, [answers, itemId]);
+    await submit({ questions: answers } as unknown as Json, content);
+  }, [answers, content, submit]);
 
   useEffect(() => {
-    if (!started || !hasTimer || score !== undefined) return;
+    if (!started || !hasTimer || locked) return;
     if (remaining <= 0) {
-      void submit();
+      void doSubmit();
       return;
     }
     const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
     return () => clearTimeout(t);
-  }, [started, hasTimer, remaining, score, submit]);
+  }, [started, hasTimer, remaining, locked, doSubmit]);
 
   function toggleOption(qi: number, option: string) {
     setAnswers((prev) =>
@@ -77,22 +62,18 @@ export function QuizSolve({ itemId, content, initialScore }: QuizSolveProps) {
     );
   }
 
-  const locked = score !== undefined;
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         {hasTimer && !locked ? (
-          <span className={cn("text-sm font-medium", remaining <= 10 && "text-destructive")}>
-            Осталось: {fmt(remaining)}
-          </span>
+          <span className={cn("text-sm font-medium", remaining <= 10 && "text-destructive")}>Осталось: {fmt(remaining)}</span>
         ) : (
           <span />
         )}
         <ScoreBadge score={score} />
       </div>
 
-      <div className={cn("relative", hasTimer && !started && "select-none")}>
+      <div className="relative">
         <div className={cn("space-y-4", hasTimer && !started && "pointer-events-none blur-sm")}>
           {content.questions.map((q, qi) => (
             <div key={qi} className="space-y-2">
@@ -101,12 +82,7 @@ export function QuizSolve({ itemId, content, initialScore }: QuizSolveProps) {
                 <div className="space-y-1">
                   {q.options.map((opt) => (
                     <label key={opt} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        disabled={locked}
-                        checked={answers[qi].selected.includes(opt)}
-                        onChange={() => toggleOption(qi, opt)}
-                      />
+                      <input type="checkbox" disabled={locked} checked={answers[qi].selected.includes(opt)} onChange={() => toggleOption(qi, opt)} />
                       {opt}
                     </label>
                   ))}
@@ -131,9 +107,7 @@ export function QuizSolve({ itemId, content, initialScore }: QuizSolveProps) {
       </div>
 
       {!locked && started ? (
-        <LoadingButton size="sm" loading={saving} onClick={submit}>
-          Отправить
-        </LoadingButton>
+        <LoadingButton size="sm" loading={saving} onClick={doSubmit}>Отправить</LoadingButton>
       ) : null}
     </div>
   );
