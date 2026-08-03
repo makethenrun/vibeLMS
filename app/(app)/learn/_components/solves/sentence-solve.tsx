@@ -19,7 +19,7 @@ export function SentenceSolve({ itemId, content, initialScore }: Props) {
     case "WORD_ORDER":
       return <div className="space-y-2">{prompt}<OrderSolve itemId={itemId} content={content} tokens={content.words} initialScore={initialScore} /></div>;
     case "SENTENCE_ORDER":
-      return <div className="space-y-2">{prompt}<OrderSolve itemId={itemId} content={content} tokens={content.sentences} initialScore={initialScore} /></div>;
+      return <div className="space-y-2">{prompt}<OrderSolve itemId={itemId} content={content} tokens={content.sentences} initialScore={initialScore} vertical /></div>;
     case "WORD_FROM_LETTERS":
       return <div className="space-y-2">{prompt}<WordLettersSolve itemId={itemId} content={content} word={content.word} extraLetters={content.extraLetters} initialScore={initialScore} /></div>;
     case "SORT_COLUMNS":

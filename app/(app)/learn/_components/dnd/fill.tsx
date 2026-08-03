@@ -39,7 +39,7 @@ export function DragChip({ chip, disabled, className }: { chip: Chip; disabled: 
       {...attributes}
       {...listeners}
     >
-      {chip.label}
+      {chip.node ?? chip.label}
     </span>
   );
 }

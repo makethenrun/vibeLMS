@@ -42,6 +42,16 @@ export async function gradeSubmission(db: Db, studentId: string, itemId: string,
   if (error) throw new Error(error.message);
 }
 
+/** Tutor sets an emoji reaction on a student's submission (null clears it). */
+export async function setReaction(db: Db, studentId: string, itemId: string, reaction: string | null): Promise<void> {
+  const { error } = await db
+    .from("material_item_submissions")
+    .update({ reaction })
+    .eq("student_id", studentId)
+    .eq("item_id", itemId);
+  if (error) throw new Error(error.message);
+}
+
 /** Map of item id → the student's submission, for a set of items. */
 export async function getSubmissionsForItems(
   db: Db,

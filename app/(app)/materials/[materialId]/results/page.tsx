@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
@@ -85,7 +86,11 @@ export default async function MaterialResultsPage({
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.student.id}>
-                    <TableCell>{r.student.full_name}</TableCell>
+                    <TableCell>
+                      <Link href={`/materials/${material.id}/results/${r.student.id}`} className="font-medium text-primary hover:underline">
+                        {r.student.full_name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{r.answered} / {gradable.length}</TableCell>
                     <TableCell>{r.avg === null ? "—" : `${r.avg}%`}</TableCell>
                   </TableRow>

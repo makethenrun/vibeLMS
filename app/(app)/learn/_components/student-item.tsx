@@ -24,6 +24,7 @@ import type {
 import type { ItemRow, ItemSubmissionRow, MaterialItemType } from "@/types";
 import { FreeSolve } from "./free-solve";
 import { GapsSolve } from "./gaps-solve";
+import { ImageAnnotate } from "./image-annotate";
 import { InfoView } from "./info-view";
 import { QuizSolve } from "./quiz-solve";
 import { GapsDragSolve } from "./solves/gaps-drag-solve";
@@ -61,13 +62,7 @@ export function StudentItem({ item, submission }: { item: ItemRow; submission?: 
         return <VideoEmbed url={(item.content as unknown as VideoContent).url} />;
       case "IMAGE": {
         const c = item.content as unknown as ImageContent;
-        return (
-          <figure className="space-y-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={c.url} alt={c.caption ?? ""} className="max-h-80 rounded-lg border object-contain" />
-            {c.caption ? <figcaption className="text-sm text-muted-foreground">{c.caption}</figcaption> : null}
-          </figure>
-        );
+        return <ImageAnnotate url={c.url} caption={c.caption} />;
       }
       case "CAROUSEL":
         return <Carousel images={(item.content as unknown as CarouselContent).images} />;
@@ -115,10 +110,13 @@ export function StudentItem({ item, submission }: { item: ItemRow; submission?: 
 
   return (
     <Card id={`item-${item.id}`} className="scroll-mt-20">
-      <CardHeader className="border-b py-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 border-b py-2">
         <CardTitle className="text-sm font-medium">
           {item.title || TYPE_LABELS[item.type]}
         </CardTitle>
+        {submission?.reaction ? (
+          <span className="text-xl" title="Реакция преподавателя">{submission.reaction}</span>
+        ) : null}
       </CardHeader>
       <CardContent className="pt-4">{render()}</CardContent>
     </Card>

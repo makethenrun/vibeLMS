@@ -23,11 +23,13 @@ export function OrderSolve({
   content,
   tokens,
   initialScore,
+  vertical = false,
 }: {
   itemId: string;
   content: ItemContent;
   tokens: string[];
   initialScore: number | null | undefined;
+  vertical?: boolean;
 }) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const initial = useMemo<Chip[]>(() => shuffle(tokens.map((label, i) => ({ id: `t${i}`, label }))), [tokens]);
@@ -43,7 +45,7 @@ export function OrderSolve({
         <ScoreBadge score={score} />
       </div>
       <p className="text-xs text-muted-foreground">Перетащите элементы в правильном порядке.</p>
-      <SortableChips chips={chips} onReorder={setChips} disabled={locked} />
+      <SortableChips chips={chips} onReorder={setChips} disabled={locked} vertical={vertical} />
       {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Проверить</LoadingButton> : null}
     </div>
   );

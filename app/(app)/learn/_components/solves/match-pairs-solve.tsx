@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { AssignBoard } from "../dnd/assign-board";
+import { Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
@@ -18,6 +18,9 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
+
+// 300×300 rounded frame (matches image size).
+const FRAME = "aspect-square w-full max-w-[300px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
 
 export function MatchPairsSolve({
   itemId,
@@ -35,8 +38,6 @@ export function MatchPairsSolve({
   const [value, setValue] = useState<Record<string, string>>({});
   const chipLabel = new Map(chips.map((c) => [c.id, c.label]));
 
-  const slots = pairs.map((p, i) => ({ id: `l${i}`, node: <span className="text-sm font-medium">{p.left}</span> }));
-
   async function onSubmit() {
     const match: Record<string, string> = {};
     pairs.forEach((_, i) => {
@@ -51,7 +52,20 @@ export function MatchPairsSolve({
       <div className="flex justify-end">
         <ScoreBadge score={score} />
       </div>
-      <AssignBoard chips={chips} slots={slots} value={value} onChange={setValue} disabled={locked} />
+
+      <FillDnd chips={chips} value={value} onChange={setValue} disabled={locked}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
+            {pairs.map((p, i) => (
+              <DropSlot key={i} id={`l${i}`} className={`flex items-center justify-center ${FRAME}`}>
+                <span>{p.left}</span>
+              </DropSlot>
+            ))}
+          </div>
+          <Bank className="h-fit flex-col items-stretch gap-4 border-none p-0" chipClassName={`flex ${FRAME}`} />
+        </div>
+      </FillDnd>
+
       {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Проверить</LoadingButton> : null}
     </div>
   );
