@@ -192,6 +192,7 @@ create table if not exists public.material_item_submissions (
   item_id      uuid not null references public.material_items (id) on delete cascade,
   answer       jsonb not null default '{}'::jsonb,
   score        numeric(5, 2),
+  reaction     text,
   submitted_at timestamptz not null default now(),
   unique (student_id, item_id)
 );

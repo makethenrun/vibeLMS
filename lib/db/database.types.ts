@@ -340,6 +340,7 @@ export interface Database {
           item_id: string;
           answer: Json;
           score: number | null;
+          reaction: string | null;
           submitted_at: string;
         };
         Insert: {
@@ -348,6 +349,7 @@ export interface Database {
           item_id: string;
           answer?: Json;
           score?: number | null;
+          reaction?: string | null;
           submitted_at?: string;
         };
         Update: {
@@ -356,6 +358,7 @@ export interface Database {
           item_id?: string;
           answer?: Json;
           score?: number | null;
+          reaction?: string | null;
           submitted_at?: string;
         };
         Relationships: [];

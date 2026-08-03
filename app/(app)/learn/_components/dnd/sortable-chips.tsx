@@ -5,6 +5,7 @@ import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -14,9 +15,10 @@ import { cn } from "@/lib/utils";
 export interface Chip {
   id: string;
   label: string;
+  node?: import("react").ReactNode;
 }
 
-function SortableChip({ chip, disabled }: { chip: Chip; disabled: boolean }) {
+function SortableChip({ chip, disabled, className }: { chip: Chip; disabled: boolean; className?: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: chip.id, disabled });
   return (
     <span
@@ -26,6 +28,7 @@ function SortableChip({ chip, disabled }: { chip: Chip; disabled: boolean }) {
         "cursor-grab select-none rounded-md border bg-background px-3 py-1.5 text-sm shadow-sm",
         isDragging && "opacity-60",
         disabled && "cursor-default",
+        className,
       )}
       {...attributes}
       {...listeners}
@@ -39,9 +42,10 @@ interface SortableChipsProps {
   chips: Chip[];
   onReorder: (chips: Chip[]) => void;
   disabled?: boolean;
+  vertical?: boolean;
 }
 
-export function SortableChips({ chips, onReorder, disabled = false }: SortableChipsProps) {
+export function SortableChips({ chips, onReorder, disabled = false, vertical = false }: SortableChipsProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   function handleDragEnd(event: DragEndEvent) {
@@ -55,10 +59,13 @@ export function SortableChips({ chips, onReorder, disabled = false }: SortableCh
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={chips.map((c) => c.id)} strategy={rectSortingStrategy}>
-        <div className="flex flex-wrap gap-2">
+      <SortableContext
+        items={chips.map((c) => c.id)}
+        strategy={vertical ? verticalListSortingStrategy : rectSortingStrategy}
+      >
+        <div className={vertical ? "flex flex-col gap-2" : "flex flex-wrap gap-2"}>
           {chips.map((chip) => (
-            <SortableChip key={chip.id} chip={chip} disabled={disabled} />
+            <SortableChip key={chip.id} chip={chip} disabled={disabled} className={vertical ? "py-2.5" : undefined} />
           ))}
         </div>
       </SortableContext>

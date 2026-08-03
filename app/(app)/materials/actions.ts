@@ -14,7 +14,7 @@ import * as items from "@/services/materials/items.service";
 import { setMaterialGroups } from "@/services/materials/material-groups.service";
 import { setItemPins } from "@/services/materials/item-pins.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
-import { gradeSubmission } from "@/services/materials/submissions.service";
+import { gradeSubmission, setReaction } from "@/services/materials/submissions.service";
 
 type Dir = "up" | "down";
 
@@ -370,6 +370,24 @@ export async function gradeSubmissionAction(
     return fail(getErrorMessage(e));
   }
   revalidatePath(`/materials/${materialId}/results`);
+  return ok();
+}
+
+export async function setReactionAction(
+  studentId: string,
+  itemId: string,
+  reaction: string | null,
+  materialId: string,
+): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await setReaction(db, studentId, itemId, reaction);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath(`/materials/${materialId}/results/${studentId}`);
   return ok();
 }
 

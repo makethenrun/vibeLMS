@@ -28,8 +28,11 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-/** 300×300 rounded square (per design) — capped to container width. */
+// 300×300 rounded square (per design).
 const IMG = "aspect-square w-full max-w-[300px] rounded-2xl border object-cover";
+const FRAME = "aspect-square w-full max-w-[300px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
+// eslint-disable-next-line @next/next/no-img-element
+const emojiImg = (url: string) => <img src={url} alt="" className="h-full w-full rounded-2xl object-cover" />;
 
 interface Props {
   itemId: string;
@@ -43,22 +46,37 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
 
   const [selected, setSelected] = useState<number[]>([]);
   const [pairAns, setPairAns] = useState<Record<string, string>>({});
-  const wordChips = useMemo<Chip[]>(() => shuffle(content.pairs.map((p, i) => ({ id: `w${i}`, label: p.word }))), [content.pairs]);
   const [dragValue, setDragValue] = useState<Record<string, string>>({});
   const selectOptions = useMemo(() => shuffle([...content.pairs.map((p) => p.word), ...content.distractors]), [content.pairs, content.distractors]);
-  const isDrag = content.variant === "DRAG_IMAGE_TO_WORD" || content.variant === "DRAG_WORD_TO_IMAGE";
+
+  // DRAG_WORD_TO_IMAGE: word chips → image slots.
+  const wordChips = useMemo<Chip[]>(() => shuffle(content.pairs.map((p, i) => ({ id: `w${i}`, label: p.word }))), [content.pairs]);
+  // DRAG_IMAGE_TO_WORD: image chips → word slots.
+  const imageChips = useMemo<Chip[]>(
+    () => shuffle(content.pairs.map((p, i) => ({ id: `img${i}`, label: p.word, node: emojiImg(p.imageUrl) }))),
+    [content.pairs],
+  );
 
   async function onSubmit() {
     if (content.variant === "SELECT_IMAGES") {
       await submit({ selected } as unknown as Json, content);
       return;
     }
-    if (isDrag) {
-      const chipLabel = new Map(wordChips.map((c) => [c.id, c.label]));
+    if (content.variant === "DRAG_WORD_TO_IMAGE") {
+      const label = new Map(wordChips.map((c) => [c.id, c.label]));
       const pairs: Record<string, string> = {};
       content.pairs.forEach((_, i) => {
         const chipId = dragValue[`p${i}`];
-        pairs[String(i)] = chipId ? chipLabel.get(chipId) ?? "" : "";
+        pairs[String(i)] = chipId ? label.get(chipId) ?? "" : "";
+      });
+      await submit({ pairs } as unknown as Json, content);
+      return;
+    }
+    if (content.variant === "DRAG_IMAGE_TO_WORD") {
+      const pairs: Record<string, string> = {};
+      content.pairs.forEach((wp, k) => {
+        const chipId = dragValue[`l${k}`]; // img${j}
+        if (chipId) pairs[chipId.replace("img", "")] = wp.word;
       });
       await submit({ pairs } as unknown as Json, content);
       return;
@@ -78,20 +96,16 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
           {content.images.map((img, i) => {
             const on = selected.includes(i);
             return (
-              <button
-                key={i}
-                type="button"
-                disabled={locked}
+              <button key={i} type="button" disabled={locked}
                 onClick={() => setSelected((prev) => (on ? prev.filter((x) => x !== i) : [...prev, i]))}
-                className={cn("rounded-2xl border-4", on ? "border-primary" : "border-transparent")}
-              >
+                className={cn("rounded-2xl border-4", on ? "border-primary" : "border-transparent")}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.imageUrl} alt="" className={IMG} />
               </button>
             );
           })}
         </div>
-      ) : isDrag ? (
+      ) : content.variant === "DRAG_WORD_TO_IMAGE" ? (
         <FillDnd chips={wordChips} value={dragValue} onChange={setDragValue} disabled={locked}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-4">
@@ -102,7 +116,20 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
                 </DropSlot>
               ))}
             </div>
-            <Bank className="h-fit flex-col items-stretch" chipClassName="w-full justify-center py-3 text-base" />
+            <Bank className="h-fit flex-col items-stretch gap-4 border-none p-0" chipClassName={`flex items-center justify-center ${FRAME}`} />
+          </div>
+        </FillDnd>
+      ) : content.variant === "DRAG_IMAGE_TO_WORD" ? (
+        <FillDnd chips={imageChips} value={dragValue} onChange={setDragValue} disabled={locked}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-4">
+              {content.pairs.map((p, k) => (
+                <DropSlot key={k} id={`l${k}`} className={`flex items-center justify-center ${FRAME}`}>
+                  <span>{p.word}</span>
+                </DropSlot>
+              ))}
+            </div>
+            <Bank className="h-fit flex-col items-stretch gap-4 border-none p-0" chipClassName={`overflow-hidden border p-0 ${IMG.replace("object-cover", "")}`} />
           </div>
         </FillDnd>
       ) : (
