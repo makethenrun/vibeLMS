@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
@@ -14,8 +13,8 @@ import {
 } from "@/components/ui/select";
 import type { GapsContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { submitItemAction } from "../actions";
 import { ScoreBadge } from "./score-badge";
+import { useSubmit } from "./use-submit";
 
 interface GapsSolveProps {
   itemId: string;
@@ -23,7 +22,6 @@ interface GapsSolveProps {
   initialScore: number | null | undefined;
 }
 
-/** Splits "a {{1}} b {{2}}" into text + blank tokens in order. */
 function tokenize(text: string): Array<{ text: string } | { blank: number }> {
   const out: Array<{ text: string } | { blank: number }> = [];
   const re = /\{\{(\d+)\}\}/g;
@@ -39,28 +37,14 @@ function tokenize(text: string): Array<{ text: string } | { blank: number }> {
 }
 
 export function GapsSolve({ itemId, content, initialScore }: GapsSolveProps) {
+  const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const [values, setValues] = useState<Record<string, string>>({});
-  const [score, setScore] = useState<number | null | undefined>(initialScore);
-  const [saving, setSaving] = useState(false);
 
   const tokens = tokenize(content.text);
   const blankById = new Map(content.blanks.map((b) => [b.index, b]));
-  const locked = score !== undefined;
 
-  async function submit() {
-    setSaving(true);
-    try {
-      const answer: Json = { blanks: values } as unknown as Json;
-      const result = await submitItemAction(itemId, answer);
-      if (result.success) {
-        setScore(result.data.score);
-        toast.success("Ответ отправлен");
-      } else {
-        toast.error(result.error);
-      }
-    } finally {
-      setSaving(false);
-    }
+  async function onSubmit() {
+    await submit({ blanks: values } as unknown as Json, content);
   }
 
   return (
@@ -105,11 +89,7 @@ export function GapsSolve({ itemId, content, initialScore }: GapsSolveProps) {
         })}
       </p>
 
-      {!locked ? (
-        <LoadingButton size="sm" loading={saving} onClick={submit}>
-          Проверить
-        </LoadingButton>
-      ) : null}
+      {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Проверить</LoadingButton> : null}
     </div>
   );
 }

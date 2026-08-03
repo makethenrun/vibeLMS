@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ImageTaskContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { AssignBoard } from "../dnd/assign-board";
+import { Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
@@ -28,6 +28,9 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/** 300×300 rounded square (per design) — capped to container width. */
+const IMG = "aspect-square w-full max-w-[300px] rounded-2xl border object-cover";
+
 interface Props {
   itemId: string;
   content: ImageTaskContent;
@@ -38,46 +41,40 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const prompt = content.prompt ? <p className="text-sm">{content.prompt}</p> : null;
 
-  // SELECT_IMAGES — click to toggle correct images.
   const [selected, setSelected] = useState<number[]>([]);
-  // TYPE_WORD / SELECT_WORD / drag — pair index → assigned word.
   const [pairAns, setPairAns] = useState<Record<string, string>>({});
-  // Drag variants use AssignBoard: slot id `p${i}` → word chip id.
   const wordChips = useMemo<Chip[]>(() => shuffle(content.pairs.map((p, i) => ({ id: `w${i}`, label: p.word }))), [content.pairs]);
   const [dragValue, setDragValue] = useState<Record<string, string>>({});
-
-  const selectOptions = useMemo(
-    () => shuffle([...content.pairs.map((p) => p.word), ...content.distractors]),
-    [content.pairs, content.distractors],
-  );
+  const selectOptions = useMemo(() => shuffle([...content.pairs.map((p) => p.word), ...content.distractors]), [content.pairs, content.distractors]);
+  const isDrag = content.variant === "DRAG_IMAGE_TO_WORD" || content.variant === "DRAG_WORD_TO_IMAGE";
 
   async function onSubmit() {
     if (content.variant === "SELECT_IMAGES") {
-      await submit({ selected } as unknown as Json);
+      await submit({ selected } as unknown as Json, content);
       return;
     }
-    if (content.variant === "DRAG_IMAGE_TO_WORD" || content.variant === "DRAG_WORD_TO_IMAGE") {
+    if (isDrag) {
       const chipLabel = new Map(wordChips.map((c) => [c.id, c.label]));
       const pairs: Record<string, string> = {};
       content.pairs.forEach((_, i) => {
         const chipId = dragValue[`p${i}`];
         pairs[String(i)] = chipId ? chipLabel.get(chipId) ?? "" : "";
       });
-      await submit({ pairs } as unknown as Json);
+      await submit({ pairs } as unknown as Json, content);
       return;
     }
-    await submit({ pairs: pairAns } as unknown as Json);
+    await submit({ pairs: pairAns } as unknown as Json, content);
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         {prompt ?? <span />}
         <ScoreBadge score={score} />
       </div>
 
       {content.variant === "SELECT_IMAGES" ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {content.images.map((img, i) => {
             const on = selected.includes(i);
             return (
@@ -86,38 +83,36 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
                 type="button"
                 disabled={locked}
                 onClick={() => setSelected((prev) => (on ? prev.filter((x) => x !== i) : [...prev, i]))}
-                className={cn("overflow-hidden rounded-lg border-2", on ? "border-primary" : "border-transparent")}
+                className={cn("rounded-2xl border-4", on ? "border-primary" : "border-transparent")}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.imageUrl} alt="" className="h-28 w-full object-cover" />
+                <img src={img.imageUrl} alt="" className={IMG} />
               </button>
             );
           })}
         </div>
-      ) : content.variant === "DRAG_IMAGE_TO_WORD" || content.variant === "DRAG_WORD_TO_IMAGE" ? (
-        <AssignBoard
-          chips={wordChips}
-          slots={content.pairs.map((p, i) => ({
-            id: `p${i}`,
-            // eslint-disable-next-line @next/next/no-img-element
-            node: <img src={p.imageUrl} alt="" className="h-16 w-16 rounded object-cover" />,
-          }))}
-          value={dragValue}
-          onChange={setDragValue}
-          disabled={locked}
-        />
+      ) : isDrag ? (
+        <FillDnd chips={wordChips} value={dragValue} onChange={setDragValue} disabled={locked}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-4">
+              {content.pairs.map((p, i) => (
+                <DropSlot key={i} id={`p${i}`} className="flex w-full max-w-[300px] flex-col items-center gap-2 rounded-2xl border p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.imageUrl} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                </DropSlot>
+              ))}
+            </div>
+            <Bank className="h-fit flex-col items-stretch" chipClassName="w-full justify-center py-3 text-base" />
+          </div>
+        </FillDnd>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {content.pairs.map((p, i) => (
-            <div key={i} className="flex items-center gap-3">
+            <div key={i} className="flex items-center gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.imageUrl} alt="" className="h-16 w-16 rounded object-cover" />
+              <img src={p.imageUrl} alt="" className={IMG} />
               {content.variant === "SELECT_WORD" ? (
-                <Select
-                  value={pairAns[String(i)] ?? ""}
-                  onValueChange={(v) => setPairAns((prev) => ({ ...prev, [String(i)]: v }))}
-                  disabled={locked}
-                >
+                <Select value={pairAns[String(i)] ?? ""} onValueChange={(v) => setPairAns((prev) => ({ ...prev, [String(i)]: v }))} disabled={locked}>
                   <SelectTrigger className="w-56"><SelectValue placeholder="Выберите слово" /></SelectTrigger>
                   <SelectContent>
                     {selectOptions.map((opt) => (
@@ -126,12 +121,7 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input
-                  disabled={locked}
-                  placeholder="Слово"
-                  value={pairAns[String(i)] ?? ""}
-                  onChange={(e) => setPairAns((prev) => ({ ...prev, [String(i)]: e.target.value }))}
-                />
+                <Input disabled={locked} placeholder="Слово" value={pairAns[String(i)] ?? ""} onChange={(e) => setPairAns((prev) => ({ ...prev, [String(i)]: e.target.value }))} className="w-56" />
               )}
             </div>
           ))}

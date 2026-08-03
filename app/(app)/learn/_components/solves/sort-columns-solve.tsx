@@ -32,7 +32,7 @@ export function SortColumnsSolve({
   const [value, setValue] = useState<Record<string, number>>({});
 
   async function onSubmit() {
-    await submit({ assign: value } as unknown as Json);
+    await submit({ assign: value } as unknown as Json, content);
   }
 
   return (

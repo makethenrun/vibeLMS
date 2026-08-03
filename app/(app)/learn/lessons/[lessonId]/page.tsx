@@ -7,21 +7,23 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getSubmissionsForItems } from "@/services/materials/submissions.service";
-import {
-  lessonMaterialId,
-  studentHasMaterialAccess,
-} from "@/services/materials/student-access.service";
+import { lessonMaterialId, studentHasMaterialAccess } from "@/services/materials/student-access.service";
+import { Workspace } from "@/app/(app)/materials/_components/workspace";
 import { StudentItem } from "../../_components/student-item";
+import { StudentModuleTree } from "../../_components/student-module-tree";
 
 export const metadata: Metadata = { title: "Урок" };
 
 export default async function StudentLessonPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lessonId: string }>;
+  searchParams: Promise<{ m?: string }>;
 }) {
   const { studentId } = await requireStudent();
   const { lessonId } = await params;
+  const { m } = await searchParams;
 
   const db = createServerSupabaseClient();
   const materialId = await lessonMaterialId(db, lessonId);
@@ -31,31 +33,29 @@ export default async function StudentLessonPage({
   if (!ctx) notFound();
 
   const modules = await getLessonModules(db, lessonId);
-  const itemIds = modules.flatMap((m) => m.items.map((i) => i.id));
-  const submissions = await getSubmissionsForItems(db, studentId, itemIds);
+  const active = modules.find((mod) => mod.id === m) ?? modules[0];
+  const submissions = active ? await getSubmissionsForItems(db, studentId, active.items.map((i) => i.id)) : {};
 
   return (
     <div className="space-y-6">
-      <PageHeader title={ctx.title} description="Пройдите упражнения урока." />
-
-      {modules.length === 0 ? (
-        <p className="text-sm text-muted-foreground">В уроке пока нет содержимого.</p>
-      ) : (
-        <div className="space-y-8">
-          {modules.map((module) => (
-            <section key={module.id} className="space-y-3">
-              <h2 className="text-lg font-semibold">{module.title}</h2>
-              {module.items.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Нет элементов.</p>
-              ) : (
-                module.items.map((item) => (
-                  <StudentItem key={item.id} item={item} submission={submissions[item.id]} />
-                ))
-              )}
-            </section>
-          ))}
-        </div>
-      )}
+      <PageHeader title={ctx.title} description="Пройдите упражнения модуля." />
+      <Workspace
+        tree={<StudentModuleTree lessonHref={`/learn/lessons/${lessonId}`} modules={modules} activeModuleId={active?.id} />}
+        treeTitle="Модули и упражнения"
+      >
+        {active ? (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">{active.title}</h2>
+            {active.items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">В модуле пока нет элементов.</p>
+            ) : (
+              active.items.map((item) => <StudentItem key={item.id} item={item} submission={submissions[item.id]} />)
+            )}
+          </section>
+        ) : (
+          <p className="text-sm text-muted-foreground">В уроке пока нет модулей.</p>
+        )}
+      </Workspace>
     </div>
   );
 }
