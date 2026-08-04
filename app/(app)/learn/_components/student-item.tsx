@@ -49,7 +49,15 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
 
 const NOT_YET_INTERACTIVE = "Интерактивное прохождение этого формата появится в следующем обновлении.";
 
-export function StudentItem({ item, submission }: { item: ItemRow; submission?: ItemSubmissionRow }) {
+export function StudentItem({
+  item,
+  submission,
+  reactionPicker,
+}: {
+  item: ItemRow;
+  submission?: ItemSubmissionRow;
+  reactionPicker?: import("react").ReactNode;
+}) {
   const initialScore = submission ? submission.score : undefined;
 
   function render() {
@@ -114,9 +122,10 @@ export function StudentItem({ item, submission }: { item: ItemRow; submission?: 
         <CardTitle className="text-sm font-medium">
           {item.title || TYPE_LABELS[item.type]}
         </CardTitle>
-        {submission?.reaction ? (
-          <span className="text-xl" title="Реакция преподавателя">{submission.reaction}</span>
-        ) : null}
+        {reactionPicker ??
+          (submission?.reaction ? (
+            <span className="text-xl" title="Реакция преподавателя">{submission.reaction}</span>
+          ) : null)}
       </CardHeader>
       <CardContent className="pt-4">{render()}</CardContent>
     </Card>

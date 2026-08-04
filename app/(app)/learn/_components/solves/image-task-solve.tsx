@@ -133,14 +133,14 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
           </div>
         </FillDnd>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-6 sm:grid-cols-2">
           {content.pairs.map((p, i) => (
-            <div key={i} className="flex items-center gap-4">
+            <div key={i} className="flex w-full max-w-[300px] flex-col items-stretch gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.imageUrl} alt="" className={IMG} />
               {content.variant === "SELECT_WORD" ? (
                 <Select value={pairAns[String(i)] ?? ""} onValueChange={(v) => setPairAns((prev) => ({ ...prev, [String(i)]: v }))} disabled={locked}>
-                  <SelectTrigger className="w-56"><SelectValue placeholder="Выберите слово" /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Выберите слово" /></SelectTrigger>
                   <SelectContent>
                     {selectOptions.map((opt) => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -148,7 +148,7 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input disabled={locked} placeholder="Слово" value={pairAns[String(i)] ?? ""} onChange={(e) => setPairAns((prev) => ({ ...prev, [String(i)]: e.target.value }))} className="w-56" />
+                <Input disabled={locked} placeholder="Слово" value={pairAns[String(i)] ?? ""} onChange={(e) => setPairAns((prev) => ({ ...prev, [String(i)]: e.target.value }))} className="w-full text-center" />
               )}
             </div>
           ))}
