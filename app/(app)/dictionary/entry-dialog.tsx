@@ -31,9 +31,23 @@ import { dictionaryEntrySchema, type DictionaryEntryInput } from "@/lib/validato
 import type { DictionaryEntry } from "@/types";
 import { createEntryAction, updateEntryAction } from "./actions";
 
-export function EntryDialog({ trigger, entry }: { trigger: ReactNode; entry?: DictionaryEntry }) {
+export function EntryDialog({
+  trigger,
+  entry,
+  defaultTerm,
+  open: openProp,
+  onOpenChange,
+}: {
+  trigger?: ReactNode;
+  entry?: DictionaryEntry;
+  defaultTerm?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const isEdit = Boolean(entry);
 
   const form = useForm<DictionaryEntryInput>({
@@ -44,7 +58,7 @@ export function EntryDialog({ trigger, entry }: { trigger: ReactNode; entry?: Di
   useEffect(() => {
     if (open) {
       form.reset({
-        term: entry?.term ?? "",
+        term: entry?.term ?? defaultTerm ?? "",
         translation: entry?.translation ?? "",
         pinyin: entry?.pinyin ?? "",
         note: entry?.note ?? "",
@@ -67,7 +81,7 @@ export function EntryDialog({ trigger, entry }: { trigger: ReactNode; entry?: Di
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Редактировать слово" : "Новое слово"}</DialogTitle>

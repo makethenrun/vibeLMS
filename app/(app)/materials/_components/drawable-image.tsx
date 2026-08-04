@@ -1,26 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Eraser, Pencil } from "lucide-react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { Eraser } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-export function ImageAnnotate({
+/**
+ * Draw freehand annotations over an image and emit them as a PNG data URL.
+ * The canvas matches the rendered image box, so the saved overlay lines up
+ * when displayed at the same size.
+ */
+export function DrawableImage({
   url,
-  caption,
-  annotations,
+  value,
+  onChange,
 }: {
   url: string;
-  caption: string | null;
-  annotations?: string | null;
+  value: string | null;
+  onChange: (dataUrl: string | null) => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
-  const [draw, setDraw] = useState(false);
+  const loadedValue = useRef<string | null>(null);
 
-  function resize() {
+  function fit() {
     const c = canvasRef.current;
     const w = wrapRef.current;
     if (!c || !w) return;
@@ -28,13 +32,25 @@ export function ImageAnnotate({
     if (r.width && r.height && (c.width !== Math.round(r.width) || c.height !== Math.round(r.height))) {
       c.width = Math.round(r.width);
       c.height = Math.round(r.height);
+      redraw();
     }
   }
 
+  function redraw() {
+    const c = canvasRef.current;
+    if (!c || !value || loadedValue.current === value) return;
+    const ctx = c.getContext("2d")!;
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0, c.width, c.height);
+    img.src = value;
+    loadedValue.current = value;
+  }
+
   useEffect(() => {
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function point(e: ReactPointerEvent) {
@@ -43,7 +59,6 @@ export function ImageAnnotate({
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   function down(e: ReactPointerEvent) {
-    if (!draw) return;
     drawing.current = true;
     const ctx = canvasRef.current!.getContext("2d")!;
     const { x, y } = point(e);
@@ -54,49 +69,42 @@ export function ImageAnnotate({
     ctx.lineCap = "round";
   }
   function move(e: ReactPointerEvent) {
-    if (!draw || !drawing.current) return;
+    if (!drawing.current) return;
     const ctx = canvasRef.current!.getContext("2d")!;
     const { x, y } = point(e);
     ctx.lineTo(x, y);
     ctx.stroke();
   }
   function stop() {
+    if (!drawing.current) return;
     drawing.current = false;
+    onChange(canvasRef.current!.toDataURL("image/png"));
   }
   function clear() {
     const c = canvasRef.current;
     if (c) c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
+    loadedValue.current = null;
+    onChange(null);
   }
 
   return (
     <div className="space-y-2">
       <div ref={wrapRef} className="relative inline-block max-w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt={caption ?? ""} onLoad={resize} className="block max-h-80 rounded-lg border" />
-        {annotations ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={annotations} alt="" className="pointer-events-none absolute inset-0 h-full w-full" />
-        ) : null}
+        <img src={url} alt="" onLoad={fit} className="block max-h-80 rounded-lg border" />
         <canvas
           ref={canvasRef}
-          className={cn("absolute inset-0 h-full w-full touch-none", draw ? "cursor-crosshair" : "pointer-events-none")}
+          className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
           onPointerDown={down}
           onPointerMove={move}
           onPointerUp={stop}
           onPointerLeave={stop}
         />
       </div>
-      {caption ? <p className="text-sm text-muted-foreground">{caption}</p> : null}
-      <div className="flex gap-2">
-        <Button size="sm" variant={draw ? "default" : "outline"} onClick={() => setDraw((d) => !d)}>
-          <Pencil className="h-4 w-4" />
-          {draw ? "Рисование включено" : "Рисовать пометки"}
-        </Button>
-        <Button size="sm" variant="outline" onClick={clear}>
-          <Eraser className="h-4 w-4" />
-          Очистить
-        </Button>
-      </div>
+      <Button size="sm" variant="outline" onClick={clear}>
+        <Eraser className="h-4 w-4" />
+        Стереть пометки
+      </Button>
     </div>
   );
 }

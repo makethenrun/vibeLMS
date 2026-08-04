@@ -7,6 +7,7 @@ import { FileUpload } from "@/components/shared/file-upload";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { itemContentSchema, type ImageContent, type ItemContent } from "@/lib/validators";
+import { DrawableImage } from "../drawable-image";
 
 interface EditorProps {
   content: ImageContent;
@@ -16,10 +17,11 @@ interface EditorProps {
 export function ImageEditor({ content, onSave }: EditorProps) {
   const [url, setUrl] = useState(content.url);
   const [caption, setCaption] = useState(content.caption ?? "");
+  const [annotations, setAnnotations] = useState<string | null>(content.annotations ?? null);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
-    const parsed = itemContentSchema.safeParse({ type: "IMAGE", url, caption: caption.trim() || null });
+    const parsed = itemContentSchema.safeParse({ type: "IMAGE", url, caption: caption.trim() || null, annotations });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Проверьте изображение");
       return;
@@ -35,18 +37,17 @@ export function ImageEditor({ content, onSave }: EditorProps) {
   return (
     <div className="space-y-3">
       {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={caption || "Изображение"} className="max-h-72 rounded-lg border object-contain" />
+        <DrawableImage url={url} value={annotations} onChange={setAnnotations} />
       ) : (
         <p className="text-sm text-muted-foreground">Изображение не задано.</p>
       )}
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Input placeholder="Ссылка на изображение" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <Input placeholder="Ссылка на изображение" value={url} onChange={(e) => { setUrl(e.target.value); setAnnotations(null); }} />
         <FileUpload
           folder="materials"
           accept=".jpg,.jpeg,.png,.webp"
           value={url || null}
-          onUploaded={(u) => setUrl(u ?? "")}
+          onUploaded={(u) => { setUrl(u ?? ""); setAnnotations(null); }}
         />
       </div>
       <Input placeholder="Подпись (необязательно)" value={caption} onChange={(e) => setCaption(e.target.value)} />

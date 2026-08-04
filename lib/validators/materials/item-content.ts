@@ -58,6 +58,8 @@ export const imageContentSchema = z.object({
   type: z.literal("IMAGE"),
   url: z.string().trim().max(1000),
   caption: z.string().trim().max(500).nullable(),
+  // Teacher's saved drawing overlay, as a PNG data URL (null = none).
+  annotations: z.string().max(3_000_000).nullable().default(null),
 });
 
 export const carouselContentSchema = z.object({
@@ -233,7 +235,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "VIDEO":
       return { type: "VIDEO", url: "" };
     case "IMAGE":
-      return { type: "IMAGE", url: "", caption: null };
+      return { type: "IMAGE", url: "", caption: null, annotations: null };
     case "CAROUSEL":
       return { type: "CAROUSEL", images: [] };
     case "LINK":
