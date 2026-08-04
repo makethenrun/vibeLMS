@@ -24,6 +24,7 @@ export interface Database {
       dictionary_entries: {
         Row: {
           id: string;
+          owner_id: string | null;
           term: string;
           translation: string;
           pinyin: string | null;
@@ -32,6 +33,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
+          owner_id?: string | null;
           term: string;
           translation: string;
           pinyin?: string | null;
@@ -40,6 +42,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          owner_id?: string | null;
           term?: string;
           translation?: string;
           pinyin?: string | null;

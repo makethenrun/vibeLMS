@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { useRef, useState } from "react";
+import { RefreshCw, SquareDashedBottom } from "lucide-react";
 import { toast } from "sonner";
 
 import { LoadingButton } from "@/components/shared/loading-button";
@@ -48,6 +48,23 @@ export function GapsEditor({ content, onSave }: EditorProps) {
   const [blanks, setBlanks] = useState<BlankDraft[]>(toDraft(content));
   const [bankText, setBankText] = useState((content.bank ?? []).join(", "));
   const [saving, setSaving] = useState(false);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+
+  function makeBlankFromSelection() {
+    const ta = textRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = text.slice(start, end).trim();
+    if (start === end || !selected) {
+      toast.error("Выделите слово в тексте");
+      return;
+    }
+    const existing = [...text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
+    const n = (existing.length ? Math.max(...existing) : 0) + 1;
+    setText(text.slice(0, start) + `{{${n}}}` + text.slice(end));
+    setBlanks((prev) => [...prev, { index: n, answersText: selected, optionsText: "" }]);
+  }
 
   function syncFromText() {
     const indices = [...new Set([...text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1])))].sort((a, b) => a - b);
@@ -104,16 +121,22 @@ export function GapsEditor({ content, onSave }: EditorProps) {
 
       <div className="space-y-1">
         <label className="text-sm font-medium">Текст с пропусками</label>
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
+        <Textarea ref={textRef} value={text} onChange={(e) => setText(e.target.value)} rows={3} />
         <p className="text-xs text-muted-foreground">
-          Отмечайте пропуски маркерами <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> и т.д.
+          Выделите слово и нажмите «Сделать пропуском», либо ставьте маркеры <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> вручную.
         </p>
       </div>
 
-      <Button size="sm" variant="outline" onClick={syncFromText}>
-        <RefreshCw className="h-4 w-4" />
-        Обновить пропуски из текста
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={makeBlankFromSelection}>
+          <SquareDashedBottom className="h-4 w-4" />
+          Сделать пропуском
+        </Button>
+        <Button size="sm" variant="outline" onClick={syncFromText}>
+          <RefreshCw className="h-4 w-4" />
+          Обновить пропуски из текста
+        </Button>
+      </div>
 
       {mode === "DRAG" ? (
         <div className="space-y-1">

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { Bank, DropSlot, FillDnd } from "../dnd/fill";
+import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
@@ -27,15 +27,22 @@ export function MatchPairsSolve({
   content,
   pairs,
   initialScore,
+  initialAnswer,
 }: {
   itemId: string;
   content: ItemContent;
   pairs: { left: string; right: string }[];
   initialScore: number | null | undefined;
+  initialAnswer?: { match?: Record<string, string> };
 }) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const chips = useMemo<Chip[]>(() => shuffle(pairs.map((p, i) => ({ id: `r${i}`, label: p.right }))), [pairs]);
-  const [value, setValue] = useState<Record<string, string>>({});
+  const [value, setValue] = useState<Record<string, string>>(() =>
+    assignByLabel(
+      pairs.map((_, i) => ({ slotId: `l${i}`, label: initialAnswer?.match?.[String(i)] ?? "" })),
+      chips,
+    ),
+  );
   const chipLabel = new Map(chips.map((c) => [c.id, c.label]));
 
   async function onSubmit() {

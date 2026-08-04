@@ -17,6 +17,23 @@ import type { Chip } from "./sortable-chips";
 
 export const BANK_ID = "__bank__";
 
+const norm = (s: string) => s.trim().toLowerCase();
+
+/** Greedily assign chips to slots by matching labels (for restoring answers). */
+export function assignByLabel(slots: { slotId: string; label: string }[], chips: Chip[]): Record<string, string> {
+  const used = new Set<string>();
+  const value: Record<string, string> = {};
+  for (const { slotId, label } of slots) {
+    if (!label) continue;
+    const chip = chips.find((c) => !used.has(c.id) && norm(c.label) === norm(label));
+    if (chip) {
+      value[slotId] = chip.id;
+      used.add(chip.id);
+    }
+  }
+  return value;
+}
+
 interface FillCtx {
   value: Record<string, string>; // slotId → chipId
   chipById: Map<string, Chip>;

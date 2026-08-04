@@ -20,6 +20,7 @@ interface GapsSolveProps {
   itemId: string;
   content: GapsContent;
   initialScore: number | null | undefined;
+  initialAnswer?: { blanks?: Record<string, string> };
 }
 
 function tokenize(text: string): Array<{ text: string } | { blank: number }> {
@@ -36,9 +37,9 @@ function tokenize(text: string): Array<{ text: string } | { blank: number }> {
   return out;
 }
 
-export function GapsSolve({ itemId, content, initialScore }: GapsSolveProps) {
+export function GapsSolve({ itemId, content, initialScore, initialAnswer }: GapsSolveProps) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(initialAnswer?.blanks ?? {});
 
   const tokens = tokenize(content.text);
   const blankById = new Map(content.blanks.map((b) => [b.index, b]));

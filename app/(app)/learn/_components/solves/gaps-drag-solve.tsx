@@ -5,7 +5,7 @@ import { Fragment, useMemo, useState } from "react";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { GapsContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { Bank, DropSlot, FillDnd } from "../dnd/fill";
+import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
@@ -24,10 +24,25 @@ function tokenize(text: string): Array<{ text: string } | { blank: number }> {
   return out;
 }
 
-export function GapsDragSolve({ itemId, content, initialScore }: { itemId: string; content: GapsContent; initialScore: number | null | undefined }) {
+export function GapsDragSolve({
+  itemId,
+  content,
+  initialScore,
+  initialAnswer,
+}: {
+  itemId: string;
+  content: GapsContent;
+  initialScore: number | null | undefined;
+  initialAnswer?: { blanks?: Record<string, string> };
+}) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const chips = useMemo<Chip[]>(() => content.bank.map((label, i) => ({ id: `w${i}`, label })), [content.bank]);
-  const [value, setValue] = useState<Record<string, string>>({});
+  const [value, setValue] = useState<Record<string, string>>(() =>
+    assignByLabel(
+      content.blanks.map((b) => ({ slotId: `b${b.index}`, label: initialAnswer?.blanks?.[String(b.index)] ?? "" })),
+      chips,
+    ),
+  );
   const chipLabel = new Map(chips.map((c) => [c.id, c.label]));
   const tokens = tokenize(content.text);
 

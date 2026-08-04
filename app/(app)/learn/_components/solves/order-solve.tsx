@@ -23,16 +23,31 @@ export function OrderSolve({
   content,
   tokens,
   initialScore,
+  initialAnswer,
   vertical = false,
 }: {
   itemId: string;
   content: ItemContent;
   tokens: string[];
   initialScore: number | null | undefined;
+  initialAnswer?: { order?: string[] };
   vertical?: boolean;
 }) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
-  const initial = useMemo<Chip[]>(() => shuffle(tokens.map((label, i) => ({ id: `t${i}`, label }))), [tokens]);
+  const initial = useMemo<Chip[]>(() => {
+    const all = tokens.map((label, i) => ({ id: `t${i}`, label }));
+    const order = initialAnswer?.order;
+    if (!order?.length) return shuffle(all);
+    const used = new Set<string>();
+    const result: Chip[] = [];
+    for (const lbl of order) {
+      const c = all.find((x) => !used.has(x.id) && x.label === lbl);
+      if (c) { used.add(c.id); result.push(c); }
+    }
+    for (const c of all) if (!used.has(c.id)) result.push(c);
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokens]);
   const [chips, setChips] = useState<Chip[]>(initial);
 
   async function onSubmit() {

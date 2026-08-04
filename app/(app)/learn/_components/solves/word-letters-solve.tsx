@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { Bank, DropSlot, FillDnd } from "../dnd/fill";
+import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
@@ -27,17 +27,24 @@ export function WordLettersSolve({
   word,
   extraLetters,
   initialScore,
+  initialAnswer,
 }: {
   itemId: string;
   content: ItemContent;
   word: string;
   extraLetters: string;
   initialScore: number | null | undefined;
+  initialAnswer?: { letters?: string[] };
 }) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const letters = useMemo(() => (word + extraLetters).split(""), [word, extraLetters]);
   const chips = useMemo<Chip[]>(() => shuffle(letters.map((label, i) => ({ id: `c${i}`, label }))), [letters]);
-  const [value, setValue] = useState<Record<string, string>>({});
+  const [value, setValue] = useState<Record<string, string>>(() =>
+    assignByLabel(
+      Array.from({ length: word.length }, (_, i) => ({ slotId: `p${i}`, label: initialAnswer?.letters?.[i] ?? "" })),
+      chips,
+    ),
+  );
   const chipLabel = new Map(chips.map((c) => [c.id, c.label]));
 
   async function onSubmit() {

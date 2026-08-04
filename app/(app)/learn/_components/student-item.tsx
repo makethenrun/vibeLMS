@@ -49,6 +49,17 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
 
 const NOT_YET_INTERACTIVE = "Интерактивное прохождение этого формата появится в следующем обновлении.";
 
+interface SavedAnswer {
+  questions?: { selected: string[]; text: string }[];
+  blanks?: Record<string, string>;
+  order?: string[];
+  letters?: string[];
+  assign?: Record<string, number>;
+  match?: Record<string, string>;
+  selected?: number[];
+  pairs?: Record<string, string>;
+}
+
 export function StudentItem({
   item,
   submission,
@@ -59,6 +70,7 @@ export function StudentItem({
   reactionPicker?: import("react").ReactNode;
 }) {
   const initialScore = submission ? submission.score : undefined;
+  const savedAnswer = submission?.answer as unknown as SavedAnswer | undefined;
 
   function render() {
     switch (item.type) {
@@ -86,19 +98,19 @@ export function StudentItem({
         );
       }
       case "QUIZ":
-        return <QuizSolve itemId={item.id} content={item.content as unknown as QuizContent} initialScore={initialScore} />;
+        return <QuizSolve itemId={item.id} content={item.content as unknown as QuizContent} initialScore={initialScore} initialAnswer={savedAnswer} />;
       case "GAPS": {
         const c = item.content as unknown as GapsContent;
-        if (c.mode === "DRAG") return <GapsDragSolve itemId={item.id} content={c} initialScore={initialScore} />;
-        return <GapsSolve itemId={item.id} content={c} initialScore={initialScore} />;
+        if (c.mode === "DRAG") return <GapsDragSolve itemId={item.id} content={c} initialScore={initialScore} initialAnswer={savedAnswer} />;
+        return <GapsSolve itemId={item.id} content={c} initialScore={initialScore} initialAnswer={savedAnswer} />;
       }
       case "IMAGE_TASK":
-        return <ImageTaskSolve itemId={item.id} content={item.content as unknown as ImageTaskContent} initialScore={initialScore} />;
+        return <ImageTaskSolve itemId={item.id} content={item.content as unknown as ImageTaskContent} initialScore={initialScore} initialAnswer={savedAnswer} />;
       case "SENTENCE_TASK":
-        return <SentenceSolve itemId={item.id} content={item.content as unknown as SentenceTaskContent} initialScore={initialScore} />;
+        return <SentenceSolve itemId={item.id} content={item.content as unknown as SentenceTaskContent} initialScore={initialScore} initialAnswer={savedAnswer} />;
       case "MATCH": {
         const c = item.content as unknown as MatchContent;
-        return <MatchPairsSolve itemId={item.id} content={c} pairs={c.pairs} initialScore={initialScore} />;
+        return <MatchPairsSolve itemId={item.id} content={c} pairs={c.pairs} initialScore={initialScore} initialAnswer={savedAnswer} />;
       }
       case "FREE": {
         const answer = (submission?.answer ?? {}) as { text?: string };

@@ -15,10 +15,9 @@ export const metadata: Metadata = { title: "Словарь" };
 
 export default async function DictionaryPage() {
   const user = await requireUser();
-  const isTutor = user.role === "TUTOR";
 
   const db = createServerSupabaseClient();
-  const entries = await listDictionary(db);
+  const entries = await listDictionary(db, user.id);
 
   const addButton = (
     <Button>
@@ -31,16 +30,16 @@ export default async function DictionaryPage() {
     <div className="space-y-6">
       <PageHeader
         title="Словарь"
-        description="Общий словарь слов и переводов."
-        actions={isTutor ? <EntryDialog trigger={addButton} /> : undefined}
+        description="Ваш личный словарь слов и переводов."
+        actions={<EntryDialog trigger={addButton} />}
       />
 
       {entries.length === 0 ? (
         <EmptyState
           icon={BookA}
           title="Словарь пуст"
-          description={isTutor ? "Добавьте первое слово." : "Слова появятся, когда преподаватель их добавит."}
-          action={isTutor ? <EntryDialog trigger={addButton} /> : undefined}
+          description="Добавьте первое слово."
+          action={<EntryDialog trigger={addButton} />}
         />
       ) : (
         <Table>
@@ -50,12 +49,12 @@ export default async function DictionaryPage() {
               <TableHead>Пиньинь</TableHead>
               <TableHead>Перевод</TableHead>
               <TableHead>Заметка</TableHead>
-              {isTutor ? <TableHead className="text-right">Действия</TableHead> : null}
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {entries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} isTutor={isTutor} />
+              <EntryRow key={entry.id} entry={entry} />
             ))}
           </TableBody>
         </Table>

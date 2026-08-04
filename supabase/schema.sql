@@ -307,6 +307,7 @@ create index if not exists payments_payment_date_idx on public.payments (payment
 -- ---------------------------------------------------------------------------
 create table if not exists public.dictionary_entries (
   id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid references public.users (id) on delete cascade,
   term        text not null,
   translation text not null,
   pinyin      text,
@@ -314,6 +315,7 @@ create table if not exists public.dictionary_entries (
   created_at  timestamptz not null default now()
 );
 create index if not exists dictionary_entries_term_idx on public.dictionary_entries (term);
+create index if not exists dictionary_entries_owner_idx on public.dictionary_entries (owner_id);
 
 -- ---------------------------------------------------------------------------
 -- settings (single row)
