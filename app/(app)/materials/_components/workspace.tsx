@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { DictionaryFab } from "./dictionary-fab";
+
 /**
  * Two-pane constructor layout: main content on the left, a contextual
  * navigation panel on the right (sticky on wide screens, stacked on mobile).
@@ -19,6 +21,7 @@ export function Workspace({
       <aside className="order-first h-fit rounded-lg border p-4 lg:order-last lg:sticky lg:top-4">
         <h2 className="mb-3 text-sm font-semibold">{treeTitle}</h2>
         {tree}
+        <DictionaryFab />
       </aside>
     </div>
   );

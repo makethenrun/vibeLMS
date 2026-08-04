@@ -303,6 +303,19 @@ create index if not exists payments_student_id_idx on public.payments (student_i
 create index if not exists payments_payment_date_idx on public.payments (payment_date);
 
 -- ---------------------------------------------------------------------------
+-- dictionary_entries (shared dictionary)
+-- ---------------------------------------------------------------------------
+create table if not exists public.dictionary_entries (
+  id          uuid primary key default gen_random_uuid(),
+  term        text not null,
+  translation text not null,
+  pinyin      text,
+  note        text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists dictionary_entries_term_idx on public.dictionary_entries (term);
+
+-- ---------------------------------------------------------------------------
 -- settings (single row)
 -- ---------------------------------------------------------------------------
 create table if not exists public.settings (
@@ -336,6 +349,7 @@ alter table public.material_items       enable row level security;
 alter table public.material_groups      enable row level security;
 alter table public.material_item_pins   enable row level security;
 alter table public.material_item_submissions enable row level security;
+alter table public.dictionary_entries   enable row level security;
 alter table public.homework             enable row level security;
 alter table public.homework_submissions enable row level security;
 alter table public.quizzes              enable row level security;

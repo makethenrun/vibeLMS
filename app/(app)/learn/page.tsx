@@ -30,15 +30,20 @@ export default async function LearnPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {materials.map((m) => (
-            <Card key={m.id}>
-              <CardHeader className="flex flex-row items-start gap-3 space-y-0">
-                <div className="rounded-md bg-muted p-2">
-                  <Layers className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <CardTitle className="truncate text-base">{m.title}</CardTitle>
-                  {m.description ? <p className="mt-1 text-xs text-muted-foreground">{m.description}</p> : null}
-                </div>
+            <Card key={m.id} className="overflow-hidden">
+              <Link href={`/learn/materials/${m.id}`} className="block">
+                {m.cover_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.cover_url} alt="" className="aspect-[3/4] w-full object-cover" />
+                ) : (
+                  <div className="flex aspect-[3/4] w-full items-center justify-center bg-muted">
+                    <Layers className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                )}
+              </Link>
+              <CardHeader className="py-3">
+                <CardTitle className="truncate text-base">{m.title}</CardTitle>
+                {m.description ? <p className="mt-1 text-xs text-muted-foreground">{m.description}</p> : null}
               </CardHeader>
               <CardContent>
                 <Button asChild size="sm" variant="outline" className="w-full">
