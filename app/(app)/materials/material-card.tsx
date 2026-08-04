@@ -13,21 +13,22 @@ import { MaterialFormDialog } from "./material-form-dialog";
 
 export function MaterialCard({ material }: { material: MaterialWithCounts }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start gap-3 space-y-0">
-        <div className="rounded-md bg-muted p-2">
-          <Layers className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <CardTitle className="truncate text-base">
-            <Link href={`/materials/${material.id}`} className="hover:underline">
-              {material.title}
-            </Link>
-          </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Разделов: {material.sectionCount} · {formatDate(material.created_at)}
-          </p>
-        </div>
+    <Card className="overflow-hidden">
+      <Link href={`/materials/${material.id}`} className="block">
+        {material.cover_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={material.cover_url} alt="" className="aspect-[3/4] w-full object-cover" />
+        ) : (
+          <div className="flex aspect-[3/4] w-full items-center justify-center bg-muted">
+            <Layers className="h-10 w-10 text-muted-foreground" />
+          </div>
+        )}
+      </Link>
+      <CardHeader className="py-3">
+        <CardTitle className="truncate text-base">
+          <Link href={`/materials/${material.id}`} className="hover:underline">{material.title}</Link>
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">Разделов: {material.sectionCount} · {formatDate(material.created_at)}</p>
       </CardHeader>
       <CardContent className="flex items-center gap-2">
         <Button asChild size="sm" variant="outline" className="flex-1">
@@ -35,18 +36,10 @@ export function MaterialCard({ material }: { material: MaterialWithCounts }) {
         </Button>
         <MaterialFormDialog
           material={material}
-          trigger={
-            <Button size="icon" variant="outline" aria-label="Редактировать">
-              <Pencil className="h-4 w-4" />
-            </Button>
-          }
+          trigger={<Button size="icon" variant="outline" aria-label="Редактировать"><Pencil className="h-4 w-4" /></Button>}
         />
         <ConfirmDialog
-          trigger={
-            <Button size="icon" variant="outline" className="text-destructive" aria-label="Удалить">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          }
+          trigger={<Button size="icon" variant="outline" className="text-destructive" aria-label="Удалить"><Trash2 className="h-4 w-4" /></Button>}
           title="Удалить материал?"
           description={`«${material.title}» и всё его содержимое будут удалены без возможности восстановления.`}
           confirmLabel="Удалить"

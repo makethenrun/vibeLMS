@@ -60,6 +60,22 @@ export async function getMaterialItemsFlat(db: Db, materialId: string): Promise<
   });
 }
 
+/** For a material, map of student id → names of the material's groups they are in. */
+export async function getMaterialStudentGroups(db: Db, materialId: string): Promise<Record<string, string[]>> {
+  const { data: mg } = await db.from("material_groups").select("group_id").eq("material_id", materialId);
+  const groupIds = (mg ?? []).map((r) => r.group_id);
+  if (groupIds.length === 0) return {};
+  const { data: groups } = await db.from("groups").select("id, name").in("id", groupIds);
+  const nameById = new Map((groups ?? []).map((g) => [g.id, g.name] as const));
+  const { data: gm } = await db.from("group_members").select("group_id, student_id").in("group_id", groupIds);
+  const map: Record<string, string[]> = {};
+  for (const r of gm ?? []) {
+    const name = nameById.get(r.group_id);
+    if (name) (map[r.student_id] ??= []).push(name);
+  }
+  return map;
+}
+
 /** Students who can access a material (via its groups). */
 export async function listMaterialStudents(db: Db, materialId: string): Promise<Student[]> {
   const { data: mg } = await db.from("material_groups").select("group_id").eq("material_id", materialId);

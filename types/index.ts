@@ -31,6 +31,7 @@ export type Quiz = Tables["quizzes"]["Row"];
 export type QuizQuestion = Tables["quiz_questions"]["Row"];
 export type Payment = Tables["payments"]["Row"];
 export type Settings = Tables["settings"]["Row"];
+export type DictionaryEntry = Tables["dictionary_entries"]["Row"];
 
 // --- Composite / view models ----------------------------------------------
 export interface StudentWithAccount extends Student {

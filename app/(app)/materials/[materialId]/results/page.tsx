@@ -11,6 +11,7 @@ import { getMaterial } from "@/services/materials/materials.service";
 import {
   GRADABLE_TYPES,
   getMaterialItemsFlat,
+  getMaterialStudentGroups,
   listMaterialStudents,
 } from "@/services/materials/results.service";
 import { getSubmissionsByStudentItem } from "@/services/materials/submissions.service";
@@ -32,9 +33,10 @@ export default async function MaterialResultsPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const [flat, students] = await Promise.all([
+  const [flat, students, studentGroups] = await Promise.all([
     getMaterialItemsFlat(db, materialId),
     listMaterialStudents(db, materialId),
+    getMaterialStudentGroups(db, materialId),
   ]);
   const gradable = flat.filter((f) => GRADABLE_TYPES.includes(f.item.type));
   const subs = await getSubmissionsByStudentItem(db, gradable.map((f) => f.item.id));
@@ -79,6 +81,7 @@ export default async function MaterialResultsPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>Ученик</TableHead>
+                  <TableHead>Группа</TableHead>
                   <TableHead>Пройдено</TableHead>
                   <TableHead>Средний балл</TableHead>
                 </TableRow>
@@ -91,6 +94,7 @@ export default async function MaterialResultsPage({
                         {r.student.full_name}
                       </Link>
                     </TableCell>
+                    <TableCell className="text-muted-foreground">{(studentGroups[r.student.id] ?? []).join(", ") || "—"}</TableCell>
                     <TableCell>{r.answered} / {gradable.length}</TableCell>
                     <TableCell>{r.avg === null ? "—" : `${r.avg}%`}</TableCell>
                   </TableRow>

@@ -21,6 +21,33 @@ export type HomeworkType = "FILE" | "QUIZ";
 export interface Database {
   public: {
     Tables: {
+      dictionary_entries: {
+        Row: {
+          id: string;
+          term: string;
+          translation: string;
+          pinyin: string | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          term: string;
+          translation: string;
+          pinyin?: string | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          term?: string;
+          translation?: string;
+          pinyin?: string | null;
+          note?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       users: {
         Row: {
           id: string;
