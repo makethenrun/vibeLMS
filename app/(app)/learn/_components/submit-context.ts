@@ -20,3 +20,6 @@ const serverSubmit: SubmitItemFn = async (itemId, answer) => {
 export const localSubmit: SubmitItemFn = async (_itemId, answer, content) => checkItem(content, answer);
 
 export const SubmitContext = createContext<SubmitItemFn>(serverSubmit);
+
+/** True when a teacher is viewing/previewing (no timer, answers shown read-only). */
+export const ReviewContext = createContext(false);

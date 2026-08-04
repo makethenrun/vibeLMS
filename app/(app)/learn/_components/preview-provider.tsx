@@ -2,9 +2,13 @@
 
 import type { ReactNode } from "react";
 
-import { SubmitContext, localSubmit } from "./submit-context";
+import { ReviewContext, SubmitContext, localSubmit } from "./submit-context";
 
-/** Wraps the player so exercises score locally without saving (teacher preview). */
+/** Wraps the player for teacher preview/review: score locally (no save), no timer. */
 export function PreviewProvider({ children }: { children: ReactNode }) {
-  return <SubmitContext.Provider value={localSubmit}>{children}</SubmitContext.Provider>;
+  return (
+    <SubmitContext.Provider value={localSubmit}>
+      <ReviewContext.Provider value={true}>{children}</ReviewContext.Provider>
+    </SubmitContext.Provider>
+  );
 }

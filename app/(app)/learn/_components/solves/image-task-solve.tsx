@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ImageTaskContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { Bank, DropSlot, FillDnd } from "../dnd/fill";
+import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
@@ -38,15 +38,13 @@ interface Props {
   itemId: string;
   content: ImageTaskContent;
   initialScore: number | null | undefined;
+  initialAnswer?: { selected?: number[]; pairs?: Record<string, string> };
 }
 
-export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
+export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }: Props) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const prompt = content.prompt ? <p className="text-sm">{content.prompt}</p> : null;
 
-  const [selected, setSelected] = useState<number[]>([]);
-  const [pairAns, setPairAns] = useState<Record<string, string>>({});
-  const [dragValue, setDragValue] = useState<Record<string, string>>({});
   const selectOptions = useMemo(() => shuffle([...content.pairs.map((p) => p.word), ...content.distractors]), [content.pairs, content.distractors]);
 
   // DRAG_WORD_TO_IMAGE: word chips → image slots.
@@ -56,6 +54,28 @@ export function ImageTaskSolve({ itemId, content, initialScore }: Props) {
     () => shuffle(content.pairs.map((p, i) => ({ id: `img${i}`, label: p.word, node: emojiImg(p.imageUrl) }))),
     [content.pairs],
   );
+
+  const [selected, setSelected] = useState<number[]>(initialAnswer?.selected ?? []);
+  const [pairAns, setPairAns] = useState<Record<string, string>>(initialAnswer?.pairs ?? {});
+  const [dragValue, setDragValue] = useState<Record<string, string>>(() => {
+    const ans = initialAnswer?.pairs;
+    if (!ans) return {};
+    if (content.variant === "DRAG_WORD_TO_IMAGE") {
+      return assignByLabel(content.pairs.map((_, i) => ({ slotId: `p${i}`, label: ans[String(i)] ?? "" })), wordChips);
+    }
+    if (content.variant === "DRAG_IMAGE_TO_WORD") {
+      const value: Record<string, string> = {};
+      const usedSlots = new Set<string>();
+      for (let j = 0; j < content.pairs.length; j++) {
+        const word = ans[String(j)];
+        if (!word) continue;
+        const k = content.pairs.findIndex((p, idx) => !usedSlots.has(`l${idx}`) && p.word === word);
+        if (k !== -1) { value[`l${k}`] = `img${j}`; usedSlots.add(`l${k}`); }
+      }
+      return value;
+    }
+    return {};
+  });
 
   async function onSubmit() {
     if (content.variant === "SELECT_IMAGES") {

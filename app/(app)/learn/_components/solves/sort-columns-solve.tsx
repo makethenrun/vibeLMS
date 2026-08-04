@@ -22,14 +22,16 @@ export function SortColumnsSolve({
   itemId,
   content,
   initialScore,
+  initialAnswer,
 }: {
   itemId: string;
   content: SentenceTaskContent;
   initialScore: number | null | undefined;
+  initialAnswer?: { assign?: Record<string, number> };
 }) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const items = useMemo(() => shuffle(content.columns.flatMap((c) => c.items)), [content.columns]);
-  const [value, setValue] = useState<Record<string, number>>({});
+  const [value, setValue] = useState<Record<string, number>>(initialAnswer?.assign ?? {});
 
   async function onSubmit() {
     await submit({ assign: value } as unknown as Json, content);

@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getSettings } from "@/services/settings/settings.service";
 import { AddToDictionary } from "./dictionary/add-to-dictionary";
+import { PinyinBar } from "@/components/editor/pinyin-bar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -17,7 +18,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       logoUrl={settings.logo_url}
     >
       {children}
-      {user.role === "TUTOR" ? <AddToDictionary /> : null}
+      <AddToDictionary />
+      <PinyinBar />
     </AppShell>
   );
 }
