@@ -30,6 +30,16 @@ const FONTS: { label: string; value: string | null }[] = [
   { label: "SimSun 宋体", value: "SimSun, 宋体, serif" },
 ];
 
+// ü and the four Pinyin tone marks (combining diacritics that attach to the
+// preceding vowel). Insert a vowel, place the cursor after it, then click a tone.
+const PINYIN: { label: string; char: string }[] = [
+  { label: "ü", char: "ü" },
+  { label: "◌̄ (1-й тон)", char: "̄" },
+  { label: "◌́ (2-й тон)", char: "́" },
+  { label: "◌̌ (3-й тон)", char: "̌" },
+  { label: "◌̀ (4-й тон)", char: "̀" },
+];
+
 interface UploadResponse {
   url?: string;
   error?: string;
@@ -115,6 +125,23 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
               }}
             >
               {font.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="sm" variant="ghost" className="h-8 px-2" aria-label="Пиньинь">
+            拼音
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {PINYIN.map((p) => (
+            <DropdownMenuItem
+              key={p.label}
+              onSelect={() => editor.chain().focus().insertContent(p.char).run()}
+            >
+              {p.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

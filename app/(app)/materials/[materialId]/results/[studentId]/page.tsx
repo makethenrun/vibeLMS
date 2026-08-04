@@ -6,21 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
+import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
 import { GRADABLE_TYPES, getMaterialItemsFlat } from "@/services/materials/results.service";
 import { getSubmissionsForItems } from "@/services/materials/submissions.service";
-import type { FreeContent } from "@/lib/validators";
-import type { MaterialItemType } from "@/types";
-import { ScoreBadge } from "@/app/(app)/learn/_components/score-badge";
+import { Workspace } from "../../../_components/workspace";
 import { Breadcrumbs } from "../../../_components/breadcrumbs";
-import { ReactionPicker } from "../reaction-picker";
+import { StudentSectionTree } from "@/app/(app)/learn/_components/student-section-tree";
 
 export const metadata: Metadata = { title: "Результаты ученика" };
-
-const TYPE_LABELS: Record<MaterialItemType, string> = {
-  INFO: "Обучающая информация", QUIZ: "Тест", GAPS: "Заполнить пропуски", FREE: "Свободный ответ",
-  MATCH: "Сопоставление пар", AUDIO: "Аудио", VIDEO: "Видео", IMAGE: "Изображение",
-  CAROUSEL: "Карусель", LINK: "Ссылка", IMAGE_TASK: "Упражнение с изображениями", SENTENCE_TASK: "Работа с предложениями",
-};
 
 export default async function StudentResultPage({
   params,
@@ -36,8 +29,27 @@ export default async function StudentResultPage({
   const { data: student } = await db.from("students").select("id, full_name").eq("id", studentId).maybeSingle();
   if (!student) notFound();
 
-  const flat = (await getMaterialItemsFlat(db, materialId)).filter((f) => GRADABLE_TYPES.includes(f.item.type));
-  const subs = await getSubmissionsForItems(db, studentId, flat.map((f) => f.item.id));
+  const [sections, flatAll] = await Promise.all([
+    getSectionsWithLessons(db, materialId),
+    getMaterialItemsFlat(db, materialId),
+  ]);
+  const gradable = flatAll.filter((f) => GRADABLE_TYPES.includes(f.item.type));
+  const subs = await getSubmissionsForItems(db, studentId, gradable.map((f) => f.item.id));
+
+  const answered = gradable.filter((f) => subs[f.item.id]).length;
+  const scores = gradable.map((f) => subs[f.item.id]).filter((s) => s && s.score !== null).map((s) => Number(s!.score));
+  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const overall = gradable.length ? Math.round((answered / gradable.length) * 100) : 0;
+
+  const byLesson = new Map<string, { total: number; done: number }>();
+  for (const f of gradable) {
+    const e = byLesson.get(f.lessonTitle) ?? { total: 0, done: 0 };
+    e.total += 1;
+    if (subs[f.item.id]) e.done += 1;
+    byLesson.set(f.lessonTitle, e);
+  }
+
+  const base = `/materials/${materialId}/results/${studentId}`;
 
   return (
     <div className="space-y-6">
@@ -46,42 +58,45 @@ export default async function StudentResultPage({
           { label: "Материалы", href: "/materials" },
           { label: material.title, href: `/materials/${material.id}` },
           { label: "Результаты", href: `/materials/${material.id}/results` },
-          { label: student.full_name, href: `/materials/${material.id}/results/${student.id}` },
+          { label: student.full_name, href: base },
         ]}
       />
-      <PageHeader title={student.full_name} description={`Материал «${material.title}» — ответы и результаты.`} />
+      <PageHeader title={student.full_name} description={`Материал «${material.title}» — прогресс и ответы.`} />
 
-      {flat.length === 0 ? (
-        <p className="text-sm text-muted-foreground">В материале нет упражнений.</p>
-      ) : (
-        <div className="space-y-3">
-          {flat.map(({ item, lessonTitle, moduleTitle }) => {
-            const sub = subs[item.id];
-            const answer = (sub?.answer ?? {}) as { text?: string };
-            return (
-              <Card key={item.id}>
-                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 border-b py-2">
-                  <div className="min-w-0">
-                    <CardTitle className="truncate text-sm">{item.title || TYPE_LABELS[item.type]}</CardTitle>
-                    <p className="text-xs text-muted-foreground">{lessonTitle} / {moduleTitle}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {sub ? <ScoreBadge score={sub.score} /> : <span className="text-xs text-muted-foreground">не пройдено</span>}
-                    {sub ? (
-                      <ReactionPicker studentId={student.id} itemId={item.id} materialId={material.id} current={sub.reaction} />
-                    ) : null}
-                  </div>
-                </CardHeader>
-                {item.type === "FREE" && answer.text ? (
-                  <CardContent className="pt-3">
-                    <p className="whitespace-pre-wrap rounded-md bg-muted/40 p-2 text-sm">{answer.text}</p>
-                  </CardContent>
-                ) : null}
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      <Workspace tree={<StudentSectionTree sections={sections} base={base} />} treeTitle="Разделы и уроки">
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="text-base">Прогресс ученика</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-6">
+              <div>
+                <p className="text-2xl font-semibold">{overall}%</p>
+                <p className="text-xs text-muted-foreground">пройдено ({answered} из {gradable.length})</p>
+              </div>
+              <div>
+                <p className="text-2xl font-semibold">{avg === null ? "—" : `${avg}%`}</p>
+                <p className="text-xs text-muted-foreground">средний балл</p>
+              </div>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${overall}%` }} />
+            </div>
+            {byLesson.size > 0 ? (
+              <ul className="space-y-1 text-sm">
+                {[...byLesson.entries()].map(([lesson, e]) => (
+                  <li key={lesson} className="flex items-center justify-between">
+                    <span className="truncate">{lesson}</span>
+                    <span className="text-muted-foreground">{e.done} / {e.total}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Откройте урок в списке справа, чтобы увидеть ответы.</p>
+            )}
+          </CardContent>
+        </Card>
+      </Workspace>
     </div>
   );
 }

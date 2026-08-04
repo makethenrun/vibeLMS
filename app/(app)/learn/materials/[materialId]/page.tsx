@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Play } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireStudent } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
@@ -49,9 +52,29 @@ export default async function StudentMaterialPage({
     byLesson.set(f.lessonTitle, e);
   }
 
+  // Where to continue: first not-yet-done exercise, else the last one.
+  const nextItem = gradable.find((f) => !subs[f.item.id]) ?? gradable[gradable.length - 1];
+  const continueHref = nextItem && nextItem.lessonId
+    ? `/learn/lessons/${nextItem.lessonId}?m=${nextItem.moduleId}#item-${nextItem.item.id}`
+    : null;
+  const allDone = answered === gradable.length && gradable.length > 0;
+
   return (
     <div className="space-y-6">
-      <PageHeader title={material.title} description={material.description ?? "Ваш прогресс и уроки материала."} />
+      <PageHeader
+        title={material.title}
+        description={material.description ?? "Ваш прогресс и уроки материала."}
+        actions={
+          continueHref ? (
+            <Button asChild>
+              <Link href={continueHref}>
+                <Play className="h-4 w-4" />
+                {allDone ? "Повторить" : answered > 0 ? "Продолжить" : "Начать"}
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
       <Workspace tree={<StudentSectionTree sections={sections} base="/learn" />} treeTitle="Разделы и уроки">
         <Card>
           <CardHeader className="py-3">

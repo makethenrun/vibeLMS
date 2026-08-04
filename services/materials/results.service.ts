@@ -8,7 +8,9 @@ export const GRADABLE_TYPES: MaterialItemType[] = ["QUIZ", "GAPS", "IMAGE_TASK",
 
 export interface MaterialItemFlat {
   item: ItemRow;
+  lessonId: string;
   lessonTitle: string;
+  moduleId: string;
   moduleTitle: string;
 }
 
@@ -50,7 +52,9 @@ export async function getMaterialItemsFlat(db: Db, materialId: string): Promise<
     const mod = moduleInfo.get(item.module_id);
     return {
       item,
+      moduleId: item.module_id,
       moduleTitle: mod?.title ?? "—",
+      lessonId: mod?.lessonId ?? "",
       lessonTitle: mod ? lessonTitle.get(mod.lessonId) ?? "—" : "—",
     };
   });

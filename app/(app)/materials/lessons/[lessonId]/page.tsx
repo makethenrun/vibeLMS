@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Eye } from "lucide-react";
+import { BarChart3, Eye } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -48,12 +48,20 @@ export default async function LessonPage({
         title={ctx.title}
         description="Один модуль на странице; переключайтесь в списке справа."
         actions={
-          <Button asChild variant="outline">
-            <Link href={`/materials/lessons/${lessonId}/preview`}>
-              <Eye className="h-4 w-4" />
-              Просмотр как ученик
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline">
+              <Link href={`/materials/${ctx.materialId}/results`}>
+                <BarChart3 className="h-4 w-4" />
+                Результаты
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/materials/lessons/${lessonId}/preview`}>
+                <Eye className="h-4 w-4" />
+                Просмотр как ученик
+              </Link>
+            </Button>
+          </>
         }
       />
       <Workspace
