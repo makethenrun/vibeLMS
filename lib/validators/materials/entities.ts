@@ -20,5 +20,6 @@ export const itemMetaSchema = z.object({
   title: z.string().trim().max(160, "Максимум 160 символов").optional().or(z.literal("")),
   note: z.string().trim().max(2000, "Максимум 2000 символов").optional().or(z.literal("")),
   noteHidden: z.boolean().default(false),
+  retryDisabled: z.boolean().default(false),
 });
 export type ItemMetaInput = z.infer<typeof itemMetaSchema>;

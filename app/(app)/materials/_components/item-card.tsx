@@ -46,6 +46,8 @@ import { QuizEditor } from "./item-editors/quiz-editor";
 import { SentenceTaskEditor } from "./item-editors/sentence-task-editor";
 import { VideoEditor } from "./item-editors/video-editor";
 
+const SOLVABLE_TYPES: MaterialItemType[] = ["QUIZ", "GAPS", "FREE", "MATCH", "IMAGE_TASK", "SENTENCE_TASK"];
+
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Обучающая информация",
   QUIZ: "Тест",
@@ -84,6 +86,7 @@ export function ItemCard({
   const [title, setTitle] = useState(item.title ?? "");
   const [note, setNote] = useState(item.note ?? "");
   const [noteHidden, setNoteHidden] = useState(item.note_hidden);
+  const [retryDisabled, setRetryDisabled] = useState(item.retry_disabled);
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
 
@@ -97,11 +100,12 @@ export function ItemCard({
     }
   };
 
-  async function saveMeta(next?: { title?: string; note?: string; noteHidden?: boolean }) {
+  async function saveMeta(next?: { title?: string; note?: string; noteHidden?: boolean; retryDisabled?: boolean }) {
     const result = await updateItemMetaAction(item.id, {
       title: next?.title ?? title,
       note: next?.note ?? note,
       noteHidden: next?.noteHidden ?? noteHidden,
+      retryDisabled: next?.retryDisabled ?? retryDisabled,
     });
     if (result.success) router.refresh();
     else toast.error(result.error);
@@ -198,7 +202,7 @@ export function ItemCard({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setNoteOpen((o) => !o)}
-            aria-label="Заметка">
+            aria-label="Заметка" title={note || "Заметка"}>
             <StickyNote className={note ? "h-4 w-4 text-primary" : "h-4 w-4"} />
           </Button>
           <Button size="icon" variant="ghost" className="h-8 w-8" disabled={!canUp}
@@ -226,6 +230,20 @@ export function ItemCard({
 
         {pinnedNames.length > 0 ? (
           <p className="text-xs text-primary">Закреплено: {pinnedNames.join(", ")}</p>
+        ) : null}
+
+        {SOLVABLE_TYPES.includes(item.type) ? (
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={retryDisabled}
+              onChange={(e) => {
+                setRetryDisabled(e.target.checked);
+                void saveMeta({ retryDisabled: e.target.checked });
+              }}
+            />
+            Запретить повторное прохождение
+          </label>
         ) : null}
 
         {noteOpen ? (

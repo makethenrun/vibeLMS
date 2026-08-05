@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
-import type { Group } from "@/types";
+import type { Group, MaterialRow } from "@/types";
 
 export async function listMaterialGroupIds(db: Db, materialId: string): Promise<string[]> {
   const { data, error } = await db
@@ -17,6 +17,25 @@ export async function getAccessibleGroups(db: Db, materialId: string): Promise<G
   const ids = await listMaterialGroupIds(db, materialId);
   if (ids.length === 0) return [];
   const { data, error } = await db.from("groups").select("*").in("id", ids).order("name");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+/** Materials that a given group has access to (for the group detail page). */
+export async function listGroupMaterials(db: Db, groupId: string): Promise<MaterialRow[]> {
+  const { data: links, error: linkErr } = await db
+    .from("material_groups")
+    .select("material_id")
+    .eq("group_id", groupId);
+  if (linkErr) throw new Error(linkErr.message);
+  const ids = [...new Set((links ?? []).map((r) => r.material_id))];
+  if (ids.length === 0) return [];
+
+  const { data, error } = await db
+    .from("materials")
+    .select("*")
+    .in("id", ids)
+    .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return data ?? [];
 }

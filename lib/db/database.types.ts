@@ -321,6 +321,7 @@ export interface Database {
           title: string | null;
           note: string | null;
           note_hidden: boolean;
+          retry_disabled: boolean;
           content: Json;
           created_at: string;
           updated_at: string;
@@ -333,6 +334,7 @@ export interface Database {
           title?: string | null;
           note?: string | null;
           note_hidden?: boolean;
+          retry_disabled?: boolean;
           content?: Json;
           created_at?: string;
           updated_at?: string;
@@ -345,6 +347,7 @@ export interface Database {
           title?: string | null;
           note?: string | null;
           note_hidden?: boolean;
+          retry_disabled?: boolean;
           content?: Json;
           created_at?: string;
           updated_at?: string;
