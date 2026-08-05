@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { useContext, useEffect, useState } from "react";
+import { ExternalLink, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import { GapsDragSolve } from "./solves/gaps-drag-solve";
 import { ImageTaskSolve } from "./solves/image-task-solve";
 import { MatchPairsSolve } from "./solves/match-pairs-solve";
 import { SentenceSolve } from "./solves/sentence-solve";
+import { ReviewContext } from "./submit-context";
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Обучающая информация",
@@ -69,8 +71,17 @@ export function StudentItem({
   submission?: ItemSubmissionRow;
   reactionPicker?: import("react").ReactNode;
 }) {
-  const initialScore = submission ? submission.score : undefined;
-  const savedAnswer = submission?.answer as unknown as SavedAnswer | undefined;
+  const review = useContext(ReviewContext);
+  const submittedAt = submission?.submitted_at;
+  const [cleared, setCleared] = useState(false);
+  // A new saved submission (student re-took) clears the local retry state.
+  useEffect(() => setCleared(false), [submittedAt]);
+
+  const initialScore = cleared ? undefined : submission ? submission.score : undefined;
+  const savedAnswer = cleared ? undefined : (submission?.answer as unknown as SavedAnswer | undefined);
+  const canRetry = !review && !item.retry_disabled && submission !== undefined && !cleared;
+  // Remount the solve on retake / new submission so its internal state resets.
+  const solveKey = `${submittedAt ?? "new"}-${cleared ? "retry" : "done"}`;
 
   function render() {
     switch (item.type) {
@@ -113,7 +124,7 @@ export function StudentItem({
         return <MatchPairsSolve itemId={item.id} content={c} pairs={c.pairs} initialScore={initialScore} initialAnswer={savedAnswer} />;
       }
       case "FREE": {
-        const answer = (submission?.answer ?? {}) as { text?: string };
+        const answer = (cleared ? {} : submission?.answer ?? {}) as { text?: string };
         return (
           <FreeSolve
             itemId={item.id}
@@ -139,7 +150,15 @@ export function StudentItem({
             <span className="text-xl" title="Реакция преподавателя">{submission.reaction}</span>
           ) : null)}
       </CardHeader>
-      <CardContent className="pt-4">{render()}</CardContent>
+      <CardContent className="space-y-3 pt-4">
+        <div key={solveKey}>{render()}</div>
+        {canRetry ? (
+          <Button size="sm" variant="outline" onClick={() => setCleared(true)}>
+            <RotateCcw className="h-4 w-4" />
+            Пройти заново
+          </Button>
+        ) : null}
+      </CardContent>
     </Card>
   );
 }

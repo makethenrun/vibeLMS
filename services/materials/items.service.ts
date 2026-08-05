@@ -54,6 +54,7 @@ export async function updateItemMeta(db: Db, id: string, meta: ItemMetaInput): P
       title: nullable(meta.title),
       note: nullable(meta.note),
       note_hidden: meta.noteHidden,
+      retry_disabled: meta.retryDisabled,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
