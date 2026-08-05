@@ -66,11 +66,11 @@ export function TextStyleBar() {
   return (
     <div className="fixed bottom-4 right-[4.75rem] z-40 flex flex-col items-end gap-2">
       {open ? (
-        <div className="flex items-center gap-1 rounded-full border bg-background p-1 shadow-lg" onMouseDown={noBlur}>
-          <Button size="icon" variant="ghost" className="h-9 w-9" title="Жирный" onClick={toggleBold}>
+        <div className="flex items-center gap-1 rounded-full border bg-background p-1 shadow-lg">
+          <Button size="icon" variant="ghost" className="h-9 w-9" title="Жирный" onMouseDown={noBlur} onClick={toggleBold}>
             <Bold className="h-4 w-4" />
           </Button>
-          <Button size="icon" variant="ghost" className="h-9 w-9" title="Курсив" onClick={toggleItalic}>
+          <Button size="icon" variant="ghost" className="h-9 w-9" title="Курсив" onMouseDown={noBlur} onClick={toggleItalic}>
             <Italic className="h-4 w-4" />
           </Button>
           <select
