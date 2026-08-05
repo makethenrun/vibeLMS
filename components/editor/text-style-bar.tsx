@@ -8,10 +8,9 @@ import { Button } from "@/components/ui/button";
 type Editable = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
 
 const FONTS: { label: string; value: string }[] = [
-  { label: "Шрифт", value: "" },
-  { label: "С засечками", value: "Georgia, 'Times New Roman', serif" },
-  { label: "Моноширинный", value: "'Courier New', monospace" },
-  { label: "Рукописный 楷体", value: "'Kaiti SC', 'KaiTi', STKaiti, serif" },
+  { label: "Стандартный", value: "" },
+  { label: "Serif (Georgia)", value: "Georgia, serif" },
+  { label: "SimSun 宋体", value: "SimSun, '宋体', serif" },
 ];
 
 const SIZES: { label: string; value: string }[] = [
