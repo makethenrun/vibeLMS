@@ -4,7 +4,6 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getSettings } from "@/services/settings/settings.service";
 import { AddToDictionary } from "./dictionary/add-to-dictionary";
 import { PinyinBar } from "@/components/editor/pinyin-bar";
-import { TextStyleBar } from "@/components/editor/text-style-bar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -21,7 +20,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {children}
       <AddToDictionary />
       <PinyinBar />
-      <TextStyleBar />
     </AppShell>
   );
 }

@@ -32,6 +32,7 @@ import type {
   VideoContent,
 } from "@/lib/validators";
 import type { Group, ItemRow, MaterialItemType } from "@/types";
+import { ITEM_FONTS, ITEM_SIZES, itemTextStyle } from "@/lib/materials/text-style";
 import { deleteItemAction, moveItemAction, setItemPinsAction, updateItemAction, updateItemMetaAction } from "../actions";
 import { AudioEditor } from "./item-editors/audio-editor";
 import { CarouselEditor } from "./item-editors/carousel-editor";
@@ -87,6 +88,8 @@ export function ItemCard({
   const [note, setNote] = useState(item.note ?? "");
   const [noteHidden, setNoteHidden] = useState(item.note_hidden);
   const [retryDisabled, setRetryDisabled] = useState(item.retry_disabled);
+  const [fontFamily, setFontFamily] = useState<string | null>(item.font_family);
+  const [fontSize, setFontSize] = useState<string | null>(item.font_size);
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
 
@@ -100,12 +103,21 @@ export function ItemCard({
     }
   };
 
-  async function saveMeta(next?: { title?: string; note?: string; noteHidden?: boolean; retryDisabled?: boolean }) {
+  async function saveMeta(next?: {
+    title?: string;
+    note?: string;
+    noteHidden?: boolean;
+    retryDisabled?: boolean;
+    fontFamily?: string | null;
+    fontSize?: string | null;
+  }) {
     const result = await updateItemMetaAction(item.id, {
       title: next?.title ?? title,
       note: next?.note ?? note,
       noteHidden: next?.noteHidden ?? noteHidden,
       retryDisabled: next?.retryDisabled ?? retryDisabled,
+      fontFamily: next?.fontFamily !== undefined ? next.fontFamily : fontFamily,
+      fontSize: next?.fontSize !== undefined ? next.fontSize : fontSize,
     });
     if (result.success) router.refresh();
     else toast.error(result.error);
@@ -246,6 +258,36 @@ export function ItemCard({
           </label>
         ) : null}
 
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>Оформление:</span>
+          <select
+            className="h-7 rounded-md border bg-background px-1"
+            value={fontFamily ?? ""}
+            onChange={(e) => {
+              const v = e.target.value || null;
+              setFontFamily(v);
+              void saveMeta({ fontFamily: v });
+            }}
+          >
+            {ITEM_FONTS.map((f) => (
+              <option key={f.label} value={f.value ?? ""}>{f.label}</option>
+            ))}
+          </select>
+          <select
+            className="h-7 rounded-md border bg-background px-1"
+            value={fontSize ?? ""}
+            onChange={(e) => {
+              const v = e.target.value || null;
+              setFontSize(v);
+              void saveMeta({ fontSize: v });
+            }}
+          >
+            {ITEM_SIZES.map((s) => (
+              <option key={s.label} value={s.value ?? ""}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+
         {noteOpen ? (
           <div className="space-y-2 rounded-md bg-muted/40 p-2">
             <Textarea
@@ -273,7 +315,7 @@ export function ItemCard({
           </div>
         ) : null}
       </CardHeader>
-      <CardContent className="pt-4">{renderEditor()}</CardContent>
+      <CardContent className="pt-4" style={itemTextStyle(fontFamily, fontSize)}>{renderEditor()}</CardContent>
     </Card>
   );
 }
