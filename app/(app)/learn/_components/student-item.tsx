@@ -23,6 +23,8 @@ import type {
   VideoContent,
 } from "@/lib/validators";
 import type { ItemRow, ItemSubmissionRow, MaterialItemType } from "@/types";
+import { itemTextStyle } from "@/lib/materials/text-style";
+import { DrawableBlock } from "./drawable-block";
 import { FreeSolve } from "./free-solve";
 import { GapsSolve } from "./gaps-solve";
 import { ImageAnnotate } from "./image-annotate";
@@ -151,7 +153,9 @@ export function StudentItem({
           ) : null)}
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
-        <div key={solveKey}>{render()}</div>
+        <DrawableBlock>
+          <div key={solveKey} style={itemTextStyle(item.font_family, item.font_size)}>{render()}</div>
+        </DrawableBlock>
         {canRetry ? (
           <Button size="sm" variant="outline" onClick={() => setCleared(true)}>
             <RotateCcw className="h-4 w-4" />
