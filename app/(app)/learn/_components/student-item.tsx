@@ -23,6 +23,7 @@ import type {
   VideoContent,
 } from "@/lib/validators";
 import type { ItemRow, ItemSubmissionRow, MaterialItemType } from "@/types";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { itemTextStyle } from "@/lib/materials/text-style";
 import { DrawableBlock } from "./drawable-block";
 import { FreeSolve } from "./free-solve";
@@ -145,7 +146,7 @@ export function StudentItem({
     <Card id={`item-${item.id}`} className="scroll-mt-20">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 border-b py-2">
         <CardTitle className="text-sm font-medium">
-          {item.title || TYPE_LABELS[item.type]}
+          {item.title ? <FormattedText text={item.title} /> : TYPE_LABELS[item.type]}
         </CardTitle>
         {reactionPicker ??
           (submission?.reaction ? (

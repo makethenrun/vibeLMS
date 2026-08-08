@@ -10,6 +10,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import { FormattedText } from "@/components/shared/formatted-text";
 import { cn } from "@/lib/utils";
 
 export interface Chip {
@@ -33,7 +34,7 @@ function SortableChip({ chip, disabled, className }: { chip: Chip; disabled: boo
       {...attributes}
       {...listeners}
     >
-      {chip.label}
+      {chip.node ?? <FormattedText text={chip.label} />}
     </span>
   );
 }
