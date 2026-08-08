@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { Eraser, Pencil } from "lucide-react";
+import { Eraser, Pen, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function DrawableBlock({ children }: { children: ReactNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [active, setActive] = useState(false);
+  const [tool, setTool] = useState<"pen" | "eraser">("pen");
 
   function fit() {
     const c = canvasRef.current;
@@ -52,10 +53,16 @@ export function DrawableBlock({ children }: { children: ReactNode }) {
     const { x, y } = point(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineWidth = 24;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 3;
+    }
   }
   function move(e: ReactPointerEvent) {
     if (!drawing.current) return;
@@ -98,16 +105,38 @@ export function DrawableBlock({ children }: { children: ReactNode }) {
           <Pencil className="h-3.5 w-3.5" />
         </Button>
         {active ? (
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-7 w-7 opacity-70 hover:opacity-100"
-            title="Стереть рисунок"
-            aria-label="Стереть"
-            onClick={clear}
-          >
-            <Eraser className="h-3.5 w-3.5" />
-          </Button>
+          <>
+            <Button
+              size="icon"
+              variant={tool === "pen" ? "default" : "outline"}
+              className="h-7 w-7 opacity-70 hover:opacity-100"
+              title="Карандаш"
+              aria-label="Карандаш"
+              onClick={() => setTool("pen")}
+            >
+              <Pen className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant={tool === "eraser" ? "default" : "outline"}
+              className="h-7 w-7 opacity-70 hover:opacity-100"
+              title="Ластик"
+              aria-label="Ластик"
+              onClick={() => setTool("eraser")}
+            >
+              <Eraser className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-7 w-7 opacity-70 hover:opacity-100"
+              title="Очистить всё"
+              aria-label="Очистить"
+              onClick={clear}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
         ) : null}
       </div>
     </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { listMaterials } from "@/services/materials/materials.service";
-import { MaterialCard } from "./material-card";
+import { MaterialsBrowser } from "./materials-browser";
 import { MaterialFormDialog } from "./material-form-dialog";
 
 export const metadata: Metadata = { title: "Материалы" };
@@ -41,11 +41,7 @@ export default async function MaterialsPage() {
           action={<MaterialFormDialog trigger={addButton} />}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {materials.map((material) => (
-            <MaterialCard key={material.id} material={material} />
-          ))}
-        </div>
+        <MaterialsBrowser materials={materials} />
       )}
     </div>
   );

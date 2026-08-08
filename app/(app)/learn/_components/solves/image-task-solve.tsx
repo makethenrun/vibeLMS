@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import {
   Select,
@@ -43,7 +44,7 @@ interface Props {
 
 export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }: Props) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
-  const prompt = content.prompt ? <p className="text-sm">{content.prompt}</p> : null;
+  const prompt = content.prompt ? <p className="text-sm"><FormattedText text={content.prompt} /></p> : null;
 
   const selectOptions = useMemo(() => shuffle([...content.pairs.map((p) => p.word), ...content.distractors]), [content.pairs, content.distractors]);
 

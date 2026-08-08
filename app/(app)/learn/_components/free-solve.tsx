@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Textarea } from "@/components/ui/textarea";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { FreeContent } from "@/lib/validators";
 import type { Json } from "@/types";
@@ -32,7 +33,7 @@ export function FreeSolve({ itemId, content, initialAnswer, initialScore }: Free
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm">{content.prompt}</p>
+        <p className="text-sm"><FormattedText text={content.prompt} /></p>
         <ScoreBadge score={score} />
       </div>
       <Textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Ваш ответ" disabled={locked} />

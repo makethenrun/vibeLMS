@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import {
   Select,
@@ -56,7 +57,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
 
       <p className="flex flex-wrap items-center gap-1 text-sm leading-8">
         {tokens.map((tok, i) => {
-          if ("text" in tok) return <Fragment key={i}>{tok.text}</Fragment>;
+          if ("text" in tok) return <Fragment key={i}><FormattedText text={tok.text} /></Fragment>;
           const blank = blankById.get(tok.blank);
           const key = String(tok.blank);
           if (content.mode === "SELECT" && blank?.options) {

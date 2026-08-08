@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Eraser, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { cn } from "@/lib/utils";
 
 export function ImageAnnotate({
@@ -86,7 +87,7 @@ export function ImageAnnotate({
           onPointerLeave={stop}
         />
       </div>
-      {caption ? <p className="text-sm text-muted-foreground">{caption}</p> : null}
+      {caption ? <p className="text-sm text-muted-foreground"><FormattedText text={caption} /></p> : null}
       <div className="flex gap-2">
         <Button size="sm" variant={draw ? "default" : "outline"} onClick={() => setDraw((d) => !d)}>
           <Pencil className="h-4 w-4" />
