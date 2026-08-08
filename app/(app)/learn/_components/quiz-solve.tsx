@@ -4,6 +4,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { cn } from "@/lib/utils";
 import type { QuizContent } from "@/lib/validators";
@@ -87,7 +88,7 @@ export function QuizSolve({ itemId, content, initialScore, initialAnswer }: Quiz
         <div className={cn("space-y-4", showTimer && !started && "pointer-events-none blur-sm")}>
           {content.questions.map((q, qi) => (
             <div key={qi} className="space-y-2">
-              <p className="text-sm font-medium">{qi + 1}. {q.question}</p>
+              <p className="text-sm font-medium">{qi + 1}. <FormattedText text={q.question} /></p>
               {q.options.length > 0 ? (
                 <div className="space-y-1">
                   {q.options.map((opt) => (

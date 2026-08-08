@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 
+import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { GapsContent } from "@/lib/validators";
 import type { Json } from "@/types";
@@ -65,7 +66,7 @@ export function GapsDragSolve({
         <p className="flex flex-wrap items-center gap-x-1 gap-y-2 text-base leading-9">
           {tokens.map((tok, i) =>
             "text" in tok ? (
-              <Fragment key={i}>{tok.text}</Fragment>
+              <Fragment key={i}><FormattedText text={tok.text} /></Fragment>
             ) : (
               <DropSlot
                 key={i}

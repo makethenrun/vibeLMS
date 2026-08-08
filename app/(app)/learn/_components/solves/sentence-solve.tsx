@@ -1,5 +1,6 @@
 "use client";
 
+import { FormattedText } from "@/components/shared/formatted-text";
 import type { SentenceTaskContent } from "@/lib/validators";
 import { MatchPairsSolve } from "./match-pairs-solve";
 import { OrderSolve } from "./order-solve";
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export function SentenceSolve({ itemId, content, initialScore, initialAnswer }: Props) {
-  const prompt = content.prompt ? <p className="text-sm">{content.prompt}</p> : null;
+  const prompt = content.prompt ? <p className="text-sm"><FormattedText text={content.prompt} /></p> : null;
 
   switch (content.variant) {
     case "WORD_ORDER":
