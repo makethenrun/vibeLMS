@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
@@ -65,7 +66,7 @@ export function MatchPairsSolve({
           <div className="space-y-4">
             {pairs.map((p, i) => (
               <DropSlot key={i} id={`l${i}`} className={`flex items-center justify-center ${FRAME}`}>
-                <span>{p.left}</span>
+                <span><FormattedText text={p.left} /></span>
               </DropSlot>
             ))}
           </div>

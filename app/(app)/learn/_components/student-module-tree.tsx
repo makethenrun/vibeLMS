@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FormattedText } from "@/components/shared/formatted-text";
 import { cn } from "@/lib/utils";
 import type { MaterialItemType, ModuleWithItems } from "@/types";
 
@@ -68,7 +69,7 @@ export function StudentModuleTree({
                         href={`${lessonHref}?m=${module.id}#item-${item.id}`}
                         className="block truncate rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
-                        {item.title || ITEM_LABELS[item.type]}
+                        {item.title ? <FormattedText text={item.title} /> : ITEM_LABELS[item.type]}
                       </Link>
                     </li>
                   ))

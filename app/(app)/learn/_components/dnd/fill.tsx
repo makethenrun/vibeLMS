@@ -12,6 +12,7 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
+import { FormattedText } from "@/components/shared/formatted-text";
 import { cn } from "@/lib/utils";
 import type { Chip } from "./sortable-chips";
 
@@ -56,7 +57,7 @@ export function DragChip({ chip, disabled, className }: { chip: Chip; disabled: 
       {...attributes}
       {...listeners}
     >
-      {chip.node ?? chip.label}
+      {chip.node ?? <FormattedText text={chip.label} />}
     </span>
   );
 }
