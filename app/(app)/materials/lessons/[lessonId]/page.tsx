@@ -10,8 +10,11 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getAccessibleGroups } from "@/services/materials/material-groups.service";
+import { getLessonBackground } from "@/services/materials/lessons.service";
 import { getPinsForItems } from "@/services/materials/item-pins.service";
 import { Breadcrumbs } from "../../_components/breadcrumbs";
+import { LessonBackgroundDialog } from "../../_components/lesson-background-dialog";
+import { LessonSurface } from "../../_components/lesson-surface";
 import { ModulePane } from "../../_components/module-pane";
 import { Workspace } from "../../_components/workspace";
 import { ModuleTree } from "./module-tree";
@@ -36,9 +39,10 @@ export default async function LessonPage({
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
 
-  const [availableGroups, pins] = await Promise.all([
+  const [availableGroups, pins, background] = await Promise.all([
     getAccessibleGroups(db, ctx.materialId),
     active ? getPinsForItems(db, active.items.map((i) => i.id)) : Promise.resolve({}),
+    getLessonBackground(db, lessonId),
   ]);
 
   return (
@@ -61,21 +65,24 @@ export default async function LessonPage({
                 Просмотр как ученик
               </Link>
             </Button>
+            <LessonBackgroundDialog lessonId={lessonId} backgroundUrl={background.url} dim={background.dim} />
           </>
         }
       />
-      <Workspace
-        tree={<ModuleTree lessonId={lessonId} modules={modules} activeModuleId={active?.id} />}
-        treeTitle="Модули"
-      >
-        {active ? (
-          <ModulePane module={active} availableGroups={availableGroups} pins={pins} />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            В уроке пока нет модулей. Добавьте первый модуль в списке справа.
-          </p>
-        )}
-      </Workspace>
+      <LessonSurface backgroundUrl={background.url} dim={background.dim}>
+        <Workspace
+          tree={<ModuleTree lessonId={lessonId} modules={modules} activeModuleId={active?.id} />}
+          treeTitle="Модули"
+        >
+          {active ? (
+            <ModulePane module={active} availableGroups={availableGroups} pins={pins} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              В уроке пока нет модулей. Добавьте первый модуль в списке справа.
+            </p>
+          )}
+        </Workspace>
+      </LessonSurface>
     </div>
   );
 }

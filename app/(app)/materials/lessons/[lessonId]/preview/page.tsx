@@ -10,6 +10,8 @@ import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
+import { getLessonBackground } from "@/services/materials/lessons.service";
+import { LessonSurface } from "../../../_components/lesson-surface";
 import { Workspace } from "../../../_components/workspace";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
@@ -34,6 +36,7 @@ export default async function LessonPreviewPage({
 
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
+  const background = await getLessonBackground(db, lessonId);
 
   return (
     <div className="space-y-6">
@@ -52,25 +55,27 @@ export default async function LessonPreviewPage({
           </>
         }
       />
-      <Workspace
-        tree={<StudentModuleTree lessonHref={`/materials/lessons/${lessonId}/preview`} modules={modules} activeModuleId={active?.id} />}
-        treeTitle="Модули и упражнения"
-      >
-        {active ? (
-          <PreviewProvider>
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold">{active.title}</h2>
-              {active.items.length === 0 ? (
-                <p className="text-sm text-muted-foreground">В модуле нет элементов.</p>
-              ) : (
-                active.items.map((item) => <StudentItem key={item.id} item={item} />)
-              )}
-            </section>
-          </PreviewProvider>
-        ) : (
-          <p className="text-sm text-muted-foreground">В уроке нет модулей.</p>
-        )}
-      </Workspace>
+      <LessonSurface backgroundUrl={background.url} dim={background.dim}>
+        <Workspace
+          tree={<StudentModuleTree lessonHref={`/materials/lessons/${lessonId}/preview`} modules={modules} activeModuleId={active?.id} />}
+          treeTitle="Модули и упражнения"
+        >
+          {active ? (
+            <PreviewProvider>
+              <section className="space-y-4">
+                <h2 className="text-lg font-semibold">{active.title}</h2>
+                {active.items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">В модуле нет элементов.</p>
+                ) : (
+                  active.items.map((item) => <StudentItem key={item.id} item={item} />)
+                )}
+              </section>
+            </PreviewProvider>
+          ) : (
+            <p className="text-sm text-muted-foreground">В уроке нет модулей.</p>
+          )}
+        </Workspace>
+      </LessonSurface>
     </div>
   );
 }

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eaf2ff"/>
+      <stop offset="0.55" stop-color="#f4f1ff"/>
+      <stop offset="1" stop-color="#fdf3ea"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.82" cy="0.2" r="0.5">
+      <stop offset="0" stop-color="#ffe9c2" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffe9c2" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#sun)"/>
+
+  <!-- soft rolling hills -->
+  <path d="M0 760 C 260 690 460 800 760 740 C 1040 685 1300 780 1600 720 L 1600 1000 L 0 1000 Z" fill="#dfeede" opacity="0.85"/>
+  <path d="M0 840 C 300 780 520 880 860 820 C 1160 768 1360 860 1600 812 L 1600 1000 L 0 1000 Z" fill="#cfe6cf" opacity="0.9"/>
+
+  <!-- faint writing-lines motif -->
+  <g stroke="#9db6d8" stroke-width="2" opacity="0.18">
+    <line x1="120" y1="250" x2="760" y2="250"/>
+    <line x1="120" y1="320" x2="700" y2="320"/>
+    <line x1="120" y1="390" x2="620" y2="390"/>
+  </g>
+
+  <!-- oversized translucent glyphs (quote + 句 = "sentence") -->
+  <text x="60" y="360" font-family="Georgia, serif" font-size="360" fill="#c7b8ff" opacity="0.28">&#8220;</text>
+  <text x="1180" y="560" font-family="SimSun, '宋体', serif" font-size="300" fill="#ffcaa8" opacity="0.30">&#21477;</text>
+</svg>

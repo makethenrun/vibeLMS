@@ -6,6 +6,12 @@ const title = z.string().trim().min(2, "Минимум 2 символа").max(16
 export const titleSchema = z.object({ title });
 export type TitleInput = z.infer<typeof titleSchema>;
 
+export const lessonBackgroundSchema = z.object({
+  url: z.string().trim().max(2000).nullable(),
+  dim: z.coerce.number().int().min(0).max(80),
+});
+export type LessonBackgroundInput = z.infer<typeof lessonBackgroundSchema>;
+
 export const materialSchema = z.object({
   title,
   description: z.string().trim().max(2000).optional().or(z.literal("")),

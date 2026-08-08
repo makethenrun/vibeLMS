@@ -1,8 +1,32 @@
 import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
+import type { LessonBackgroundInput } from "@/lib/validators";
 import type { LessonRow } from "@/types";
 import { swapForMove } from "./reorder";
+
+export interface LessonBackground {
+  url: string | null;
+  dim: number;
+}
+
+export async function getLessonBackground(db: Db, lessonId: string): Promise<LessonBackground> {
+  const { data } = await db
+    .from("material_lessons")
+    .select("background_url, background_dim")
+    .eq("id", lessonId)
+    .maybeSingle();
+  return { url: data?.background_url ?? null, dim: data?.background_dim ?? 0 };
+}
+
+export async function setLessonBackground(db: Db, lessonId: string, input: LessonBackgroundInput): Promise<void> {
+  const url = input.url && input.url.trim() !== "" ? input.url.trim() : null;
+  const { error } = await db
+    .from("material_lessons")
+    .update({ background_url: url, background_dim: url ? input.dim : 0 })
+    .eq("id", lessonId);
+  if (error) throw new Error(error.message);
+}
 
 export async function listLessons(db: Db, sectionId: string): Promise<LessonRow[]> {
   const { data, error } = await db
