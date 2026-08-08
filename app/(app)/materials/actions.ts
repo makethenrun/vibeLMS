@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
-import { itemContentSchema, itemMetaSchema, materialSchema, titleSchema, type MaterialInput } from "@/lib/validators";
+import { itemContentSchema, itemMetaSchema, lessonBackgroundSchema, materialSchema, titleSchema, type MaterialInput } from "@/lib/validators";
 import * as materials from "@/services/materials/materials.service";
 import * as sections from "@/services/materials/sections.service";
 import * as lessons from "@/services/materials/lessons.service";
@@ -191,6 +191,22 @@ export async function moveLessonAction(id: string, direction: Dir): Promise<Acti
     return fail(getErrorMessage(e));
   }
   revalidatePath("/materials", "layout");
+  return ok();
+}
+
+export async function setLessonBackgroundAction(lessonId: string, input: unknown): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const parsed = lessonBackgroundSchema.safeParse(input);
+  if (!parsed.success) return fail("Проверьте параметры фона", parsed.error.flatten().fieldErrors);
+  const db = createServerSupabaseClient();
+  try {
+    await lessons.setLessonBackground(db, lessonId, parsed.data);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  revalidatePath("/learn", "layout");
   return ok();
 }
 

@@ -270,6 +270,8 @@ export interface Database {
           section_id: string;
           title: string;
           position: number;
+          background_url: string | null;
+          background_dim: number;
           created_at: string;
         };
         Insert: {
@@ -277,6 +279,8 @@ export interface Database {
           section_id: string;
           title: string;
           position?: number;
+          background_url?: string | null;
+          background_dim?: number;
           created_at?: string;
         };
         Update: {
@@ -284,6 +288,8 @@ export interface Database {
           section_id?: string;
           title?: string;
           position?: number;
+          background_url?: string | null;
+          background_dim?: number;
           created_at?: string;
         };
         Relationships: [];
