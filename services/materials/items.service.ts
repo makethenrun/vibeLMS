@@ -64,6 +64,14 @@ export async function updateItemMeta(db: Db, id: string, meta: ItemMetaInput): P
   if (error) throw new Error(error.message);
 }
 
+export async function setItemDrawing(db: Db, id: string, drawing: string | null): Promise<void> {
+  const { error } = await db
+    .from("material_items")
+    .update({ drawing, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 /** Copies the given items (in order) to the end of a target module. */
 export async function copyItemsToModule(db: Db, itemIds: string[], targetModuleId: string): Promise<number> {
   if (itemIds.length === 0) return 0;

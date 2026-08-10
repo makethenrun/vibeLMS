@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Pin, StickyNote, Trash2 } from "lucide-react";
+import { Brush, ChevronDown, ChevronUp, Pin, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -33,7 +33,9 @@ import type {
 } from "@/lib/validators";
 import type { Group, ItemRow, MaterialItemType } from "@/types";
 import { ITEM_FONTS, ITEM_SIZES, itemTextStyle } from "@/lib/materials/text-style";
-import { deleteItemAction, moveItemAction, setItemPinsAction, updateItemAction, updateItemMetaAction } from "../actions";
+import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
+import { StudentItem } from "@/app/(app)/learn/_components/student-item";
+import { deleteItemAction, moveItemAction, setItemDrawingAction, setItemPinsAction, updateItemAction, updateItemMetaAction } from "../actions";
 import { AudioEditor } from "./item-editors/audio-editor";
 import { CarouselEditor } from "./item-editors/carousel-editor";
 import { FreeEditor } from "./item-editors/free-editor";
@@ -92,7 +94,18 @@ export function ItemCard({
   const [fontSize, setFontSize] = useState<string | null>(item.font_size);
   const [explanation, setExplanation] = useState(item.explanation ?? "");
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
+  const [drawMode, setDrawMode] = useState(false);
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
+
+  const saveDrawing = async (dataUrl: string | null) => {
+    const result = await setItemDrawingAction(item.id, dataUrl);
+    if (result.success) {
+      toast.success(dataUrl ? "Рисунок сохранён" : "Рисунок удалён");
+      router.refresh();
+    } else {
+      toast.error(result.error);
+    }
+  };
 
   const onSave = async (content: ItemContent) => {
     const result = await updateItemAction(item.id, content);
@@ -220,6 +233,16 @@ export function ItemCard({
             aria-label="Заметка" title={note || "Заметка"}>
             <StickyNote className={note ? "h-4 w-4 text-primary" : "h-4 w-4"} />
           </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className={drawMode || item.drawing ? "h-8 w-8 text-primary" : "h-8 w-8"}
+            onClick={() => setDrawMode((d) => !d)}
+            aria-label="Рисование"
+            title="Рисовать поверх задания (как видит ученик)"
+          >
+            <Brush className="h-4 w-4" />
+          </Button>
           <Button size="icon" variant="ghost" className="h-8 w-8" disabled={!canUp}
             onClick={() => move("up")} aria-label="Вверх">
             <ChevronUp className="h-4 w-4" />
@@ -331,7 +354,20 @@ export function ItemCard({
           </div>
         ) : null}
       </CardHeader>
-      <CardContent className="pt-4" style={itemTextStyle(fontFamily, fontSize)}>{renderEditor()}</CardContent>
+      <CardContent className="pt-4" style={drawMode ? undefined : itemTextStyle(fontFamily, fontSize)}>
+        {drawMode ? (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Вид как у ученика. Рисуйте поверх задания и сохраните кнопкой <span className="font-medium">✓</span> в панели рисования.
+            </p>
+            <PreviewProvider>
+              <StudentItem item={item} saveDrawing={saveDrawing} />
+            </PreviewProvider>
+          </div>
+        ) : (
+          renderEditor()
+        )}
+      </CardContent>
     </Card>
   );
 }

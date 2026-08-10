@@ -341,6 +341,23 @@ export async function updateItemMetaAction(id: string, meta: unknown): Promise<A
   return ok();
 }
 
+export async function setItemDrawingAction(itemId: string, drawing: string | null): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  if (drawing !== null && (typeof drawing !== "string" || !drawing.startsWith("data:image/") || drawing.length > 3_000_000)) {
+    return fail("Некорректный рисунок");
+  }
+  const db = createServerSupabaseClient();
+  try {
+    await items.setItemDrawing(db, itemId, drawing);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials", "layout");
+  revalidatePath("/learn", "layout");
+  return ok();
+}
+
 export async function setItemPinsAction(itemId: string, groupIds: string[]): Promise<ActionResult> {
   const denied = await requireTutorResult();
   if (denied) return denied;
