@@ -9,7 +9,9 @@ import {
   type SentenceTaskContent,
 } from "@/lib/validators";
 
-const norm = (s: string): string => s.trim().toLowerCase();
+// Inline formatting tags ([b]/[i]/[u]/[c=…]) must not affect correctness.
+const FORMAT_TAG = /\[\/?(?:b|i|u)\]|\[c=#[0-9a-fA-F]{3,8}\]|\[\/c\]/g;
+const norm = (s: string): string => s.replace(FORMAT_TAG, "").trim().toLowerCase();
 
 // --- Answer shapes (as produced by the solve components) --------------------
 export interface QuizAnswer {

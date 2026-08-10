@@ -29,5 +29,6 @@ export const itemMetaSchema = z.object({
   retryDisabled: z.boolean().default(false),
   fontFamily: z.string().max(200).nullable().default(null),
   fontSize: z.string().max(20).nullable().default(null),
+  explanation: z.string().trim().max(2000, "Максимум 2000 символов").optional().or(z.literal("")),
 });
 export type ItemMetaInput = z.infer<typeof itemMetaSchema>;

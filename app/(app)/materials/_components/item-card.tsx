@@ -90,6 +90,7 @@ export function ItemCard({
   const [retryDisabled, setRetryDisabled] = useState(item.retry_disabled);
   const [fontFamily, setFontFamily] = useState<string | null>(item.font_family);
   const [fontSize, setFontSize] = useState<string | null>(item.font_size);
+  const [explanation, setExplanation] = useState(item.explanation ?? "");
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
 
@@ -110,6 +111,7 @@ export function ItemCard({
     retryDisabled?: boolean;
     fontFamily?: string | null;
     fontSize?: string | null;
+    explanation?: string;
   }) {
     const result = await updateItemMetaAction(item.id, {
       title: next?.title ?? title,
@@ -118,6 +120,7 @@ export function ItemCard({
       retryDisabled: next?.retryDisabled ?? retryDisabled,
       fontFamily: next?.fontFamily !== undefined ? next.fontFamily : fontFamily,
       fontSize: next?.fontSize !== undefined ? next.fontSize : fontSize,
+      explanation: next?.explanation ?? explanation,
     });
     if (result.success) router.refresh();
     else toast.error(result.error);
@@ -256,6 +259,19 @@ export function ItemCard({
             />
             Запретить повторное прохождение
           </label>
+        ) : null}
+
+        {SOLVABLE_TYPES.includes(item.type) ? (
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Пояснение при неверном ответе (необязательно)</label>
+            <Textarea
+              rows={2}
+              placeholder="Показывается ученику, если он ответил неверно…"
+              value={explanation}
+              onChange={(e) => setExplanation(e.target.value)}
+              onBlur={() => saveMeta({ explanation })}
+            />
+          </div>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

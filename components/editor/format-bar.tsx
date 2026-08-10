@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bold, Italic, Palette, Underline, X } from "lucide-react";
+import { Bold, Highlighter, Italic, Underline, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 type Field = HTMLInputElement | HTMLTextAreaElement;
 
-const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#0ea5e9", "#6366f1", "#ec4899", "#111827"];
+// Highlighter (marker) colours — light so dark text stays readable.
+const COLORS = ["#fde68a", "#a7f3d0", "#bfdbfe", "#fbcfe8", "#ddd6fe", "#fecaca", "#bbf7d0", "#e5e7eb"];
 
 function isField(el: EventTarget | null): el is Field {
   return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
@@ -75,9 +76,9 @@ export function FormatBar() {
             <Underline className="h-4 w-4" />
           </Button>
           <div className="relative">
-            <Button size="icon" variant="ghost" className={iconBtn} title="Цвет текста" onMouseDown={noBlur}
+            <Button size="icon" variant="ghost" className={iconBtn} title="Выделение цветом" onMouseDown={noBlur}
               onClick={() => setColors((c) => !c)}>
-              <Palette className="h-4 w-4" />
+              <Highlighter className="h-4 w-4" />
             </Button>
             {colors ? (
               <div className="absolute bottom-11 right-0 grid grid-cols-4 gap-1 rounded-md border bg-background p-1.5 shadow-lg">
@@ -107,7 +108,7 @@ export function FormatBar() {
         onMouseDown={noBlur}
         onClick={() => setOpen((o) => !o)}
         aria-label="Оформление текста"
-        title="Оформление: полужирный, курсив, подчёркивание, цвет"
+        title="Оформление: полужирный, курсив, подчёркивание, выделение"
       >
         {open ? <X className="h-5 w-5" /> : <Bold className="h-5 w-5" />}
       </Button>
