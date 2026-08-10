@@ -77,9 +77,20 @@ describe("checkItem", () => {
     )).toBe(100);
   });
 
-  it("scores old MATCH", () => {
+  it("scores multi-column MATCH", () => {
+    const content = {
+      type: "MATCH" as const, prompt: null,
+      columns: ["Слово", "Транскрипция", "Перевод"],
+      rows: [["dog", "dɒɡ", "собака"]],
+      pairs: [],
+    };
+    expect(checkItem(content, { table: { "1:0": "dɒɡ", "2:0": "собака" } })).toBe(100);
+    expect(checkItem(content, { table: { "1:0": "dɒɡ", "2:0": "wrong" } })).toBe(50);
+  });
+
+  it("scores legacy MATCH pairs", () => {
     expect(checkItem(
-      { type: "MATCH", prompt: null, pairs: [{ left: "a", right: "b" }] },
+      { type: "MATCH", prompt: null, columns: ["", ""], rows: [], pairs: [{ left: "a", right: "b" }] },
       { match: { "0": "b" } },
     )).toBe(100);
   });

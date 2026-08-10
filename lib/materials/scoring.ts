@@ -1,11 +1,12 @@
-import type {
-  GapsContent,
-  ImageTaskContent,
-  ItemContent,
-  MatchContent,
-  MaterialQuestion,
-  QuizContent,
-  SentenceTaskContent,
+import {
+  getMatchTable,
+  type GapsContent,
+  type ImageTaskContent,
+  type ItemContent,
+  type MatchContent,
+  type MaterialQuestion,
+  type QuizContent,
+  type SentenceTaskContent,
 } from "@/lib/validators";
 
 const norm = (s: string): string => s.trim().toLowerCase();
@@ -31,7 +32,31 @@ export interface SentenceTaskAnswer {
   match?: Record<string, string>; // MATCH_PAIRS: left index → chosen right
 }
 export interface MatchAnswer {
-  match: Record<string, string>; // left index → chosen right
+  // New multi-column form: key `${col}:${row}` → chosen value (col >= 1).
+  table?: Record<string, string>;
+  // Legacy two-column form: row index → chosen right.
+  match?: Record<string, string>;
+}
+
+function matchTableScore(content: MatchContent, answer: MatchAnswer): number {
+  const { columns, rows } = getMatchTable(content);
+  // Legacy answers stored only `match` (row → right) for two columns.
+  const table = answer.table ?? mapLegacyMatch(answer.match);
+  let total = 0;
+  let correct = 0;
+  rows.forEach((row, r) => {
+    for (let c = 1; c < columns.length; c++) {
+      total += 1;
+      if (norm(table[`${c}:${r}`] ?? "") === norm(row[c] ?? "")) correct += 1;
+    }
+  });
+  return pct(correct, total);
+}
+
+function mapLegacyMatch(match: Record<string, string> | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(match ?? {})) out[`1:${k}`] = v;
+  return out;
 }
 
 const pct = (correct: number, total: number): number => (total === 0 ? 0 : Math.round((correct / total) * 100));
@@ -128,7 +153,7 @@ export function checkItem(content: ItemContent, answer: unknown): number | null 
     case "SENTENCE_TASK":
       return scoreSentenceTask(content, answer as SentenceTaskAnswer);
     case "MATCH":
-      return matchScore((content as MatchContent).pairs, (answer as MatchAnswer).match ?? {});
+      return matchTableScore(content as MatchContent, answer as MatchAnswer);
     case "FREE":
       return null;
     default:
