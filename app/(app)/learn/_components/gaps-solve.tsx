@@ -5,6 +5,8 @@ import { Fragment, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
+import { cn } from "@/lib/utils";
+import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import {
   Select,
   SelectContent,
@@ -60,6 +62,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
           if ("text" in tok) return <Fragment key={i}><FormattedText text={tok.text} /></Fragment>;
           const blank = blankById.get(tok.blank);
           const key = String(tok.blank);
+          const ok = blank ? isCorrect(values[key], blank.answers) : false;
           if (content.mode === "SELECT" && blank?.options) {
             return (
               <Select
@@ -68,7 +71,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
                 onValueChange={(v) => setValues((prev) => ({ ...prev, [key]: v }))}
                 disabled={locked}
               >
-                <SelectTrigger className="inline-flex h-8 w-40">
+                <SelectTrigger className={cn("inline-flex h-8 w-40", feedbackClass(locked, ok))}>
                   <SelectValue placeholder="…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -85,7 +88,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
               disabled={locked}
               value={values[key] ?? ""}
               onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
-              className="inline-flex h-8 w-32"
+              className={cn("inline-flex h-8 w-32", feedbackClass(locked, ok))}
             />
           );
         })}

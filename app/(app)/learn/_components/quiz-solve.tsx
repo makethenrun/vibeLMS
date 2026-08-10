@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { cn } from "@/lib/utils";
+import { feedbackClass, isCorrect, normAnswer } from "@/lib/materials/answer-check";
 import type { QuizContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { ScoreBadge } from "./score-badge";
@@ -91,12 +92,17 @@ export function QuizSolve({ itemId, content, initialScore, initialAnswer }: Quiz
               <p className="text-sm font-medium">{qi + 1}. <FormattedText text={q.question} /></p>
               {q.options.length > 0 ? (
                 <div className="space-y-1">
-                  {q.options.map((opt) => (
-                    <label key={opt} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" disabled={locked} checked={answers[qi].selected.includes(opt)} onChange={() => toggleOption(qi, opt)} />
-                      {opt}
-                    </label>
-                  ))}
+                  {q.options.map((opt) => {
+                    const correctOpt = q.correctAnswers.some((a) => normAnswer(a) === normAnswer(opt));
+                    const picked = answers[qi].selected.includes(opt);
+                    const cls = !locked ? "" : correctOpt ? "bg-green-50 text-green-900" : picked ? "bg-red-50 text-red-900 line-through" : "";
+                    return (
+                      <label key={opt} className={cn("flex items-center gap-2 rounded px-1 py-0.5 text-sm", cls)}>
+                        <input type="checkbox" disabled={locked} checked={picked} onChange={() => toggleOption(qi, opt)} />
+                        {opt}
+                      </label>
+                    );
+                  })}
                 </div>
               ) : (
                 <Input
@@ -104,6 +110,7 @@ export function QuizSolve({ itemId, content, initialScore, initialAnswer }: Quiz
                   placeholder="Ваш ответ"
                   value={answers[qi].text}
                   onChange={(e) => setAnswers((prev) => prev.map((a, i) => (i === qi ? { ...a, text: e.target.value } : a)))}
+                  className={feedbackClass(locked, isCorrect(answers[qi].text, [q.correctAnswer]))}
                 />
               )}
             </div>

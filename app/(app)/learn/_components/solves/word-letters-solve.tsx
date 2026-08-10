@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/shared/loading-button";
+import { cn } from "@/lib/utils";
+import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
@@ -64,7 +66,11 @@ export function WordLettersSolve({
       <FillDnd chips={chips} value={value} onChange={setValue} disabled={locked}>
         <div className="flex flex-wrap justify-center gap-2 rounded-lg border bg-muted/30 p-4">
           {Array.from({ length: word.length }, (_, i) => (
-            <DropSlot key={i} id={`p${i}`} className={`${TILE} border-2 border-dashed`} />
+            <DropSlot
+              key={i}
+              id={`p${i}`}
+              className={cn(`${TILE} border-2 border-dashed`, feedbackClass(locked, isCorrect(chipLabel.get(value[`p${i}`] ?? ""), [word[i] ?? ""])))}
+            />
           ))}
         </div>
         <div className="mt-3">

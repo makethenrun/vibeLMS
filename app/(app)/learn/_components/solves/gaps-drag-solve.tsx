@@ -4,6 +4,8 @@ import { Fragment, useMemo, useState } from "react";
 
 import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
+import { cn } from "@/lib/utils";
+import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { GapsContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
@@ -45,6 +47,7 @@ export function GapsDragSolve({
     ),
   );
   const chipLabel = new Map(chips.map((c) => [c.id, c.label]));
+  const blankById = new Map(content.blanks.map((b) => [b.index, b]));
   const tokens = tokenize(content.text);
 
   async function onSubmit() {
@@ -71,7 +74,10 @@ export function GapsDragSolve({
               <DropSlot
                 key={i}
                 id={`b${tok.blank}`}
-                className="inline-flex h-9 min-w-28 items-center justify-center rounded-md border-2 border-dashed px-1 align-middle"
+                className={cn(
+                  "inline-flex h-9 min-w-28 items-center justify-center rounded-md border-2 border-dashed px-1 align-middle",
+                  feedbackClass(locked, isCorrect(chipLabel.get(value[`b${tok.blank}`] ?? ""), blankById.get(tok.blank)?.answers ?? [])),
+                )}
                 placeholder={<span className="text-sm text-muted-foreground">перетащите</span>}
               />
             ),
