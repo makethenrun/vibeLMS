@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/shared/loading-button";
+import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { SortableChips, type Chip } from "../dnd/sortable-chips";
@@ -60,7 +61,13 @@ export function OrderSolve({
         <ScoreBadge score={score} />
       </div>
       <p className="text-xs text-muted-foreground">Перетащите элементы в правильном порядке.</p>
-      <SortableChips chips={chips} onReorder={setChips} disabled={locked} vertical={vertical} />
+      <SortableChips
+        chips={chips}
+        onReorder={setChips}
+        disabled={locked}
+        vertical={vertical}
+        chipClass={(chip, i) => feedbackClass(locked, isCorrect(chip.label, [tokens[i] ?? ""]))}
+      />
       {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Проверить</LoadingButton> : null}
     </div>
   );

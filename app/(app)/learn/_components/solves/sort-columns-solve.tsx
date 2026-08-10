@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { LoadingButton } from "@/components/shared/loading-button";
+import { feedbackClass } from "@/lib/materials/answer-check";
 import type { SentenceTaskContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { ColumnsBoard } from "../dnd/columns-board";
@@ -31,6 +32,11 @@ export function SortColumnsSolve({
 }) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const items = useMemo(() => shuffle(content.columns.flatMap((c) => c.items)), [content.columns]);
+  const correctColumn = useMemo(() => {
+    const map = new Map<string, number>();
+    content.columns.forEach((c, ci) => c.items.forEach((it) => map.set(it, ci)));
+    return map;
+  }, [content.columns]);
   const [value, setValue] = useState<Record<string, number>>(initialAnswer?.assign ?? {});
 
   async function onSubmit() {
@@ -42,7 +48,14 @@ export function SortColumnsSolve({
       <div className="flex justify-end">
         <ScoreBadge score={score} />
       </div>
-      <ColumnsBoard columns={content.columns.map((c) => ({ title: c.title }))} items={items} value={value} onChange={setValue} disabled={locked} />
+      <ColumnsBoard
+        columns={content.columns.map((c) => ({ title: c.title }))}
+        items={items}
+        value={value}
+        onChange={setValue}
+        disabled={locked}
+        itemClass={(label) => feedbackClass(locked, value[label] === correctColumn.get(label))}
+      />
       {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Проверить</LoadingButton> : null}
     </div>
   );

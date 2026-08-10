@@ -44,9 +44,10 @@ interface SortableChipsProps {
   onReorder: (chips: Chip[]) => void;
   disabled?: boolean;
   vertical?: boolean;
+  chipClass?: (chip: Chip, index: number) => string;
 }
 
-export function SortableChips({ chips, onReorder, disabled = false, vertical = false }: SortableChipsProps) {
+export function SortableChips({ chips, onReorder, disabled = false, vertical = false, chipClass }: SortableChipsProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   function handleDragEnd(event: DragEndEvent) {
@@ -65,8 +66,8 @@ export function SortableChips({ chips, onReorder, disabled = false, vertical = f
         strategy={vertical ? verticalListSortingStrategy : rectSortingStrategy}
       >
         <div className={vertical ? "flex flex-col gap-2" : "flex flex-wrap gap-2"}>
-          {chips.map((chip) => (
-            <SortableChip key={chip.id} chip={chip} disabled={disabled} className={vertical ? "py-2.5" : undefined} />
+          {chips.map((chip, i) => (
+            <SortableChip key={chip.id} chip={chip} disabled={disabled} className={cn(vertical && "py-2.5", chipClass?.(chip, i))} />
           ))}
         </div>
       </SortableContext>

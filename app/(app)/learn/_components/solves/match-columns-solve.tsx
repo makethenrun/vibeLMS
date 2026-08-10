@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
+import { cn } from "@/lib/utils";
+import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
@@ -99,11 +101,14 @@ export function MatchColumnsSolve({ itemId, content, columns, rows, initialScore
               <div className="h-7 text-xs font-medium text-muted-foreground">
                 {columns[c] ? <FormattedText text={columns[c]} /> : " "}
               </div>
-              {rows.map((_, r) => (
+              {rows.map((row, r) => (
                 <DropSlot
                   key={r}
                   id={`r${r}`}
-                  className={`${CELL} min-w-36 border-dashed`}
+                  className={cn(
+                    `${CELL} min-w-36 border-dashed`,
+                    feedbackClass(locked, isCorrect(chipsByCol[c].find((ch) => ch.id === values[c]?.[`r${r}`])?.label, [row[c] ?? ""])),
+                  )}
                   placeholder={<span className="text-xs text-muted-foreground">перетащите</span>}
                 />
               ))}

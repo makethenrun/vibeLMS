@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { ImageTaskContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
@@ -55,6 +56,9 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
     () => shuffle(content.pairs.map((p, i) => ({ id: `img${i}`, label: p.word, node: emojiImg(p.imageUrl) }))),
     [content.pairs],
   );
+
+  const wordLabel = new Map(wordChips.map((c) => [c.id, c.label]));
+  const imageLabel = new Map(imageChips.map((c) => [c.id, c.label]));
 
   const [selected, setSelected] = useState<number[]>(initialAnswer?.selected ?? []);
   const [pairAns, setPairAns] = useState<Record<string, string>>(initialAnswer?.pairs ?? {});
@@ -116,10 +120,13 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {content.images.map((img, i) => {
             const on = selected.includes(i);
+            const border = locked
+              ? on === img.correct ? "border-green-500" : "border-red-500"
+              : on ? "border-primary" : "border-transparent";
             return (
               <button key={i} type="button" disabled={locked}
                 onClick={() => setSelected((prev) => (on ? prev.filter((x) => x !== i) : [...prev, i]))}
-                className={cn("rounded-2xl border-4", on ? "border-primary" : "border-transparent")}>
+                className={cn("rounded-2xl border-4", border)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.imageUrl} alt="" className={IMG} />
               </button>
@@ -131,7 +138,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-4">
               {content.pairs.map((p, i) => (
-                <DropSlot key={i} id={`p${i}`} className="flex w-full max-w-[200px] flex-col items-center gap-2 rounded-2xl border p-3">
+                <DropSlot key={i} id={`p${i}`} className={cn("flex w-full max-w-[200px] flex-col items-center gap-2 rounded-2xl border p-3", feedbackClass(locked, isCorrect(wordLabel.get(dragValue[`p${i}`] ?? ""), [p.word])))}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.imageUrl} alt="" className="aspect-square w-full rounded-xl object-cover" />
                 </DropSlot>
@@ -145,7 +152,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-4">
               {content.pairs.map((p, k) => (
-                <DropSlot key={k} id={`l${k}`} className={`flex items-center justify-center ${FRAME}`}>
+                <DropSlot key={k} id={`l${k}`} className={cn(`flex items-center justify-center ${FRAME}`, feedbackClass(locked, isCorrect(imageLabel.get(dragValue[`l${k}`] ?? ""), [p.word])))}>
                   <span>{p.word}</span>
                 </DropSlot>
               ))}
@@ -161,7 +168,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
               <img src={p.imageUrl} alt="" className={IMG} />
               {content.variant === "SELECT_WORD" ? (
                 <Select value={pairAns[String(i)] ?? ""} onValueChange={(v) => setPairAns((prev) => ({ ...prev, [String(i)]: v }))} disabled={locked}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Выберите слово" /></SelectTrigger>
+                  <SelectTrigger className={cn("w-full", feedbackClass(locked, isCorrect(pairAns[String(i)], [p.word])))}><SelectValue placeholder="Выберите слово" /></SelectTrigger>
                   <SelectContent>
                     {selectOptions.map((opt) => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -169,7 +176,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
                   </SelectContent>
                 </Select>
               ) : (
-                <Input disabled={locked} placeholder="Слово" value={pairAns[String(i)] ?? ""} onChange={(e) => setPairAns((prev) => ({ ...prev, [String(i)]: e.target.value }))} className="w-full text-center" />
+                <Input disabled={locked} placeholder="Слово" value={pairAns[String(i)] ?? ""} onChange={(e) => setPairAns((prev) => ({ ...prev, [String(i)]: e.target.value }))} className={cn("w-full text-center", feedbackClass(locked, isCorrect(pairAns[String(i)], [p.word])))} />
               )}
             </div>
           ))}

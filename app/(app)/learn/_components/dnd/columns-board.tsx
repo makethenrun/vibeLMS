@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const BANK = "__bank__";
 
-function Item({ id, label, disabled }: { id: string; label: string; disabled: boolean }) {
+function Item({ id, label, disabled, className }: { id: string; label: string; disabled: boolean; className?: string }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id, disabled });
   return (
     <span
@@ -25,6 +25,7 @@ function Item({ id, label, disabled }: { id: string; label: string; disabled: bo
         "cursor-grab select-none rounded-md border bg-background px-3 py-1 text-sm shadow-sm",
         isDragging && "opacity-60",
         disabled && "cursor-default",
+        className,
       )}
       {...attributes}
       {...listeners}
@@ -34,14 +35,14 @@ function Item({ id, label, disabled }: { id: string; label: string; disabled: bo
   );
 }
 
-function Bin({ id, title, items, disabled }: { id: string; title: string; items: string[]; disabled: boolean }) {
+function Bin({ id, title, items, disabled, itemClass }: { id: string; title: string; items: string[]; disabled: boolean; itemClass?: (label: string) => string }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled });
   return (
     <div ref={setNodeRef} className={cn("min-h-24 flex-1 space-y-2 rounded-md border p-2", isOver && "border-primary bg-accent")}>
       <p className="text-xs font-medium text-muted-foreground">{title}</p>
       <div className="flex flex-wrap gap-2">
         {items.map((label) => (
-          <Item key={label} id={label} label={label} disabled={disabled} />
+          <Item key={label} id={label} label={label} disabled={disabled} className={itemClass?.(label)} />
         ))}
       </div>
     </div>
@@ -55,9 +56,10 @@ interface ColumnsBoardProps {
   value: Record<string, number>;
   onChange: (value: Record<string, number>) => void;
   disabled?: boolean;
+  itemClass?: (label: string) => string;
 }
 
-export function ColumnsBoard({ columns, items, value, onChange, disabled = false }: ColumnsBoardProps) {
+export function ColumnsBoard({ columns, items, value, onChange, disabled = false, itemClass }: ColumnsBoardProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const bankItems = items.filter((it) => value[it] === undefined);
 
@@ -82,6 +84,7 @@ export function ColumnsBoard({ columns, items, value, onChange, disabled = false
               title={col.title}
               items={items.filter((it) => value[it] === ci)}
               disabled={disabled}
+              itemClass={itemClass}
             />
           ))}
         </div>
