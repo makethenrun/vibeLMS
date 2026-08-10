@@ -330,6 +330,7 @@ export interface Database {
           retry_disabled: boolean;
           font_family: string | null;
           font_size: string | null;
+          explanation: string | null;
           content: Json;
           created_at: string;
           updated_at: string;
@@ -345,6 +346,7 @@ export interface Database {
           retry_disabled?: boolean;
           font_family?: string | null;
           font_size?: string | null;
+          explanation?: string | null;
           content?: Json;
           created_at?: string;
           updated_at?: string;
@@ -360,6 +362,7 @@ export interface Database {
           retry_disabled?: boolean;
           font_family?: string | null;
           font_size?: string | null;
+          explanation?: string | null;
           content?: Json;
           created_at?: string;
           updated_at?: string;

@@ -30,8 +30,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 // 300×300 rounded square (per design).
-const IMG = "aspect-square w-full max-w-[300px] rounded-2xl border object-cover";
-const FRAME = "aspect-square w-full max-w-[300px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
+const IMG = "aspect-square w-full max-w-[200px] rounded-2xl border object-cover";
+const FRAME = "aspect-square w-full max-w-[200px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
 // eslint-disable-next-line @next/next/no-img-element
 const emojiImg = (url: string) => <img src={url} alt="" className="h-full w-full rounded-2xl object-cover" />;
 
@@ -131,7 +131,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-4">
               {content.pairs.map((p, i) => (
-                <DropSlot key={i} id={`p${i}`} className="flex w-full max-w-[300px] flex-col items-center gap-2 rounded-2xl border p-3">
+                <DropSlot key={i} id={`p${i}`} className="flex w-full max-w-[200px] flex-col items-center gap-2 rounded-2xl border p-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.imageUrl} alt="" className="aspect-square w-full rounded-xl object-cover" />
                 </DropSlot>
@@ -156,7 +156,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
       ) : (
         <div className="grid gap-6 sm:grid-cols-2">
           {content.pairs.map((p, i) => (
-            <div key={i} className="flex w-full max-w-[300px] flex-col items-stretch gap-2">
+            <div key={i} className="flex w-full max-w-[200px] flex-col items-stretch gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.imageUrl} alt="" className={IMG} />
               {content.variant === "SELECT_WORD" ? (

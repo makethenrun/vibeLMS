@@ -23,7 +23,14 @@ function styleFromStack(stack: Entry[]): CSSProperties {
     if (e.tag === "b") style.fontWeight = 700;
     else if (e.tag === "i") style.fontStyle = "italic";
     else if (e.tag === "u") decorations.push("underline");
-    else if (e.tag === "c") style.color = e.color;
+    else if (e.tag === "c") {
+      // Colour = highlight (marker) behind the text, not the glyph colour.
+      style.backgroundColor = e.color;
+      style.borderRadius = "0.2em";
+      style.padding = "0 0.12em";
+      style.boxDecorationBreak = "clone";
+      style.WebkitBoxDecorationBreak = "clone";
+    }
   }
   if (decorations.length) style.textDecoration = decorations.join(" ");
   return style;

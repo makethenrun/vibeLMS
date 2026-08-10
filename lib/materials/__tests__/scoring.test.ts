@@ -44,6 +44,10 @@ describe("checkItem", () => {
     expect(checkItem(gaps, { blanks: {} })).toBe(0);
   });
 
+  it("ignores inline formatting tags when scoring", () => {
+    expect(checkItem(gaps, { blanks: { "1": "[b]went[/b]", "2": "[c=#fde68a]saw[/c]" } })).toBe(100);
+  });
+
   it("returns null for FREE (manual grading)", () => {
     expect(checkItem({ type: "FREE", prompt: "Опишите", sampleAnswer: null }, { text: "..." })).toBeNull();
   });

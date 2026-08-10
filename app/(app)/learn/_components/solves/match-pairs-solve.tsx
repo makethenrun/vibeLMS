@@ -21,7 +21,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 // 300×300 rounded frame (matches image size).
-const FRAME = "aspect-square w-full max-w-[300px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
+const FRAME = "aspect-square w-full max-w-[200px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
 
 export function MatchPairsSolve({
   itemId,

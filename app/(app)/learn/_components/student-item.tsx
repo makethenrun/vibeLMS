@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
-import { ExternalLink, RotateCcw } from "lucide-react";
+import { ExternalLink, Lightbulb, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +84,8 @@ export function StudentItem({
   const initialScore = cleared ? undefined : submission ? submission.score : undefined;
   const savedAnswer = cleared ? undefined : (submission?.answer as unknown as SavedAnswer | undefined);
   const canRetry = !review && !item.retry_disabled && submission !== undefined && !cleared;
+  const showExplanation =
+    !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
   // Remount the solve on retake / new submission so its internal state resets.
   const solveKey = `${submittedAt ?? "new"}-${cleared ? "retry" : "done"}`;
 
@@ -158,6 +160,12 @@ export function StudentItem({
         <DrawableBlock>
           <div key={solveKey} style={itemTextStyle(item.font_family, item.font_size)}>{render()}</div>
         </DrawableBlock>
+        {showExplanation ? (
+          <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+            <p><FormattedText text={item.explanation} /></p>
+          </div>
+        ) : null}
         {canRetry ? (
           <Button size="sm" variant="outline" onClick={() => setCleared(true)}>
             <RotateCcw className="h-4 w-4" />
