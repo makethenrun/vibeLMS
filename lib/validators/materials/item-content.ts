@@ -93,8 +93,11 @@ export const sentenceTaskContentSchema = z.object({
     .array(z.object({ title: z.string().trim().max(200), items: z.array(z.string().trim().max(200)).max(30) }))
     .max(6)
     .default([]),
-  // MATCH_PAIRS: pairs to match (moved here from the standalone MATCH format).
+  // MATCH_PAIRS: legacy two-column pairs; kept so existing items keep working.
   pairs: z.array(z.object({ left: z.string().trim().max(300), right: z.string().trim().max(300) })).max(30).default([]),
+  // MATCH_PAIRS: multi-column table (word / transcription / translation …).
+  matchColumns: z.array(z.string().trim().max(100)).max(5).default([]),
+  matchRows: z.array(z.array(nonEmpty.max(300))).max(20).default([]),
 });
 
 export const imageTaskContentSchema = z.object({
@@ -192,6 +195,17 @@ export const itemContentSchema = z
       }
     }
 
+    if (v.type === "SENTENCE_TASK" && v.variant === "MATCH_PAIRS") {
+      if (v.matchRows.length === 0 && v.pairs.length === 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Добавьте строку", path: ["matchRows"] });
+      }
+      for (const [i, row] of v.matchRows.entries()) {
+        if (row.length !== v.matchColumns.length) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Строка ${i + 1}: заполните все столбцы`, path: ["matchRows"] });
+        }
+      }
+    }
+
     if (v.type === "GAPS") {
       const placeholders = [...v.text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
       const blankIndices = new Set(v.blanks.map((b) => b.index));
@@ -283,6 +297,8 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
         extraLetters: "",
         columns: [],
         pairs: [],
+        matchColumns: [],
+        matchRows: [],
       };
     case "GAPS":
       return { type: "GAPS", mode: "INPUT", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }], bank: [] };

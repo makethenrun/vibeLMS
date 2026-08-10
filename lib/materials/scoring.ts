@@ -31,7 +31,8 @@ export interface SentenceTaskAnswer {
   order?: string[]; // WORD_ORDER / SENTENCE_ORDER
   letters?: string[]; // WORD_FROM_LETTERS
   assign?: Record<string, number>; // SORT_COLUMNS: item → column index
-  match?: Record<string, string>; // MATCH_PAIRS: left index → chosen right
+  match?: Record<string, string>; // MATCH_PAIRS (legacy): left index → chosen right
+  table?: Record<string, string>; // MATCH_PAIRS: `${col}:${row}` → chosen value
 }
 export interface MatchAnswer {
   // New multi-column form: key `${col}:${row}` → chosen value (col >= 1).
@@ -40,8 +41,8 @@ export interface MatchAnswer {
   match?: Record<string, string>;
 }
 
-function matchTableScore(content: MatchContent, answer: MatchAnswer): number {
-  const { columns, rows } = getMatchTable(content);
+function matchTableScore(source: { columns: string[]; rows: string[][] }, answer: MatchAnswer): number {
+  const { columns, rows } = source;
   // Legacy answers stored only `match` (row → right) for two columns.
   const table = answer.table ?? mapLegacyMatch(answer.match);
   let total = 0;
@@ -68,10 +69,6 @@ function orderScore(correctOrder: string[], studentOrder: string[]): number {
   return pct(matches, correctOrder.length);
 }
 
-function matchScore(pairs: { left: string; right: string }[], match: Record<string, string>): number {
-  const correct = pairs.reduce((s, p, i) => s + (norm(match[String(i)] ?? "") === norm(p.right) ? 1 : 0), 0);
-  return pct(correct, pairs.length);
-}
 
 function scoreQuestion(q: MaterialQuestion, ans: { selected: string[]; text: string } | undefined): number {
   if (!ans) return 0;
@@ -136,7 +133,10 @@ export function scoreSentenceTask(content: SentenceTaskContent, answer: Sentence
       return pct(correct, all.length);
     }
     case "MATCH_PAIRS":
-      return matchScore(content.pairs, answer.match ?? {});
+      return matchTableScore(
+        getMatchTable({ columns: content.matchColumns, rows: content.matchRows, pairs: content.pairs }),
+        answer as MatchAnswer,
+      );
   }
 }
 
@@ -155,7 +155,7 @@ export function checkItem(content: ItemContent, answer: unknown): number | null 
     case "SENTENCE_TASK":
       return scoreSentenceTask(content, answer as SentenceTaskAnswer);
     case "MATCH":
-      return matchTableScore(content as MatchContent, answer as MatchAnswer);
+      return matchTableScore(getMatchTable(content as MatchContent), answer as MatchAnswer);
     case "FREE":
       return null;
     default:

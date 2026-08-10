@@ -1,8 +1,8 @@
 "use client";
 
 import { FormattedText } from "@/components/shared/formatted-text";
-import type { SentenceTaskContent } from "@/lib/validators";
-import { MatchPairsSolve } from "./match-pairs-solve";
+import { getMatchTable, type SentenceTaskContent } from "@/lib/validators";
+import { MatchColumnsSolve } from "./match-columns-solve";
 import { OrderSolve } from "./order-solve";
 import { SortColumnsSolve } from "./sort-columns-solve";
 import { WordLettersSolve } from "./word-letters-solve";
@@ -16,6 +16,7 @@ interface Props {
     letters?: string[];
     assign?: Record<string, number>;
     match?: Record<string, string>;
+    table?: Record<string, string>;
   };
 }
 
@@ -31,7 +32,9 @@ export function SentenceSolve({ itemId, content, initialScore, initialAnswer }: 
       return <div className="space-y-2">{prompt}<WordLettersSolve itemId={itemId} content={content} word={content.word} extraLetters={content.extraLetters} initialScore={initialScore} initialAnswer={initialAnswer} /></div>;
     case "SORT_COLUMNS":
       return <div className="space-y-2">{prompt}<SortColumnsSolve itemId={itemId} content={content} initialScore={initialScore} initialAnswer={initialAnswer} /></div>;
-    case "MATCH_PAIRS":
-      return <div className="space-y-2">{prompt}<MatchPairsSolve itemId={itemId} content={content} pairs={content.pairs} initialScore={initialScore} initialAnswer={initialAnswer} /></div>;
+    case "MATCH_PAIRS": {
+      const table = getMatchTable({ columns: content.matchColumns, rows: content.matchRows, pairs: content.pairs });
+      return <div className="space-y-2">{prompt}<MatchColumnsSolve itemId={itemId} content={content} columns={table.columns} rows={table.rows} initialScore={initialScore} initialAnswer={initialAnswer} /></div>;
+    }
   }
 }

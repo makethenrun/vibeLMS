@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import { FormattedText } from "@/components/shared/formatted-text";
 import { LoadingButton } from "@/components/shared/loading-button";
-import { getMatchTable, type MatchContent } from "@/lib/validators";
+import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { assignByLabel, Bank, DropSlot, FillDnd } from "../dnd/fill";
 import type { Chip } from "../dnd/sortable-chips";
@@ -24,14 +24,15 @@ const CELL = "flex h-11 items-center rounded-md border bg-background px-3 text-s
 
 interface Props {
   itemId: string;
-  content: MatchContent;
+  content: ItemContent;
+  columns: string[];
+  rows: string[][];
   initialScore: number | null | undefined;
   initialAnswer?: { table?: Record<string, string>; match?: Record<string, string> };
 }
 
-export function MatchColumnsSolve({ itemId, content, initialScore, initialAnswer }: Props) {
+export function MatchColumnsSolve({ itemId, content, columns, rows, initialScore, initialAnswer }: Props) {
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
-  const { columns, rows } = useMemo(() => getMatchTable(content), [content]);
   const targetCols = useMemo(() => columns.map((_, c) => c).filter((c) => c >= 1), [columns]);
 
   // One shuffled bank of chips per non-anchor column.
@@ -42,7 +43,7 @@ export function MatchColumnsSolve({ itemId, content, initialScore, initialAnswer
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content]);
+  }, [columns, rows]);
 
   const [values, setValues] = useState<Record<number, Record<string, string>>>(() => {
     const initial: Record<number, Record<string, string>> = {};
