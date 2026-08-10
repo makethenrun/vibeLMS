@@ -16,11 +16,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  getMatchTable,
   itemContentSchema,
   type ItemContent,
   type SentenceTaskContent,
   type SentenceTaskVariant,
 } from "@/lib/validators";
+import { MATCH_MIN_COLS, MatchTableFields } from "./match-table-fields";
 
 const VARIANTS: { value: SentenceTaskVariant; label: string }[] = [
   { value: "WORD_ORDER", label: "Расставить слова в правильном порядке" },
@@ -33,10 +35,6 @@ const VARIANTS: { value: SentenceTaskVariant; label: string }[] = [
 interface ColumnDraft {
   title: string;
   itemsText: string;
-}
-interface PairDraft {
-  left: string;
-  right: string;
 }
 
 interface EditorProps {
@@ -60,8 +58,12 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       ? content.columns.map((c) => ({ title: c.title, itemsText: c.items.join(", ") }))
       : [{ title: "", itemsText: "" }, { title: "", itemsText: "" }],
   );
-  const [pairs, setPairs] = useState<PairDraft[]>(
-    content.pairs.length ? content.pairs.map((p) => ({ ...p })) : [{ left: "", right: "" }],
+  const matchInit = getMatchTable({ columns: content.matchColumns, rows: content.matchRows, pairs: content.pairs });
+  const [matchColumns, setMatchColumns] = useState<string[]>(
+    matchInit.columns.length >= MATCH_MIN_COLS ? matchInit.columns : ["", ""],
+  );
+  const [matchRows, setMatchRows] = useState<string[][]>(
+    matchInit.rows.length ? matchInit.rows.map((r) => [...r]) : [["", ""]],
   );
   const [saving, setSaving] = useState(false);
 
@@ -78,7 +80,9 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
         variant === "SORT_COLUMNS"
           ? columns.filter((c) => c.title.trim()).map((c) => ({ title: c.title.trim(), items: parseList(c.itemsText) }))
           : [],
-      pairs: variant === "MATCH_PAIRS" ? pairs.filter((p) => p.left.trim() && p.right.trim()) : [],
+      pairs: [],
+      matchColumns: variant === "MATCH_PAIRS" ? matchColumns.map((h) => h.trim()) : [],
+      matchRows: variant === "MATCH_PAIRS" ? matchRows.map((row) => row.map((c) => c.trim())) : [],
     };
     const parsed = itemContentSchema.safeParse(candidate);
     if (!parsed.success) {
@@ -185,26 +189,7 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       ) : null}
 
       {variant === "MATCH_PAIRS" ? (
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Пары</label>
-          {pairs.map((pair, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Input placeholder="dog" value={pair.left}
-                onChange={(e) => setPairs((prev) => prev.map((p, j) => (j === i ? { ...p, left: e.target.value } : p)))} />
-              <span className="text-muted-foreground">—</span>
-              <Input placeholder="собака" value={pair.right}
-                onChange={(e) => setPairs((prev) => prev.map((p, j) => (j === i ? { ...p, right: e.target.value } : p)))} />
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" disabled={pairs.length <= 1}
-                onClick={() => setPairs((prev) => prev.filter((_, j) => j !== i))} aria-label="Удалить пару">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <Button size="sm" variant="outline" onClick={() => setPairs((prev) => [...prev, { left: "", right: "" }])}>
-            <Plus className="h-4 w-4" />
-            Пара
-          </Button>
-        </div>
+        <MatchTableFields columns={matchColumns} rows={matchRows} setColumns={setMatchColumns} setRows={setMatchRows} />
       ) : null}
 
       <LoadingButton size="sm" loading={saving} onClick={handleSave}>

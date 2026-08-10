@@ -24,6 +24,7 @@ import type {
 } from "@/lib/validators";
 import type { ItemRow, ItemSubmissionRow, MaterialItemType } from "@/types";
 import { FormattedText } from "@/components/shared/formatted-text";
+import { getMatchTable } from "@/lib/validators";
 import { itemTextStyle } from "@/lib/materials/text-style";
 import { DrawableBlock } from "./drawable-block";
 import { FreeSolve } from "./free-solve";
@@ -127,7 +128,8 @@ export function StudentItem({
         return <SentenceSolve itemId={item.id} content={item.content as unknown as SentenceTaskContent} initialScore={initialScore} initialAnswer={savedAnswer} />;
       case "MATCH": {
         const c = item.content as unknown as MatchContent;
-        return <MatchColumnsSolve itemId={item.id} content={c} initialScore={initialScore} initialAnswer={savedAnswer} />;
+        const table = getMatchTable(c);
+        return <MatchColumnsSolve itemId={item.id} content={c} columns={table.columns} rows={table.rows} initialScore={initialScore} initialAnswer={savedAnswer} />;
       }
       case "FREE": {
         const answer = (cleared ? {} : submission?.answer ?? {}) as { text?: string };

@@ -70,11 +70,17 @@ describe("checkItem", () => {
   });
 
   it("scores SENTENCE_TASK variants", () => {
-    const base = { type: "SENTENCE_TASK" as const, prompt: null, words: [] as string[], sentences: [] as string[], word: "", extraLetters: "", columns: [] as { title: string; items: string[] }[], pairs: [] as { left: string; right: string }[] };
+    const base = { type: "SENTENCE_TASK" as const, prompt: null, words: [] as string[], sentences: [] as string[], word: "", extraLetters: "", columns: [] as { title: string; items: string[] }[], pairs: [] as { left: string; right: string }[], matchColumns: [] as string[], matchRows: [] as string[][] };
     expect(checkItem({ ...base, variant: "WORD_ORDER", words: ["I", "like", "tea"] }, { order: ["I", "like", "tea"] })).toBe(100);
     expect(checkItem({ ...base, variant: "WORD_ORDER", words: ["I", "like", "tea"] }, { order: ["like", "I", "tea"] })).toBe(33);
     expect(checkItem({ ...base, variant: "WORD_FROM_LETTERS", word: "cat" }, { letters: ["c", "a", "t"] })).toBe(100);
+    // legacy pairs still score
     expect(checkItem({ ...base, variant: "MATCH_PAIRS", pairs: [{ left: "dog", right: "собака" }] }, { match: { "0": "собака" } })).toBe(100);
+    // multi-column table
+    expect(checkItem(
+      { ...base, variant: "MATCH_PAIRS", matchColumns: ["Слово", "Перевод", "Транскрипция"], matchRows: [["dog", "собака", "dɒɡ"]] },
+      { table: { "1:0": "собака", "2:0": "dɒɡ" } },
+    )).toBe(100);
     expect(checkItem(
       { ...base, variant: "SORT_COLUMNS", columns: [{ title: "V", items: ["run"] }, { title: "N", items: ["cat"] }] },
       { assign: { run: 0, cat: 1 } },
