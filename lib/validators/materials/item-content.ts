@@ -143,8 +143,30 @@ export const freeContentSchema = z.object({
 export const matchContentSchema = z.object({
   type: z.literal("MATCH"),
   prompt: z.string().trim().max(1000).nullable(),
-  pairs: z.array(z.object({ left: nonEmpty.max(300), right: nonEmpty.max(300) })).min(1, "Добавьте пару").max(20),
+  // Column headers (2..5). The first column is the fixed anchor; the rest are
+  // shuffled and matched to it — e.g. word / transcription / translation.
+  columns: z.array(z.string().trim().max(100)).min(2, "Минимум 2 столбца").max(5, "Максимум 5 столбцов").default(["", ""]),
+  // One string per column per row.
+  rows: z.array(z.array(nonEmpty.max(300))).min(1, "Добавьте строку").max(20).default([]),
+  // Legacy two-column form; kept so existing items keep working.
+  pairs: z.array(z.object({ left: nonEmpty.max(300), right: nonEmpty.max(300) })).max(20).default([]),
 });
+
+/** Normalises a MATCH item (new columns/rows or legacy pairs) into a table. */
+export function getMatchTable(content: {
+  columns?: string[];
+  rows?: string[][];
+  pairs?: { left: string; right: string }[];
+}): { columns: string[]; rows: string[][] } {
+  if (content.rows && content.rows.length > 0) {
+    const width = content.rows[0].length;
+    const columns = content.columns && content.columns.length >= 2 ? content.columns : Array.from({ length: width }, () => "");
+    return { columns, rows: content.rows };
+  }
+  const rows = (content.pairs ?? []).map((p) => [p.left, p.right]);
+  const columns = content.columns && content.columns.length === 2 ? content.columns : ["", ""];
+  return { columns, rows };
+}
 
 export const itemContentSchema = z
   .discriminatedUnion("type", [
@@ -162,6 +184,14 @@ export const itemContentSchema = z
     matchContentSchema,
   ])
   .superRefine((v, ctx) => {
+    if (v.type === "MATCH") {
+      for (const [i, row] of v.rows.entries()) {
+        if (row.length !== v.columns.length) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Строка ${i + 1}: заполните все столбцы`, path: ["rows"] });
+        }
+      }
+    }
+
     if (v.type === "GAPS") {
       const placeholders = [...v.text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
       const blankIndices = new Set(v.blanks.map((b) => b.index));
@@ -259,6 +289,12 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "FREE":
       return { type: "FREE", prompt: "Задание", sampleAnswer: null };
     case "MATCH":
-      return { type: "MATCH", prompt: null, pairs: [{ left: "A", right: "Б" }] };
+      return {
+        type: "MATCH",
+        prompt: null,
+        columns: ["Слово", "Перевод"],
+        rows: [["dog", "собака"], ["cat", "кошка"]],
+        pairs: [],
+      };
   }
 }

@@ -33,7 +33,7 @@ import { InfoView } from "./info-view";
 import { QuizSolve } from "./quiz-solve";
 import { GapsDragSolve } from "./solves/gaps-drag-solve";
 import { ImageTaskSolve } from "./solves/image-task-solve";
-import { MatchPairsSolve } from "./solves/match-pairs-solve";
+import { MatchColumnsSolve } from "./solves/match-columns-solve";
 import { SentenceSolve } from "./solves/sentence-solve";
 import { ReviewContext } from "./submit-context";
 
@@ -63,6 +63,7 @@ interface SavedAnswer {
   match?: Record<string, string>;
   selected?: number[];
   pairs?: Record<string, string>;
+  table?: Record<string, string>;
 }
 
 export function StudentItem({
@@ -124,7 +125,7 @@ export function StudentItem({
         return <SentenceSolve itemId={item.id} content={item.content as unknown as SentenceTaskContent} initialScore={initialScore} initialAnswer={savedAnswer} />;
       case "MATCH": {
         const c = item.content as unknown as MatchContent;
-        return <MatchPairsSolve itemId={item.id} content={c} pairs={c.pairs} initialScore={initialScore} initialAnswer={savedAnswer} />;
+        return <MatchColumnsSolve itemId={item.id} content={c} initialScore={initialScore} initialAnswer={savedAnswer} />;
       }
       case "FREE": {
         const answer = (cleared ? {} : submission?.answer ?? {}) as { text?: string };

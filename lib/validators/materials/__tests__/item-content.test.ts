@@ -132,15 +132,23 @@ describe("itemContentSchema", () => {
     expect(r.success).toBe(false);
   });
 
-  it("accepts MATCH with >=1 pair", () => {
+  it("accepts MATCH with multiple columns", () => {
     const r = itemContentSchema.safeParse({
-      type: "MATCH", prompt: null, pairs: [{ left: "dog", right: "собака" }],
+      type: "MATCH", prompt: null,
+      columns: ["Слово", "Транскрипция", "Перевод"],
+      rows: [["dog", "dɒɡ", "собака"], ["cat", "kæt", "кошка"]],
     });
     expect(r.success).toBe(true);
   });
 
-  it("rejects MATCH with zero pairs", () => {
-    expect(itemContentSchema.safeParse({ type: "MATCH", prompt: null, pairs: [] }).success).toBe(false);
+  it("rejects MATCH with zero rows", () => {
+    expect(itemContentSchema.safeParse({ type: "MATCH", prompt: null, columns: ["a", "b"], rows: [] }).success).toBe(false);
+  });
+
+  it("rejects MATCH when a row width differs from columns", () => {
+    expect(itemContentSchema.safeParse({
+      type: "MATCH", prompt: null, columns: ["a", "b", "c"], rows: [["1", "2"]],
+    }).success).toBe(false);
   });
 
   it("accepts FREE with optional sample", () => {
