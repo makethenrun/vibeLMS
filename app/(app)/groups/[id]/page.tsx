@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Layers, Pencil } from "lucide-react";
+import { Layers, Pencil, Radio } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -63,10 +63,10 @@ export default async function GroupDetailPage({
           ) : (
             <ul className="divide-y">
               {materials.map((material) => (
-                <li key={material.id}>
+                <li key={material.id} className="flex items-center gap-3 py-2">
                   <Link
                     href={`/materials/${material.id}`}
-                    className="flex items-center gap-3 py-2 hover:text-primary"
+                    className="flex flex-1 items-center gap-3 hover:text-primary"
                   >
                     {material.cover_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -78,6 +78,12 @@ export default async function GroupDetailPage({
                     )}
                     <span className="text-sm font-medium">{material.title}</span>
                   </Link>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={`/materials/${material.id}/session/${group.id}`}>
+                      <Radio className="h-4 w-4" />
+                      Провести занятие
+                    </Link>
+                  </Button>
                 </li>
               ))}
             </ul>

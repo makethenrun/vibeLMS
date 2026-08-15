@@ -372,6 +372,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      live_sessions: {
+        Row: {
+          id: string;
+          group_id: string;
+          material_id: string;
+          active_item_id: string | null;
+          drawing: string | null;
+          created_at: string;
+          updated_at: string;
+          ended_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          material_id: string;
+          active_item_id?: string | null;
+          drawing?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          ended_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          material_id?: string;
+          active_item_id?: string | null;
+          drawing?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          ended_at?: string | null;
+        };
+        Relationships: [];
+      };
       material_groups: {
         Row: { material_id: string; group_id: string; created_at: string };
         Insert: { material_id: string; group_id: string; created_at?: string };
