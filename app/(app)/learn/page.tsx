@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { GraduationCap, Layers } from "lucide-react";
+import { GraduationCap, Layers, Radio } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
@@ -9,17 +9,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireStudent } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { listStudentMaterials } from "@/services/materials/student-access.service";
+import { getActiveSessionForStudent } from "@/services/materials/live-session.service";
 
 export const metadata: Metadata = { title: "Обучение" };
 
 export default async function LearnPage() {
   const { studentId } = await requireStudent();
   const db = createServerSupabaseClient();
-  const materials = await listStudentMaterials(db, studentId);
+  const [materials, liveSession] = await Promise.all([
+    listStudentMaterials(db, studentId),
+    getActiveSessionForStudent(db, studentId),
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Обучение" description="Доступные вам материалы." />
+
+      {liveSession ? (
+        <Link
+          href="/learn/live"
+          className="flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-red-900 hover:bg-red-100"
+        >
+          <Radio className="h-5 w-5 animate-pulse text-red-500" />
+          <span className="font-medium">Идёт занятие — присоединиться</span>
+        </Link>
+      ) : null}
 
       {materials.length === 0 ? (
         <EmptyState
