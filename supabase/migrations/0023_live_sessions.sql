@@ -19,3 +19,7 @@ create table if not exists public.live_sessions (
 create unique index if not exists live_sessions_one_active_per_group
   on public.live_sessions (group_id)
   where ended_at is null;
+
+-- RLS on, no policies = deny-all for anon/authenticated keys. The app uses the
+-- service-role key (which bypasses RLS), matching every other table here.
+alter table public.live_sessions enable row level security;
