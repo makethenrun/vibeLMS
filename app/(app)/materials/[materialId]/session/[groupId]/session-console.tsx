@@ -10,27 +10,19 @@ import { LoadingButton } from "@/components/shared/loading-button";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
 import { cn } from "@/lib/utils";
-import type { ItemRow, ItemSubmissionRow, MaterialItemType } from "@/types";
+import type { ItemRow, ItemSubmissionRow } from "@/types";
 import type { SessionResultRow, SessionState } from "@/services/materials/live-session.service";
+import type { TreeSection } from "@/services/materials/material-tree.service";
 import {
   endSessionAction,
   pollSessionResultsAction,
   setActiveItemAction,
   setSessionDrawingAction,
 } from "@/app/(app)/live/actions";
-
-const TYPE_LABELS: Record<MaterialItemType, string> = {
-  INFO: "Инфо", QUIZ: "Тест", GAPS: "Пропуски", FREE: "Свободный ответ", MATCH: "Сопоставление",
-  AUDIO: "Аудио", VIDEO: "Видео", IMAGE: "Изображение", CAROUSEL: "Карусель", LINK: "Ссылка",
-  IMAGE_TASK: "Картинки", SENTENCE_TASK: "Предложения",
-};
+import { ExerciseTree } from "./exercise-tree";
 
 interface SessionItem {
   id: string;
-  title: string | null;
-  type: MaterialItemType;
-  lessonTitle: string;
-  moduleTitle: string;
   item: ItemRow;
 }
 
@@ -40,6 +32,7 @@ export function SessionConsole({
   groupName,
   groupId,
   items,
+  tree,
   students,
   initialState,
 }: {
@@ -48,6 +41,7 @@ export function SessionConsole({
   groupName: string;
   groupId: string;
   items: SessionItem[];
+  tree: TreeSection[];
   students: { id: string; fullName: string }[];
   initialState: SessionState;
 }) {
@@ -128,28 +122,10 @@ export function SessionConsole({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_300px]">
-        {/* Exercises */}
+        {/* Exercises — same Section → Lesson → Module → Item tree as in materials */}
         <aside className="h-fit rounded-lg border bg-card p-2 lg:sticky lg:top-4">
           <p className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Упражнения</p>
-          <ul className="space-y-0.5">
-            {items.map((it) => (
-              <li key={it.id}>
-                <button
-                  type="button"
-                  onClick={() => selectItem(it.id)}
-                  className={cn(
-                    "w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
-                    it.id === activeItemId && "bg-primary text-primary-foreground hover:bg-primary",
-                  )}
-                >
-                  <span className="block truncate">{it.title || TYPE_LABELS[it.type]}</span>
-                  <span className={cn("block truncate text-xs", it.id === activeItemId ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                    {it.lessonTitle} · {it.moduleTitle}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ExerciseTree tree={tree} activeItemId={activeItemId} onSelect={selectItem} />
         </aside>
 
         {/* Active exercise with live drawing */}

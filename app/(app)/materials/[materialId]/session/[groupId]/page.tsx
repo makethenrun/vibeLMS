@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getGroup } from "@/services/groups/groups.service";
 import { getMaterial } from "@/services/materials/materials.service";
 import { getMaterialItemsFlat } from "@/services/materials/results.service";
+import { getMaterialTree } from "@/services/materials/material-tree.service";
 import { getActiveSession, getSessionStudents, toState } from "@/services/materials/live-session.service";
 import { SessionConsole } from "./session-console";
 import { StartSessionScreen } from "./start-session";
@@ -38,19 +39,13 @@ export default async function SessionPage({
     );
   }
 
-  const [flat, students] = await Promise.all([
+  const [flat, tree, students] = await Promise.all([
     getMaterialItemsFlat(db, materialId),
+    getMaterialTree(db, materialId),
     getSessionStudents(db, groupId),
   ]);
 
-  const items = flat.map((f) => ({
-    id: f.item.id,
-    title: f.item.title,
-    type: f.item.type,
-    lessonTitle: f.lessonTitle,
-    moduleTitle: f.moduleTitle,
-    item: f.item,
-  }));
+  const items = flat.map((f) => ({ id: f.item.id, item: f.item }));
 
   return (
     <SessionConsole
@@ -59,6 +54,7 @@ export default async function SessionPage({
       groupName={group.name}
       groupId={groupId}
       items={items}
+      tree={tree}
       students={students.map((s) => ({ id: s.id, fullName: s.full_name }))}
       initialState={toState(session)}
     />
