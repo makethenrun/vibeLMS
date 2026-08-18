@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Radio } from "lucide-react";
 
@@ -15,18 +15,20 @@ export function StudentLive({
   sessionId,
   items,
   initialState,
-  initialSubmission,
+  initialItemIds,
+  initialSubmissions,
 }: {
   sessionId: string;
   items: ItemRow[];
   initialState: SessionState;
-  initialSubmission: ItemSubmissionRow | null;
+  initialItemIds: string[];
+  initialSubmissions: Record<string, ItemSubmissionRow>;
 }) {
-  const byId = useRef(new Map(items.map((i) => [i.id, i])));
+  const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const [state, setState] = useState<SessionState>(initialState);
-  const [submission, setSubmission] = useState<ItemSubmissionRow | null>(initialSubmission);
+  const [itemIds, setItemIds] = useState<string[]>(initialItemIds);
+  const [submissions, setSubmissions] = useState<Record<string, ItemSubmissionRow>>(initialSubmissions);
   const polling = useRef(false);
-  const activeIdRef = useRef(initialState.activeItemId);
 
   const poll = useCallback(async () => {
     if (polling.current) return;
@@ -35,14 +37,8 @@ export function StudentLive({
       const res = await pollStudentSessionAction(sessionId);
       if (res.success) {
         setState(res.data.state);
-        // Only replace the submission when it belongs to the current item, so a
-        // student's own just-submitted answer isn't clobbered by a stale null.
-        if (res.data.state.activeItemId !== activeIdRef.current) {
-          activeIdRef.current = res.data.state.activeItemId;
-          setSubmission(res.data.submission);
-        } else if (res.data.submission) {
-          setSubmission(res.data.submission);
-        }
+        setItemIds(res.data.itemIds);
+        setSubmissions(res.data.submissions);
       }
     } finally {
       polling.current = false;
@@ -66,7 +62,8 @@ export function StudentLive({
     );
   }
 
-  const activeItem = state.activeItemId ? byId.current.get(state.activeItemId) : undefined;
+  const singleItem = state.kind === "item" && itemIds.length === 1;
+  const activeItems = itemIds.map((id) => itemById.get(id)).filter((i): i is ItemRow => Boolean(i));
 
   return (
     <div className="space-y-4">
@@ -75,19 +72,24 @@ export function StudentLive({
         Идёт занятие
       </h1>
 
-      {activeItem ? (
+      {activeItems.length === 0 ? (
+        <p className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
+          Ожидаем преподавателя — задание появится, когда он его выберет.
+        </p>
+      ) : singleItem ? (
         <div className="relative">
-          <StudentItem key={activeItem.id} item={activeItem} submission={submission ?? undefined} drawingOverride={null} />
+          <StudentItem key={activeItems[0].id} item={activeItems[0]} submission={submissions[activeItems[0].id]} drawingOverride={null} />
           {state.drawing ? (
-            // Live tutor drawing overlay (read-only), stretched over the block.
             // eslint-disable-next-line @next/next/no-img-element
             <img src={state.drawing} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
           ) : null}
         </div>
       ) : (
-        <p className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-          Ожидаем преподавателя — упражнение появится, когда он его выберет.
-        </p>
+        <div className="space-y-4">
+          {activeItems.map((item) => (
+            <StudentItem key={item.id} item={item} submission={submissions[item.id]} drawingOverride={null} />
+          ))}
+        </div>
       )}
     </div>
   );

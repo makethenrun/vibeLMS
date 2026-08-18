@@ -5,8 +5,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { requireStudent } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
+import { itemsForScope } from "@/lib/materials/scope";
 import { getMaterialItemsFlat } from "@/services/materials/results.service";
+import { getMaterialTree } from "@/services/materials/material-tree.service";
 import { getActiveSessionForStudent, toState } from "@/services/materials/live-session.service";
+import type { ItemSubmissionRow } from "@/types";
 import { StudentLive } from "./student-live";
 
 export const metadata: Metadata = { title: "Занятие" };
@@ -27,26 +30,31 @@ export default async function StudentLivePage() {
     );
   }
 
-  const flat = await getMaterialItemsFlat(db, session.material_id);
+  const [flat, tree] = await Promise.all([
+    getMaterialItemsFlat(db, session.material_id),
+    getMaterialTree(db, session.material_id),
+  ]);
   const items = flat.map((f) => f.item);
+  const state = toState(session);
+  const initialItemIds = itemsForScope(tree, state.kind, state.scopeId);
 
-  let initialSubmission = null;
-  if (session.active_item_id) {
+  const initialSubmissions: Record<string, ItemSubmissionRow> = {};
+  if (initialItemIds.length > 0) {
     const { data } = await db
       .from("material_item_submissions")
       .select("*")
       .eq("student_id", studentId)
-      .eq("item_id", session.active_item_id)
-      .maybeSingle();
-    initialSubmission = data ?? null;
+      .in("item_id", initialItemIds);
+    for (const row of data ?? []) initialSubmissions[row.item_id] = row;
   }
 
   return (
     <StudentLive
       sessionId={session.id}
       items={items}
-      initialState={toState(session)}
-      initialSubmission={initialSubmission}
+      initialState={state}
+      initialItemIds={initialItemIds}
+      initialSubmissions={initialSubmissions}
     />
   );
 }

@@ -1,10 +1,12 @@
 import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
+import type { ScopeKind } from "@/lib/materials/scope";
 import type { ItemSubmissionRow, LiveSessionRow, Student } from "@/types";
 
 export interface SessionState {
-  activeItemId: string | null;
+  kind: ScopeKind;
+  scopeId: string | null; // active item id, or the section/lesson/module id
   drawing: string | null;
   endedAt: string | null;
   updatedAt: string;
@@ -13,7 +15,7 @@ export interface SessionState {
 export interface SessionResultRow {
   studentId: string;
   fullName: string;
-  submission: ItemSubmissionRow | null;
+  submissions: Record<string, ItemSubmissionRow>; // item id → submission
 }
 
 export async function getSession(db: Db, sessionId: string): Promise<LiveSessionRow | null> {
@@ -44,11 +46,17 @@ export async function startSession(db: Db, groupId: string, materialId: string):
   return data;
 }
 
-export async function setActiveItem(db: Db, sessionId: string, itemId: string | null): Promise<void> {
-  // Switching the exercise clears the live drawing.
+export async function setActiveScope(db: Db, sessionId: string, kind: ScopeKind, id: string | null): Promise<void> {
+  // Switching the active scope clears the live drawing.
   const { error } = await db
     .from("live_sessions")
-    .update({ active_item_id: itemId, drawing: null, updated_at: new Date().toISOString() })
+    .update({
+      active_kind: kind,
+      active_item_id: kind === "item" ? id : null,
+      active_node_id: kind === "item" ? null : id,
+      drawing: null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", sessionId);
   if (error) throw new Error(error.message);
 }
@@ -70,8 +78,10 @@ export async function endSession(db: Db, sessionId: string): Promise<void> {
 }
 
 export function toState(session: LiveSessionRow): SessionState {
+  const kind = (session.active_kind ?? "item") as ScopeKind;
   return {
-    activeItemId: session.active_item_id,
+    kind,
+    scopeId: kind === "item" ? session.active_item_id : session.active_node_id,
     drawing: session.drawing,
     endedAt: session.ended_at,
     updatedAt: session.updated_at,
@@ -100,19 +110,24 @@ export async function studentInSession(db: Db, studentId: string, sessionId: str
   return Boolean(data);
 }
 
-/** Per-student result for the session's active item. */
-export async function getSessionResults(db: Db, session: LiveSessionRow): Promise<SessionResultRow[]> {
-  const students = await getSessionStudents(db, session.group_id);
-  if (!session.active_item_id || students.length === 0) {
-    return students.map((s) => ({ studentId: s.id, fullName: s.full_name, submission: null }));
+/** Per-student submissions for the given items (the active scope). */
+export async function getSessionResults(db: Db, groupId: string, itemIds: string[]): Promise<SessionResultRow[]> {
+  const students = await getSessionStudents(db, groupId);
+  if (itemIds.length === 0 || students.length === 0) {
+    return students.map((s) => ({ studentId: s.id, fullName: s.full_name, submissions: {} }));
   }
   const { data: subs } = await db
     .from("material_item_submissions")
     .select("*")
-    .eq("item_id", session.active_item_id)
+    .in("item_id", itemIds)
     .in("student_id", students.map((s) => s.id));
-  const byStudent = new Map((subs ?? []).map((r) => [r.student_id, r] as const));
-  return students.map((s) => ({ studentId: s.id, fullName: s.full_name, submission: byStudent.get(s.id) ?? null }));
+  const byStudent = new Map<string, Record<string, ItemSubmissionRow>>();
+  for (const row of subs ?? []) {
+    const map = byStudent.get(row.student_id) ?? {};
+    map[row.item_id] = row;
+    byStudent.set(row.student_id, map);
+  }
+  return students.map((s) => ({ studentId: s.id, fullName: s.full_name, submissions: byStudent.get(s.id) ?? {} }));
 }
 
 /** The active session (if any) among the groups the student belongs to. */
