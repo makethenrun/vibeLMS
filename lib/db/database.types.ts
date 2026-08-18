@@ -378,6 +378,8 @@ export interface Database {
           group_id: string;
           material_id: string;
           active_item_id: string | null;
+          active_kind: string;
+          active_node_id: string | null;
           drawing: string | null;
           created_at: string;
           updated_at: string;
@@ -388,6 +390,8 @@ export interface Database {
           group_id: string;
           material_id: string;
           active_item_id?: string | null;
+          active_kind?: string;
+          active_node_id?: string | null;
           drawing?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -398,6 +402,8 @@ export interface Database {
           group_id?: string;
           material_id?: string;
           active_item_id?: string | null;
+          active_kind?: string;
+          active_node_id?: string | null;
           drawing?: string | null;
           created_at?: string;
           updated_at?: string;

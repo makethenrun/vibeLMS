@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { MaterialItemType } from "@/types";
-import type { TreeSection } from "@/services/materials/material-tree.service";
+import type { ScopeKind, TreeSection } from "@/lib/materials/scope";
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Инфо", QUIZ: "Тест", GAPS: "Пропуски", FREE: "Свободный ответ", MATCH: "Сопоставление",
@@ -13,33 +13,55 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   IMAGE_TASK: "Картинки", SENTENCE_TASK: "Предложения",
 };
 
-function Row({ depth, open, onToggle, label }: { depth: number; open: boolean; onToggle: () => void; label: string }) {
+/** A container row: chevron toggles expand, the label selects the whole scope. */
+function GroupRow({
+  depth,
+  open,
+  onToggle,
+  label,
+  active,
+  onSelect,
+  bold,
+}: {
+  depth: number;
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+  active: boolean;
+  onSelect: () => void;
+  bold?: boolean;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex w-full items-center gap-1 rounded px-1 py-1 text-left hover:bg-accent"
-      style={{ paddingLeft: depth * 12 + 4 }}
+    <div
+      className={cn("flex items-center gap-1 rounded", active ? "bg-primary text-primary-foreground" : "hover:bg-accent")}
+      style={{ paddingLeft: depth * 12 }}
     >
-      {open ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
-      <span className="truncate">{label}</span>
-    </button>
+      <button type="button" onClick={onToggle} className="shrink-0 p-1" aria-label={open ? "Свернуть" : "Развернуть"}>
+        {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+      </button>
+      <button type="button" onClick={onSelect} className={cn("flex-1 truncate py-1 pr-1 text-left", bold && "font-medium")}>
+        {label}
+      </button>
+    </div>
   );
 }
 
-/** Section → Lesson → Module → Item tree; clicking an item makes it active. */
+/** Section → Lesson → Module → Item tree. Selecting any node makes it active. */
 export function ExerciseTree({
   tree,
-  activeItemId,
+  activeKind,
+  activeId,
   onSelect,
 }: {
   tree: TreeSection[];
-  activeItemId: string | null;
-  onSelect: (itemId: string) => void;
+  activeKind: ScopeKind;
+  activeId: string | null;
+  onSelect: (kind: ScopeKind, id: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setCollapsed((p) => ({ ...p, [id]: !p[id] }));
   const isOpen = (id: string) => !collapsed[id];
+  const isActive = (kind: ScopeKind, id: string) => activeKind === kind && activeId === id;
 
   if (tree.length === 0) return <p className="px-2 text-xs text-muted-foreground">В материале нет упражнений.</p>;
 
@@ -47,26 +69,35 @@ export function ExerciseTree({
     <div className="space-y-0.5 text-sm">
       {tree.map((section) => (
         <div key={section.id}>
-          <Row depth={0} open={isOpen(section.id)} onToggle={() => toggle(section.id)} label={section.title} />
+          <GroupRow
+            depth={0} bold open={isOpen(section.id)} onToggle={() => toggle(section.id)}
+            label={section.title} active={isActive("section", section.id)} onSelect={() => onSelect("section", section.id)}
+          />
           {isOpen(section.id)
             ? section.lessons.map((lesson) => (
                 <div key={lesson.id}>
-                  <Row depth={1} open={isOpen(lesson.id)} onToggle={() => toggle(lesson.id)} label={lesson.title} />
+                  <GroupRow
+                    depth={1} open={isOpen(lesson.id)} onToggle={() => toggle(lesson.id)}
+                    label={lesson.title} active={isActive("lesson", lesson.id)} onSelect={() => onSelect("lesson", lesson.id)}
+                  />
                   {isOpen(lesson.id)
-                    ? lesson.modules.map((module) => (
-                        <div key={module.id}>
-                          <Row depth={2} open={isOpen(module.id)} onToggle={() => toggle(module.id)} label={module.title} />
-                          {isOpen(module.id)
-                            ? module.items.map((item) => (
+                    ? lesson.modules.map((mod) => (
+                        <div key={mod.id}>
+                          <GroupRow
+                            depth={2} open={isOpen(mod.id)} onToggle={() => toggle(mod.id)}
+                            label={mod.title} active={isActive("module", mod.id)} onSelect={() => onSelect("module", mod.id)}
+                          />
+                          {isOpen(mod.id)
+                            ? mod.items.map((item) => (
                                 <button
                                   key={item.id}
                                   type="button"
-                                  onClick={() => onSelect(item.id)}
+                                  onClick={() => onSelect("item", item.id)}
                                   className={cn(
                                     "block w-full truncate rounded py-1 pr-1 text-left hover:bg-accent",
-                                    item.id === activeItemId && "bg-primary text-primary-foreground hover:bg-primary",
+                                    isActive("item", item.id) && "bg-primary text-primary-foreground hover:bg-primary",
                                   )}
-                                  style={{ paddingLeft: 3 * 12 + 18 }}
+                                  style={{ paddingLeft: 3 * 12 + 20 }}
                                 >
                                   {item.title || TYPE_LABELS[item.type]}
                                 </button>

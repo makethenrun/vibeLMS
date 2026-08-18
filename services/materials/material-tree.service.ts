@@ -1,28 +1,9 @@
 import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
-import type { MaterialItemType } from "@/types";
+import type { TreeItem, TreeModule, TreeLesson, TreeSection } from "@/lib/materials/scope";
 
-export interface TreeItem {
-  id: string;
-  title: string | null;
-  type: MaterialItemType;
-}
-export interface TreeModule {
-  id: string;
-  title: string;
-  items: TreeItem[];
-}
-export interface TreeLesson {
-  id: string;
-  title: string;
-  modules: TreeModule[];
-}
-export interface TreeSection {
-  id: string;
-  title: string;
-  lessons: TreeLesson[];
-}
+export type { TreeItem, TreeModule, TreeLesson, TreeSection } from "@/lib/materials/scope";
 
 /** Full Section → Lesson → Module → Item hierarchy of a material, in order. */
 export async function getMaterialTree(db: Db, materialId: string): Promise<TreeSection[]> {
