@@ -122,10 +122,15 @@ export const imageTaskContentSchema = z.object({
 });
 
 const blankSchema = z.object({
-  index: z.number().int().positive(),
+  // The placeholder key inside {{…}}. Usually the missing word itself; older
+  // items used a number — both are accepted (coerced to a string).
+  index: z.coerce.string().trim().min(1),
   answers: z.array(nonEmpty.max(200)).min(1, "Укажите ответ"),
   options: z.array(nonEmpty.max(200)).min(2).nullable(),
 });
+
+/** Matches a {{placeholder}} whose content is a word or number (not braces). */
+export const GAP_RE = /\{\{([^{}]+)\}\}/g;
 
 export const gapsContentSchema = z.object({
   type: z.literal("GAPS"),
@@ -207,16 +212,16 @@ export const itemContentSchema = z
     }
 
     if (v.type === "GAPS") {
-      const placeholders = [...v.text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
-      const blankIndices = new Set(v.blanks.map((b) => b.index));
+      const placeholders = [...v.text.matchAll(new RegExp(GAP_RE))].map((m) => m[1].trim());
+      const blankKeys = new Set(v.blanks.map((b) => String(b.index)));
       for (const p of placeholders) {
-        if (!blankIndices.has(p)) {
+        if (!blankKeys.has(p)) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Пропуск {{${p}}} без ответа`, path: ["blanks"] });
         }
       }
       for (const b of v.blanks) {
-        if (!placeholders.includes(b.index)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ответ ${b.index} без пропуска в тексте`, path: ["blanks"] });
+        if (!placeholders.includes(String(b.index))) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ответ «${b.index}» без пропуска в тексте`, path: ["blanks"] });
         }
       }
 
@@ -301,7 +306,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
         matchRows: [],
       };
     case "GAPS":
-      return { type: "GAPS", mode: "INPUT", text: "Пример с {{1}}.", blanks: [{ index: 1, answers: ["ответ"], options: null }], bank: [] };
+      return { type: "GAPS", mode: "INPUT", text: "Небо {{голубое}}.", blanks: [{ index: "голубое", answers: ["голубое"], options: null }], bank: [] };
     case "FREE":
       return { type: "FREE", prompt: "Задание", sampleAnswer: null };
     case "MATCH":

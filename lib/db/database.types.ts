@@ -272,6 +272,9 @@ export interface Database {
           position: number;
           background_url: string | null;
           background_dim: number;
+          background_fit: string;
+          background_position: string;
+          background_scale: number;
           created_at: string;
         };
         Insert: {
@@ -281,6 +284,9 @@ export interface Database {
           position?: number;
           background_url?: string | null;
           background_dim?: number;
+          background_fit?: string;
+          background_position?: string;
+          background_scale?: number;
           created_at?: string;
         };
         Update: {
@@ -290,6 +296,9 @@ export interface Database {
           position?: number;
           background_url?: string | null;
           background_dim?: number;
+          background_fit?: string;
+          background_position?: string;
+          background_scale?: number;
           created_at?: string;
         };
         Relationships: [];

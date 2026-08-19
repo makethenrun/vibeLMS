@@ -151,6 +151,14 @@ describe("itemContentSchema", () => {
     }).success).toBe(false);
   });
 
+  it("accepts word-marker gaps", () => {
+    const r = itemContentSchema.safeParse({
+      type: "GAPS", mode: "INPUT", text: "Небо {{голубое}}.",
+      blanks: [{ index: "голубое", answers: ["голубое"], options: null }], bank: [],
+    });
+    expect(r.success).toBe(true);
+  });
+
   it("accepts FREE with optional sample", () => {
     expect(itemContentSchema.safeParse({ type: "FREE", prompt: "Опишите", sampleAnswer: null }).success).toBe(true);
   });

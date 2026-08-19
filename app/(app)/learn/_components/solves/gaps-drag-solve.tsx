@@ -13,14 +13,14 @@ import type { Chip } from "../dnd/sortable-chips";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
 
-function tokenize(text: string): Array<{ text: string } | { blank: number }> {
-  const out: Array<{ text: string } | { blank: number }> = [];
-  const re = /\{\{(\d+)\}\}/g;
+function tokenize(text: string): Array<{ text: string } | { blank: string }> {
+  const out: Array<{ text: string } | { blank: string }> = [];
+  const re = /\{\{([^{}]+)\}\}/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) out.push({ text: text.slice(last, m.index) });
-    out.push({ blank: Number(m[1]) });
+    out.push({ blank: m[1].trim() });
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push({ text: text.slice(last) });
@@ -47,7 +47,7 @@ export function GapsDragSolve({
     ),
   );
   const chipLabel = new Map(chips.map((c) => [c.id, c.label]));
-  const blankById = new Map(content.blanks.map((b) => [b.index, b]));
+  const blankById = new Map(content.blanks.map((b) => [String(b.index), b]));
   const tokens = tokenize(content.text);
 
   async function onSubmit() {
@@ -66,7 +66,7 @@ export function GapsDragSolve({
       </div>
 
       <FillDnd chips={chips} value={value} onChange={setValue} disabled={locked}>
-        <p className="flex flex-wrap items-center gap-x-1 gap-y-2 text-base leading-9">
+        <p className="whitespace-pre-wrap text-base leading-[2.6]">
           {tokens.map((tok, i) =>
             "text" in tok ? (
               <Fragment key={i}><FormattedText text={tok.text} /></Fragment>

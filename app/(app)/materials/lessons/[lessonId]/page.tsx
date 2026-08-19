@@ -48,28 +48,39 @@ export default async function LessonPage({
   return (
     <div className="space-y-6">
       <Breadcrumbs crumbs={ctx.crumbs} />
-      <PageHeader
-        title={ctx.title}
-        description="Один модуль на странице; переключайтесь в списке справа."
-        actions={
-          <>
-            <Button asChild variant="outline">
-              <Link href={`/materials/${ctx.materialId}/results`}>
-                <BarChart3 className="h-4 w-4" />
-                Результаты
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/materials/lessons/${lessonId}/preview`}>
-                <Eye className="h-4 w-4" />
-                Просмотр как ученик
-              </Link>
-            </Button>
-            <LessonBackgroundDialog lessonId={lessonId} backgroundUrl={background.url} dim={background.dim} />
-          </>
+      <LessonSurface
+        background={background}
+        header={
+          <PageHeader
+            title={ctx.title}
+            description="Один модуль на странице; переключайтесь в списке справа."
+            actions={
+              <>
+                <Button asChild variant="outline">
+                  <Link href={`/materials/${ctx.materialId}/results`}>
+                    <BarChart3 className="h-4 w-4" />
+                    Результаты
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/materials/lessons/${lessonId}/preview`}>
+                    <Eye className="h-4 w-4" />
+                    Просмотр как ученик
+                  </Link>
+                </Button>
+                <LessonBackgroundDialog
+                  lessonId={lessonId}
+                  backgroundUrl={background.url}
+                  dim={background.dim}
+                  fit={background.fit}
+                  position={background.position}
+                  scale={background.scale}
+                />
+              </>
+            }
+          />
         }
-      />
-      <LessonSurface backgroundUrl={background.url} dim={background.dim}>
+      >
         <Workspace
           tree={<ModuleTree lessonId={lessonId} modules={modules} activeModuleId={active?.id} />}
           treeTitle="Модули"

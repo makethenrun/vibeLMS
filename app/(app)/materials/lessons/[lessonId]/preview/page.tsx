@@ -40,22 +40,26 @@ export default async function LessonPreviewPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={ctx.title}
-        description="Так урок видит ученик. Ответы проверяются, но не сохраняются."
-        actions={
-          <>
-            <Badge variant="secondary">Просмотр как ученик</Badge>
-            <Button asChild variant="outline">
-              <Link href={`/materials/lessons/${lessonId}`}>
-                <Pencil className="h-4 w-4" />
-                К редактированию
-              </Link>
-            </Button>
-          </>
+      <LessonSurface
+        background={background}
+        header={
+          <PageHeader
+            title={ctx.title}
+            description="Так урок видит ученик. Ответы проверяются, но не сохраняются."
+            actions={
+              <>
+                <Badge variant="secondary">Просмотр как ученик</Badge>
+                <Button asChild variant="outline">
+                  <Link href={`/materials/lessons/${lessonId}`}>
+                    <Pencil className="h-4 w-4" />
+                    К редактированию
+                  </Link>
+                </Button>
+              </>
+            }
+          />
         }
-      />
-      <LessonSurface backgroundUrl={background.url} dim={background.dim}>
+      >
         <Workspace
           tree={<StudentModuleTree lessonHref={`/materials/lessons/${lessonId}/preview`} modules={modules} activeModuleId={active?.id} />}
           treeTitle="Модули и упражнения"
@@ -63,7 +67,7 @@ export default async function LessonPreviewPage({
           {active ? (
             <PreviewProvider>
               <section className="space-y-4">
-                <h2 className="text-lg font-semibold">{active.title}</h2>
+                <h2 className={active && background.url ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{active.title}</h2>
                 {active.items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">В модуле нет элементов.</p>
                 ) : (

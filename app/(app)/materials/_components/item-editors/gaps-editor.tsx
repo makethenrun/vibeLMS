@@ -20,7 +20,7 @@ import { itemContentSchema, type GapsContent, type ItemContent } from "@/lib/val
 type Mode = "INPUT" | "SELECT" | "DRAG";
 
 interface BlankDraft {
-  index: number;
+  key: string;
   answersText: string;
   optionsText: string;
 }
@@ -30,9 +30,15 @@ interface EditorProps {
   onSave: (content: ItemContent) => Promise<void>;
 }
 
+const GAP_RE = /\{\{([^{}]+)\}\}/g;
+
+function keysInText(text: string): string[] {
+  return [...new Set([...text.matchAll(GAP_RE)].map((m) => m[1].trim()))];
+}
+
 function toDraft(content: GapsContent): BlankDraft[] {
   return content.blanks.map((b) => ({
-    index: b.index,
+    key: String(b.index),
     answersText: b.answers.join(", "),
     optionsText: b.options ? b.options.join(", ") : "",
   }));
@@ -60,22 +66,26 @@ export function GapsEditor({ content, onSave }: EditorProps) {
       toast.error("Выделите слово в тексте");
       return;
     }
-    const existing = [...text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]));
-    const n = (existing.length ? Math.max(...existing) : 0) + 1;
-    setText(text.slice(0, start) + `{{${n}}}` + text.slice(end));
-    setBlanks((prev) => [...prev, { index: n, answersText: selected, optionsText: "" }]);
+    if (selected.includes("{") || selected.includes("}")) {
+      toast.error("В пропуске не должно быть фигурных скобок");
+      return;
+    }
+    setText(text.slice(0, start) + `{{${selected}}}` + text.slice(end));
+    setBlanks((prev) =>
+      prev.some((b) => b.key === selected) ? prev : [...prev, { key: selected, answersText: selected, optionsText: "" }],
+    );
   }
 
   function syncFromText() {
-    const indices = [...new Set([...text.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1])))].sort((a, b) => a - b);
+    const keys = keysInText(text);
     setBlanks((prev) => {
-      const byIndex = new Map(prev.map((b) => [b.index, b]));
-      return indices.map((index) => byIndex.get(index) ?? { index, answersText: "", optionsText: "" });
+      const byKey = new Map(prev.map((b) => [b.key, b]));
+      return keys.map((key) => byKey.get(key) ?? { key, answersText: key, optionsText: "" });
     });
   }
 
-  function updateBlank(index: number, patch: Partial<BlankDraft>) {
-    setBlanks((prev) => prev.map((b) => (b.index === index ? { ...b, ...patch } : b)));
+  function updateBlank(key: string, patch: Partial<BlankDraft>) {
+    setBlanks((prev) => prev.map((b) => (b.key === key ? { ...b, ...patch } : b)));
   }
 
   async function handleSave() {
@@ -85,7 +95,7 @@ export function GapsEditor({ content, onSave }: EditorProps) {
       text,
       bank: mode === "DRAG" ? parseList(bankText) : [],
       blanks: blanks.map((b) => ({
-        index: b.index,
+        index: b.key,
         answers: parseList(b.answersText),
         options: mode === "SELECT" && parseList(b.optionsText).length > 0 ? parseList(b.optionsText) : null,
       })),
@@ -123,7 +133,7 @@ export function GapsEditor({ content, onSave }: EditorProps) {
         <label className="text-sm font-medium">Текст с пропусками</label>
         <Textarea ref={textRef} value={text} onChange={(e) => setText(e.target.value)} rows={3} />
         <p className="text-xs text-muted-foreground">
-          Выделите слово и нажмите «Сделать пропуском», либо ставьте маркеры <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> вручную.
+          Выделите слово и нажмите «Сделать пропуском» — оно превратится в <code>{"{{слово}}"}</code>. Можно вписывать маркеры вручную.
         </p>
       </div>
 
@@ -150,14 +160,14 @@ export function GapsEditor({ content, onSave }: EditorProps) {
 
       <div className="space-y-2">
         {blanks.map((blank) => (
-          <div key={blank.index} className="rounded-md border p-2">
-            <p className="mb-2 text-sm font-medium">Пропуск {"{{"}{blank.index}{"}}"}</p>
+          <div key={blank.key} className="rounded-md border p-2">
+            <p className="mb-2 text-sm font-medium">Пропуск {"{{"}{blank.key}{"}}"}</p>
             <div className="space-y-2">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Правильные ответы (через запятую)</label>
                 <Input
                   value={blank.answersText}
-                  onChange={(e) => updateBlank(blank.index, { answersText: e.target.value })}
+                  onChange={(e) => updateBlank(blank.key, { answersText: e.target.value })}
                   placeholder="went, go (past)"
                 />
               </div>
@@ -166,7 +176,7 @@ export function GapsEditor({ content, onSave }: EditorProps) {
                   <label className="text-xs text-muted-foreground">Варианты для выбора (через запятую)</label>
                   <Input
                     value={blank.optionsText}
-                    onChange={(e) => updateBlank(blank.index, { optionsText: e.target.value })}
+                    onChange={(e) => updateBlank(blank.key, { optionsText: e.target.value })}
                     placeholder="went, goed, gone"
                   />
                 </div>

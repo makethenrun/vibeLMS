@@ -41,15 +41,17 @@ export default async function StudentLessonPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title={ctx.title} description="Пройдите упражнения модуля." />
-      <LessonSurface backgroundUrl={background.url} dim={background.dim}>
+      <LessonSurface
+        background={background}
+        header={<PageHeader title={ctx.title} description="Пройдите упражнения модуля." />}
+      >
         <Workspace
           tree={<StudentModuleTree lessonHref={`/learn/lessons/${lessonId}`} modules={modules} activeModuleId={active?.id} />}
           treeTitle="Модули и упражнения"
         >
           {active ? (
             <section className="space-y-4">
-              <h2 className="text-lg font-semibold">{active.title}</h2>
+              <h2 className={active && background.url ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{active.title}</h2>
               {active.items.length === 0 ? (
                 <p className="text-sm text-muted-foreground">В модуле пока нет элементов.</p>
               ) : (
