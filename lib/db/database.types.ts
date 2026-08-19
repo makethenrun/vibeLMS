@@ -380,6 +380,7 @@ export interface Database {
           active_item_id: string | null;
           active_kind: string;
           active_node_id: string | null;
+          focused_item_id: string | null;
           drawing: string | null;
           created_at: string;
           updated_at: string;
@@ -392,6 +393,7 @@ export interface Database {
           active_item_id?: string | null;
           active_kind?: string;
           active_node_id?: string | null;
+          focused_item_id?: string | null;
           drawing?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -404,10 +406,38 @@ export interface Database {
           active_item_id?: string | null;
           active_kind?: string;
           active_node_id?: string | null;
+          focused_item_id?: string | null;
           drawing?: string | null;
           created_at?: string;
           updated_at?: string;
           ended_at?: string | null;
+        };
+        Relationships: [];
+      };
+      live_drawings: {
+        Row: {
+          session_id: string;
+          item_id: string;
+          author_key: string;
+          student_id: string | null;
+          drawing: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          session_id: string;
+          item_id: string;
+          author_key: string;
+          student_id?: string | null;
+          drawing?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          item_id?: string;
+          author_key?: string;
+          student_id?: string | null;
+          drawing?: string | null;
+          updated_at?: string;
         };
         Relationships: [];
       };

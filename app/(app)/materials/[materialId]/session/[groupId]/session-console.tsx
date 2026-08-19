@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Radio, Square } from "lucide-react";
+import { ChevronDown, ChevronRight, Pin, PinOff, Radio, Square } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
@@ -15,8 +16,9 @@ import type { SessionResultRow, SessionState } from "@/services/materials/live-s
 import {
   endSessionAction,
   pollSessionResultsAction,
+  saveTutorDrawingAction,
   setActiveScopeAction,
-  setSessionDrawingAction,
+  setFocusedItemAction,
 } from "@/app/(app)/live/actions";
 import { ExerciseTree } from "./exercise-tree";
 
@@ -29,6 +31,7 @@ export function SessionConsole({
   tree,
   students,
   initialState,
+  initialTutorDrawings,
 }: {
   sessionId: string;
   materialTitle: string;
@@ -38,28 +41,35 @@ export function SessionConsole({
   tree: TreeSection[];
   students: { id: string; fullName: string }[];
   initialState: SessionState;
+  initialTutorDrawings: Record<string, string>;
 }) {
   const router = useRouter();
   const [scope, setScope] = useState<{ kind: ScopeKind; id: string | null }>({ kind: initialState.kind, id: initialState.scopeId });
-  const [centerDrawing, setCenterDrawing] = useState<string | null>(initialState.drawing);
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(initialState.focusedItemId);
   const [results, setResults] = useState<SessionResultRow[]>(
     students.map((s) => ({ studentId: s.id, fullName: s.fullName, submissions: {} })),
   );
+  const [tutorDrawings, setTutorDrawings] = useState<Record<string, string>>(initialTutorDrawings);
+  const [watchDrawings, setWatchDrawings] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
   const polling = useRef(false);
+  const expandedRef = useRef<string | null>(null);
+  expandedRef.current = expanded;
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i.item])), [items]);
   const scopeItemIds = useMemo(() => itemsForScope(tree, scope.kind, scope.id), [tree, scope]);
-  const singleItem = scope.kind === "item" && scopeItemIds.length === 1;
 
   const poll = useCallback(async () => {
     if (polling.current) return;
     polling.current = true;
     try {
-      const res = await pollSessionResultsAction(sessionId);
+      const res = await pollSessionResultsAction(sessionId, expandedRef.current ?? undefined);
       if (res.success) {
         setResults(res.data.results);
+        setTutorDrawings(res.data.tutorDrawings);
+        setWatchDrawings(res.data.watchDrawings);
+        setFocusedItemId(res.data.state.focusedItemId);
         if (res.data.state.endedAt) router.push(`/groups/${groupId}`);
       }
     } finally {
@@ -75,13 +85,20 @@ export function SessionConsole({
 
   async function selectScope(kind: ScopeKind, id: string) {
     setScope({ kind, id });
-    setCenterDrawing(null);
+    setFocusedItemId(null);
     const res = await setActiveScopeAction(sessionId, kind, id);
     if (!res.success) toast.error(res.error);
   }
 
-  async function saveDrawing(dataUrl: string | null) {
-    const res = await setSessionDrawingAction(sessionId, dataUrl);
+  async function toggleFocus(itemId: string) {
+    const next = focusedItemId === itemId ? null : itemId;
+    setFocusedItemId(next);
+    const res = await setFocusedItemAction(sessionId, next);
+    if (!res.success) toast.error(res.error);
+  }
+
+  async function saveTutorDrawing(itemId: string, dataUrl: string | null) {
+    const res = await saveTutorDrawingAction(sessionId, itemId, dataUrl);
     if (!res.success) toast.error(res.error);
   }
 
@@ -102,7 +119,7 @@ export function SessionConsole({
     };
   }
 
-  const doneCount = results.filter((r) => scopeItemIds.every((id) => r.submissions[id])).length;
+  const doneCount = results.filter((r) => scopeItemIds.length > 0 && scopeItemIds.every((id) => r.submissions[id])).length;
 
   return (
     <div className="space-y-4">
@@ -121,27 +138,40 @@ export function SessionConsole({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
-        {/* Exercises — same Section → Lesson → Module → Item tree as in materials */}
+        {/* Exercises tree */}
         <aside className="h-fit rounded-lg border bg-card p-2 lg:sticky lg:top-4">
           <p className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Упражнения</p>
           <ExerciseTree tree={tree} activeKind={scope.kind} activeId={scope.id} onSelect={selectScope} />
         </aside>
 
-        {/* Active scope: one or many exercises; draw only on a single exercise */}
+        {/* Active scope: exercises with the "pin to students" control and live drawing */}
         <main className="min-w-0 space-y-4">
           {scopeItemIds.length === 0 ? (
             <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-              Выберите упражнение, модуль, урок или раздел слева — он откроется у всех учеников.
+              Выберите раздел, урок, модуль или упражнение слева — оно откроется у всех учеников.
             </div>
           ) : (
             <PreviewProvider>
               {scopeItemIds.map((id) => {
                 const item = itemById.get(id);
                 if (!item) return null;
-                return singleItem ? (
-                  <StudentItem key={id} item={item} drawingOverride={centerDrawing} saveDrawing={saveDrawing} />
-                ) : (
-                  <StudentItem key={id} item={item} drawingOverride={null} />
+                const focused = focusedItemId === id;
+                return (
+                  <div key={id} className={cn("rounded-lg", focused && "ring-2 ring-primary ring-offset-2")}>
+                    <div className="mb-1 flex justify-end">
+                      <Button size="sm" variant={focused ? "default" : "outline"} onClick={() => toggleFocus(id)}>
+                        {focused ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                        {focused ? "Откреплено" : "Показать всем"}
+                      </Button>
+                    </div>
+                    <StudentItem
+                      item={item}
+                      drawingOverride={tutorDrawings[id] ?? null}
+                      saveDrawing={(d) => saveTutorDrawing(id, d)}
+                      liveDraw
+                      drawStartActive
+                    />
+                  </div>
                 );
               })}
             </PreviewProvider>
@@ -165,11 +195,10 @@ export function SessionConsole({
                     <button
                       type="button"
                       className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-sm"
-                      onClick={() => setExpanded(isOpen ? null : r.studentId)}
-                      disabled={!hasAny}
+                      onClick={() => { setWatchDrawings({}); setExpanded(isOpen ? null : r.studentId); }}
                     >
                       <span className="flex items-center gap-1 truncate">
-                        {hasAny ? (isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />) : <span className="w-3.5" />}
+                        {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                         <span className="truncate">{r.fullName}</span>
                       </span>
                       <span className="flex shrink-0 flex-wrap justify-end gap-0.5">
@@ -179,14 +208,26 @@ export function SessionConsole({
                         })}
                       </span>
                     </button>
-                    {isOpen && hasAny ? (
+                    {isOpen ? (
                       <div className="space-y-2 border-t p-2">
-                        <PreviewProvider>
-                          {scopeItemIds.map((id) => {
-                            const item = itemById.get(id);
-                            return item ? <StudentItem key={id} item={item} submission={r.submissions[id]} drawingOverride={null} /> : null;
-                          })}
-                        </PreviewProvider>
+                        {hasAny || Object.keys(watchDrawings).length > 0 ? (
+                          <PreviewProvider>
+                            {scopeItemIds.map((id) => {
+                              const item = itemById.get(id);
+                              return item ? (
+                                <div key={id} className="relative">
+                                  <StudentItem item={item} submission={r.submissions[id]} drawingOverride={null} />
+                                  {watchDrawings[id] ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={watchDrawings[id]} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
+                                  ) : null}
+                                </div>
+                              ) : null;
+                            })}
+                          </PreviewProvider>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Ученик ещё ничего не сделал.</p>
+                        )}
                       </div>
                     ) : null}
                   </li>

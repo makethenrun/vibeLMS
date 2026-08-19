@@ -7,10 +7,12 @@ import type { ItemSubmissionRow, LiveSessionRow, Student } from "@/types";
 export interface SessionState {
   kind: ScopeKind;
   scopeId: string | null; // active item id, or the section/lesson/module id
-  drawing: string | null;
+  focusedItemId: string | null; // exercise the tutor pinned (students scroll to it)
   endedAt: string | null;
   updatedAt: string;
 }
+
+export const TUTOR_AUTHOR = "tutor";
 
 export interface SessionResultRow {
   studentId: string;
@@ -54,19 +56,55 @@ export async function setActiveScope(db: Db, sessionId: string, kind: ScopeKind,
       active_kind: kind,
       active_item_id: kind === "item" ? id : null,
       active_node_id: kind === "item" ? null : id,
-      drawing: null,
+      focused_item_id: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", sessionId);
   if (error) throw new Error(error.message);
 }
 
-export async function setSessionDrawing(db: Db, sessionId: string, drawing: string | null): Promise<void> {
+export async function setFocusedItem(db: Db, sessionId: string, itemId: string | null): Promise<void> {
   const { error } = await db
     .from("live_sessions")
-    .update({ drawing, updated_at: new Date().toISOString() })
+    .update({ focused_item_id: itemId, updated_at: new Date().toISOString() })
     .eq("id", sessionId);
   if (error) throw new Error(error.message);
+}
+
+/** Upsert (or clear) one author's drawing for one exercise in a session. */
+export async function upsertDrawing(
+  db: Db,
+  sessionId: string,
+  itemId: string,
+  authorKey: string,
+  studentId: string | null,
+  drawing: string | null,
+): Promise<void> {
+  if (drawing === null) {
+    await db.from("live_drawings").delete().eq("session_id", sessionId).eq("item_id", itemId).eq("author_key", authorKey);
+    return;
+  }
+  const { error } = await db
+    .from("live_drawings")
+    .upsert(
+      { session_id: sessionId, item_id: itemId, author_key: authorKey, student_id: studentId, drawing, updated_at: new Date().toISOString() },
+      { onConflict: "session_id,item_id,author_key" },
+    );
+  if (error) throw new Error(error.message);
+}
+
+/** Map item id → drawing for one author across the given items. */
+export async function getDrawings(db: Db, sessionId: string, itemIds: string[], authorKey: string): Promise<Record<string, string>> {
+  if (itemIds.length === 0) return {};
+  const { data } = await db
+    .from("live_drawings")
+    .select("item_id, drawing")
+    .eq("session_id", sessionId)
+    .eq("author_key", authorKey)
+    .in("item_id", itemIds);
+  const map: Record<string, string> = {};
+  for (const row of data ?? []) if (row.drawing) map[row.item_id] = row.drawing;
+  return map;
 }
 
 export async function endSession(db: Db, sessionId: string): Promise<void> {
@@ -82,7 +120,7 @@ export function toState(session: LiveSessionRow): SessionState {
   return {
     kind,
     scopeId: kind === "item" ? session.active_item_id : session.active_node_id,
-    drawing: session.drawing,
+    focusedItemId: session.focused_item_id,
     endedAt: session.ended_at,
     updatedAt: session.updated_at,
   };

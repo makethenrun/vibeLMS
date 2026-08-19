@@ -8,7 +8,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { itemsForScope } from "@/lib/materials/scope";
 import { getMaterialItemsFlat } from "@/services/materials/results.service";
 import { getMaterialTree } from "@/services/materials/material-tree.service";
-import { getActiveSessionForStudent, toState } from "@/services/materials/live-session.service";
+import { getActiveSessionForStudent, getDrawings, TUTOR_AUTHOR, toState } from "@/services/materials/live-session.service";
 import type { ItemSubmissionRow } from "@/types";
 import { StudentLive } from "./student-live";
 
@@ -48,6 +48,11 @@ export default async function StudentLivePage() {
     for (const row of data ?? []) initialSubmissions[row.item_id] = row;
   }
 
+  const [initialTutorDrawings, initialMyDrawings] = await Promise.all([
+    getDrawings(db, session.id, initialItemIds, TUTOR_AUTHOR),
+    getDrawings(db, session.id, initialItemIds, studentId),
+  ]);
+
   return (
     <StudentLive
       sessionId={session.id}
@@ -55,6 +60,8 @@ export default async function StudentLivePage() {
       initialState={state}
       initialItemIds={initialItemIds}
       initialSubmissions={initialSubmissions}
+      initialTutorDrawings={initialTutorDrawings}
+      initialMyDrawings={initialMyDrawings}
     />
   );
 }

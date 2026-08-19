@@ -73,12 +73,16 @@ export function StudentItem({
   reactionPicker,
   saveDrawing,
   drawingOverride,
+  liveDraw = false,
+  drawStartActive,
 }: {
   item: ItemRow;
   submission?: ItemSubmissionRow;
   reactionPicker?: import("react").ReactNode;
   saveDrawing?: (dataUrl: string | null) => Promise<void>;
   drawingOverride?: string | null;
+  liveDraw?: boolean;
+  drawStartActive?: boolean;
 }) {
   const review = useContext(ReviewContext);
   const submittedAt = submission?.submitted_at;
@@ -163,7 +167,12 @@ export function StudentItem({
           ) : null)}
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
-        <DrawableBlock initial={drawingOverride !== undefined ? drawingOverride : item.drawing} onSave={saveDrawing}>
+        <DrawableBlock
+          initial={drawingOverride !== undefined ? drawingOverride : item.drawing}
+          onSave={saveDrawing}
+          autoSave={liveDraw}
+          startActive={drawStartActive}
+        >
           <div key={solveKey} style={itemTextStyle(item.font_family, item.font_size)}>{render()}</div>
         </DrawableBlock>
         {showExplanation ? (
