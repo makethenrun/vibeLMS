@@ -26,14 +26,14 @@ interface GapsSolveProps {
   initialAnswer?: { blanks?: Record<string, string> };
 }
 
-function tokenize(text: string): Array<{ text: string } | { blank: number }> {
-  const out: Array<{ text: string } | { blank: number }> = [];
-  const re = /\{\{(\d+)\}\}/g;
+function tokenize(text: string): Array<{ text: string } | { blank: string }> {
+  const out: Array<{ text: string } | { blank: string }> = [];
+  const re = /\{\{([^{}]+)\}\}/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) out.push({ text: text.slice(last, m.index) });
-    out.push({ blank: Number(m[1]) });
+    out.push({ blank: m[1].trim() });
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push({ text: text.slice(last) });
@@ -45,7 +45,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
   const [values, setValues] = useState<Record<string, string>>(initialAnswer?.blanks ?? {});
 
   const tokens = tokenize(content.text);
-  const blankById = new Map(content.blanks.map((b) => [b.index, b]));
+  const blankById = new Map(content.blanks.map((b) => [String(b.index), b]));
 
   async function onSubmit() {
     await submit({ blanks: values } as unknown as Json, content);
@@ -57,7 +57,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
         <ScoreBadge score={score} />
       </div>
 
-      <p className="flex flex-wrap items-center gap-1 text-sm leading-8">
+      <p className="whitespace-pre-wrap text-sm leading-[2.4]">
         {tokens.map((tok, i) => {
           if ("text" in tok) return <Fragment key={i}><FormattedText text={tok.text} /></Fragment>;
           const blank = blankById.get(tok.blank);
@@ -71,7 +71,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
                 onValueChange={(v) => setValues((prev) => ({ ...prev, [key]: v }))}
                 disabled={locked}
               >
-                <SelectTrigger className={cn("inline-flex h-8 w-40", feedbackClass(locked, ok))}>
+                <SelectTrigger className={cn("inline-flex h-8 w-40 align-middle", feedbackClass(locked, ok))}>
                   <SelectValue placeholder="…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -88,7 +88,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
               disabled={locked}
               value={values[key] ?? ""}
               onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
-              className={cn("inline-flex h-8 w-32", feedbackClass(locked, ok))}
+              className={cn("inline-flex h-8 w-32 align-middle", feedbackClass(locked, ok))}
             />
           );
         })}

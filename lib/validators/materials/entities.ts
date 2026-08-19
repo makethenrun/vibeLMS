@@ -9,6 +9,9 @@ export type TitleInput = z.infer<typeof titleSchema>;
 export const lessonBackgroundSchema = z.object({
   url: z.string().trim().max(2000).nullable(),
   dim: z.coerce.number().int().min(0).max(80),
+  fit: z.enum(["cover", "contain", "tile"]).default("cover"),
+  position: z.enum(["top", "center", "bottom"]).default("center"),
+  scale: z.coerce.number().int().min(25).max(300).default(100),
 });
 export type LessonBackgroundInput = z.infer<typeof lessonBackgroundSchema>;
 

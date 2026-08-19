@@ -8,22 +8,37 @@ import { swapForMove } from "./reorder";
 export interface LessonBackground {
   url: string | null;
   dim: number;
+  fit: "cover" | "contain" | "tile";
+  position: "top" | "center" | "bottom";
+  scale: number;
 }
 
 export async function getLessonBackground(db: Db, lessonId: string): Promise<LessonBackground> {
   const { data } = await db
     .from("material_lessons")
-    .select("background_url, background_dim")
+    .select("background_url, background_dim, background_fit, background_position, background_scale")
     .eq("id", lessonId)
     .maybeSingle();
-  return { url: data?.background_url ?? null, dim: data?.background_dim ?? 0 };
+  return {
+    url: data?.background_url ?? null,
+    dim: data?.background_dim ?? 0,
+    fit: (data?.background_fit as LessonBackground["fit"]) ?? "cover",
+    position: (data?.background_position as LessonBackground["position"]) ?? "center",
+    scale: data?.background_scale ?? 100,
+  };
 }
 
 export async function setLessonBackground(db: Db, lessonId: string, input: LessonBackgroundInput): Promise<void> {
   const url = input.url && input.url.trim() !== "" ? input.url.trim() : null;
   const { error } = await db
     .from("material_lessons")
-    .update({ background_url: url, background_dim: url ? input.dim : 0 })
+    .update({
+      background_url: url,
+      background_dim: url ? input.dim : 0,
+      background_fit: input.fit,
+      background_position: input.position,
+      background_scale: input.scale,
+    })
     .eq("id", lessonId);
   if (error) throw new Error(error.message);
 }

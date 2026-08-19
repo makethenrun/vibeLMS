@@ -16,8 +16,8 @@ const gaps: GapsContent = {
   mode: "INPUT",
   text: "go → {{1}}, see → {{2}}",
   blanks: [
-    { index: 1, answers: ["went"], options: null },
-    { index: 2, answers: ["saw"], options: null },
+    { index: "1", answers: ["went"], options: null },
+    { index: "2", answers: ["saw"], options: null },
   ],
   bank: [],
 };
@@ -46,6 +46,12 @@ describe("checkItem", () => {
 
   it("ignores inline formatting tags when scoring", () => {
     expect(checkItem(gaps, { blanks: { "1": "[b]went[/b]", "2": "[c=#fde68a]saw[/c]" } })).toBe(100);
+  });
+
+  it("scores word-marker gaps", () => {
+    const g = { type: "GAPS" as const, mode: "INPUT" as const, text: "Небо {{голубое}}.", blanks: [{ index: "голубое", answers: ["голубое"], options: null }], bank: [] };
+    expect(checkItem(g, { blanks: { "голубое": "голубое" } })).toBe(100);
+    expect(checkItem(g, { blanks: { "голубое": "красное" } })).toBe(0);
   });
 
   it("returns null for FREE (manual grading)", () => {
