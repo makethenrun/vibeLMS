@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import type { ItemRow, ItemSubmissionRow } from "@/types";
 import type { SessionState } from "@/services/materials/live-session.service";
-import { pollStudentSessionAction } from "@/app/(app)/live/actions";
+import { pollStudentSessionAction, saveStudentDrawingAction } from "@/app/(app)/live/actions";
 import { StudentItem } from "../_components/student-item";
 
 export function StudentLive({
@@ -17,18 +17,25 @@ export function StudentLive({
   initialState,
   initialItemIds,
   initialSubmissions,
+  initialTutorDrawings,
+  initialMyDrawings,
 }: {
   sessionId: string;
   items: ItemRow[];
   initialState: SessionState;
   initialItemIds: string[];
   initialSubmissions: Record<string, ItemSubmissionRow>;
+  initialTutorDrawings: Record<string, string>;
+  initialMyDrawings: Record<string, string>;
 }) {
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const [state, setState] = useState<SessionState>(initialState);
   const [itemIds, setItemIds] = useState<string[]>(initialItemIds);
   const [submissions, setSubmissions] = useState<Record<string, ItemSubmissionRow>>(initialSubmissions);
+  const [tutorDrawings, setTutorDrawings] = useState<Record<string, string>>(initialTutorDrawings);
+  const myDrawingsRef = useRef<Record<string, string>>(initialMyDrawings);
   const polling = useRef(false);
+  const lastFocus = useRef<string | null>(null);
 
   const poll = useCallback(async () => {
     if (polling.current) return;
@@ -39,6 +46,8 @@ export function StudentLive({
         setState(res.data.state);
         setItemIds(res.data.itemIds);
         setSubmissions(res.data.submissions);
+        setTutorDrawings(res.data.tutorDrawings);
+        myDrawingsRef.current = res.data.myDrawings;
       }
     } finally {
       polling.current = false;
@@ -51,6 +60,20 @@ export function StudentLive({
     return () => clearInterval(id);
   }, [poll]);
 
+  // Scroll to the exercise the tutor pinned.
+  useEffect(() => {
+    const focus = state.focusedItemId;
+    if (focus && focus !== lastFocus.current) {
+      lastFocus.current = focus;
+      document.getElementById(`item-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (!focus) lastFocus.current = null;
+  }, [state.focusedItemId]);
+
+  async function saveDrawing(itemId: string, dataUrl: string | null) {
+    await saveStudentDrawingAction(sessionId, itemId, dataUrl);
+  }
+
   if (state.endedAt) {
     return (
       <div className="space-y-4">
@@ -62,7 +85,6 @@ export function StudentLive({
     );
   }
 
-  const singleItem = state.kind === "item" && itemIds.length === 1;
   const activeItems = itemIds.map((id) => itemById.get(id)).filter((i): i is ItemRow => Boolean(i));
 
   return (
@@ -76,18 +98,24 @@ export function StudentLive({
         <p className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
           Ожидаем преподавателя — задание появится, когда он его выберет.
         </p>
-      ) : singleItem ? (
-        <div className="relative">
-          <StudentItem key={activeItems[0].id} item={activeItems[0]} submission={submissions[activeItems[0].id]} drawingOverride={null} />
-          {state.drawing ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={state.drawing} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
-          ) : null}
-        </div>
       ) : (
         <div className="space-y-4">
           {activeItems.map((item) => (
-            <StudentItem key={item.id} item={item} submission={submissions[item.id]} drawingOverride={null} />
+            <div key={item.id} className="relative">
+              <StudentItem
+                item={item}
+                submission={submissions[item.id]}
+                drawingOverride={myDrawingsRef.current[item.id] ?? null}
+                saveDrawing={(d) => saveDrawing(item.id, d)}
+                liveDraw
+                drawStartActive={false}
+              />
+              {tutorDrawings[item.id] ? (
+                // Live tutor drawing overlay (read-only).
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={tutorDrawings[item.id]} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
+              ) : null}
+            </div>
           ))}
         </div>
       )}

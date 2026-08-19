@@ -5,9 +5,10 @@ import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getGroup } from "@/services/groups/groups.service";
 import { getMaterial } from "@/services/materials/materials.service";
+import { itemsForScope } from "@/lib/materials/scope";
 import { getMaterialItemsFlat } from "@/services/materials/results.service";
 import { getMaterialTree } from "@/services/materials/material-tree.service";
-import { getActiveSession, getSessionStudents, toState } from "@/services/materials/live-session.service";
+import { getActiveSession, getDrawings, getSessionStudents, TUTOR_AUTHOR, toState } from "@/services/materials/live-session.service";
 import { SessionConsole } from "./session-console";
 import { StartSessionScreen } from "./start-session";
 
@@ -46,6 +47,9 @@ export default async function SessionPage({
   ]);
 
   const items = flat.map((f) => ({ id: f.item.id, item: f.item }));
+  const state = toState(session);
+  const scopeItemIds = itemsForScope(tree, state.kind, state.scopeId);
+  const initialTutorDrawings = await getDrawings(db, session.id, scopeItemIds, TUTOR_AUTHOR);
 
   return (
     <SessionConsole
@@ -56,7 +60,8 @@ export default async function SessionPage({
       items={items}
       tree={tree}
       students={students.map((s) => ({ id: s.id, fullName: s.full_name }))}
-      initialState={toState(session)}
+      initialState={state}
+      initialTutorDrawings={initialTutorDrawings}
     />
   );
 }

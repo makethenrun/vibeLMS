@@ -18,16 +18,22 @@ export function DrawableBlock({
   children,
   initial,
   onSave,
+  autoSave = false,
+  startActive,
 }: {
   children: ReactNode;
   initial?: string | null;
   onSave?: (dataUrl: string | null) => void | Promise<void>;
+  /** Persist on every stroke end (live), instead of via the ✓ button. */
+  autoSave?: boolean;
+  /** Whether drawing starts on (default: on when it can save, off otherwise). */
+  startActive?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const loadedInitial = useRef(false);
-  const [active, setActive] = useState(Boolean(onSave));
+  const [active, setActive] = useState(startActive ?? Boolean(onSave));
   const [tool, setTool] = useState<"pen" | "eraser">("pen");
   const [saving, setSaving] = useState(false);
 
@@ -98,7 +104,9 @@ export function DrawableBlock({
     ctx.stroke();
   }
   function stop() {
+    if (!drawing.current) return;
     drawing.current = false;
+    if (autoSave && onSave && canvasRef.current) void onSave(canvasRef.current.toDataURL("image/png"));
   }
   function clear() {
     const c = canvasRef.current;
@@ -175,7 +183,7 @@ export function DrawableBlock({
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
-            {onSave ? (
+            {onSave && !autoSave ? (
               <Button
                 size="icon"
                 variant="default"
