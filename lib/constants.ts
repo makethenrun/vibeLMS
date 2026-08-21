@@ -28,6 +28,7 @@ export const HOMEWORK_TYPE_LABELS: Record<HomeworkType, string> = {
 export const ROLE_LABELS: Record<UserRole, string> = {
   TUTOR: "Преподаватель",
   STUDENT: "Ученик",
+  ASSISTANT: "Ассистент",
 };
 
 /** Material types that are backed by an uploaded file (everything but links). */

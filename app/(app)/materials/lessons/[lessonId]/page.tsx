@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BarChart3, Eye } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
+import { canEditMaterial, canViewMaterial } from "@/services/assistants/assistants.service";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
@@ -28,13 +29,16 @@ export default async function LessonPage({
   params: Promise<{ lessonId: string }>;
   searchParams: Promise<{ m?: string }>;
 }) {
-  await requireTutor();
+  const user = await requireStaff();
   const { lessonId } = await params;
   const { m } = await searchParams;
 
   const db = createServerSupabaseClient();
   const ctx = await lessonContext(db, lessonId);
   if (!ctx) notFound();
+  if (!(await canViewMaterial(db, user, ctx.materialId))) notFound();
+  // View-only assistants can't open the editor — send them to the read-only preview.
+  if (!(await canEditMaterial(db, user, ctx.materialId))) redirect(`/materials/lessons/${lessonId}/preview`);
 
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];

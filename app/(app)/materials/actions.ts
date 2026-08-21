@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getTutorOrNull } from "@/lib/auth/guards";
+import { getStaffOrNull, getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
+import { canEditMaterial, resolveMaterialId } from "@/services/assistants/assistants.service";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
 import { itemContentSchema, itemMetaSchema, lessonBackgroundSchema, materialSchema, titleSchema, type MaterialInput } from "@/lib/validators";
 import * as materials from "@/services/materials/materials.service";
@@ -32,6 +33,25 @@ async function requireTutorResult(): Promise<ActionResult | null> {
   return tutor ? null : fail("Недостаточно прав");
 }
 
+async function requireStaffResult(): Promise<ActionResult | null> {
+  const staff = await getStaffOrNull();
+  return staff ? null : fail("Недостаточно прав");
+}
+
+/**
+ * Allows the action when the user is the tutor, or an assistant granted edit on
+ * the material that owns the given node. Use for material content mutations.
+ */
+async function requireEdit(kind: "material" | "section" | "lesson" | "module" | "item", id: string): Promise<ActionResult | null> {
+  const user = await getStaffOrNull();
+  if (!user) return fail("Недостаточно прав");
+  if (user.role === "TUTOR") return null;
+  const db = createServerSupabaseClient();
+  const materialId = await resolveMaterialId(db, kind, id);
+  if (!materialId) return fail("Материал не найден");
+  return (await canEditMaterial(db, user, materialId)) ? null : fail("Нет прав на редактирование этого материала");
+}
+
 // --- Materials --------------------------------------------------------------
 
 export async function createMaterialAction(input: MaterialInput): Promise<ActionResult> {
@@ -50,7 +70,7 @@ export async function createMaterialAction(input: MaterialInput): Promise<Action
 }
 
 export async function updateMaterialAction(id: string, input: MaterialInput): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("material", id);
   if (denied) return denied;
   const parsed = materialSchema.safeParse(input);
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -81,7 +101,7 @@ export async function deleteMaterialAction(id: string): Promise<ActionResult> {
 // --- Sections ---------------------------------------------------------------
 
 export async function createSectionAction(materialId: string, title: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("material", materialId);
   if (denied) return denied;
   const parsed = titleSchema.safeParse({ title });
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -96,7 +116,7 @@ export async function createSectionAction(materialId: string, title: string): Pr
 }
 
 export async function updateSectionAction(id: string, title: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("section", id);
   if (denied) return denied;
   const parsed = titleSchema.safeParse({ title });
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -111,7 +131,7 @@ export async function updateSectionAction(id: string, title: string): Promise<Ac
 }
 
 export async function deleteSectionAction(id: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("section", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -124,7 +144,7 @@ export async function deleteSectionAction(id: string): Promise<ActionResult> {
 }
 
 export async function moveSectionAction(id: string, direction: Dir): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("section", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -139,7 +159,7 @@ export async function moveSectionAction(id: string, direction: Dir): Promise<Act
 // --- Lessons ----------------------------------------------------------------
 
 export async function createLessonAction(sectionId: string, title: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("section", sectionId);
   if (denied) return denied;
   const parsed = titleSchema.safeParse({ title });
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -154,7 +174,7 @@ export async function createLessonAction(sectionId: string, title: string): Prom
 }
 
 export async function updateLessonAction(id: string, title: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("lesson", id);
   if (denied) return denied;
   const parsed = titleSchema.safeParse({ title });
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -169,7 +189,7 @@ export async function updateLessonAction(id: string, title: string): Promise<Act
 }
 
 export async function deleteLessonAction(id: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("lesson", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -182,7 +202,7 @@ export async function deleteLessonAction(id: string): Promise<ActionResult> {
 }
 
 export async function moveLessonAction(id: string, direction: Dir): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("lesson", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -195,7 +215,7 @@ export async function moveLessonAction(id: string, direction: Dir): Promise<Acti
 }
 
 export async function setLessonBackgroundAction(lessonId: string, input: unknown): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("lesson", lessonId);
   if (denied) return denied;
   const parsed = lessonBackgroundSchema.safeParse(input);
   if (!parsed.success) return fail("Проверьте параметры фона", parsed.error.flatten().fieldErrors);
@@ -213,7 +233,7 @@ export async function setLessonBackgroundAction(lessonId: string, input: unknown
 // --- Modules -----------------------------------------------------------------
 
 export async function createModuleAction(lessonId: string, title: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("lesson", lessonId);
   if (denied) return denied;
   const parsed = titleSchema.safeParse({ title });
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -228,7 +248,7 @@ export async function createModuleAction(lessonId: string, title: string): Promi
 }
 
 export async function updateModuleAction(id: string, title: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("module", id);
   if (denied) return denied;
   const parsed = titleSchema.safeParse({ title });
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -243,7 +263,7 @@ export async function updateModuleAction(id: string, title: string): Promise<Act
 }
 
 export async function deleteModuleAction(id: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("module", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -256,7 +276,7 @@ export async function deleteModuleAction(id: string): Promise<ActionResult> {
 }
 
 export async function moveModuleAction(id: string, direction: Dir): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("module", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -271,7 +291,7 @@ export async function moveModuleAction(id: string, direction: Dir): Promise<Acti
 // --- Items (attached to a module) -------------------------------------------
 
 export async function createItemAction(moduleId: string, content: unknown): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("module", moduleId);
   if (denied) return denied;
   const parsed = itemContentSchema.safeParse(content);
   if (!parsed.success) return fail("Проверьте упражнение", parsed.error.flatten().fieldErrors);
@@ -286,7 +306,7 @@ export async function createItemAction(moduleId: string, content: unknown): Prom
 }
 
 export async function updateItemAction(id: string, content: unknown): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("item", id);
   if (denied) return denied;
   const parsed = itemContentSchema.safeParse(content);
   if (!parsed.success) return fail("Проверьте упражнение", parsed.error.flatten().fieldErrors);
@@ -301,7 +321,7 @@ export async function updateItemAction(id: string, content: unknown): Promise<Ac
 }
 
 export async function deleteItemAction(id: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("item", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -314,7 +334,7 @@ export async function deleteItemAction(id: string): Promise<ActionResult> {
 }
 
 export async function moveItemAction(id: string, direction: Dir): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("item", id);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -327,7 +347,7 @@ export async function moveItemAction(id: string, direction: Dir): Promise<Action
 }
 
 export async function updateItemMetaAction(id: string, meta: unknown): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("item", id);
   if (denied) return denied;
   const parsed = itemMetaSchema.safeParse(meta);
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
@@ -342,7 +362,7 @@ export async function updateItemMetaAction(id: string, meta: unknown): Promise<A
 }
 
 export async function setItemDrawingAction(itemId: string, drawing: string | null): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("item", itemId);
   if (denied) return denied;
   if (drawing !== null && (typeof drawing !== "string" || !drawing.startsWith("data:image/") || drawing.length > 3_000_000)) {
     return fail("Некорректный рисунок");
@@ -359,7 +379,7 @@ export async function setItemDrawingAction(itemId: string, drawing: string | nul
 }
 
 export async function setItemPinsAction(itemId: string, groupIds: string[]): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("item", itemId);
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -372,7 +392,7 @@ export async function setItemPinsAction(itemId: string, groupIds: string[]): Pro
 }
 
 export async function importItemsAction(itemIds: string[], targetModuleId: string): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireEdit("module", targetModuleId);
   if (denied) return denied;
   if (itemIds.length === 0) return fail("Не выбрано ни одного упражнения");
   const db = createServerSupabaseClient();
@@ -393,7 +413,7 @@ export async function gradeSubmissionAction(
   score: number,
   materialId: string,
 ): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireStaffResult();
   if (denied) return denied;
   if (!Number.isFinite(score) || score < 0 || score > 100) return fail("Балл должен быть от 0 до 100");
   const db = createServerSupabaseClient();
@@ -412,7 +432,7 @@ export async function setReactionAction(
   reaction: string | null,
   materialId: string,
 ): Promise<ActionResult> {
-  const denied = await requireTutorResult();
+  const denied = await requireStaffResult();
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {

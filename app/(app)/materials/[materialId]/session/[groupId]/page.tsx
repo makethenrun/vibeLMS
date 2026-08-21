@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
+import { canAccessGroup, canViewMaterial } from "@/services/assistants/assistants.service";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getGroup } from "@/services/groups/groups.service";
 import { getMaterial } from "@/services/materials/materials.service";
@@ -19,10 +20,13 @@ export default async function SessionPage({
 }: {
   params: Promise<{ materialId: string; groupId: string }>;
 }) {
-  await requireTutor();
+  const user = await requireStaff();
   const { materialId, groupId } = await params;
 
   const db = createServerSupabaseClient();
+  if (user.role === "ASSISTANT" && !((await canAccessGroup(db, user, groupId)) && (await canViewMaterial(db, user, materialId)))) {
+    notFound();
+  }
   const [material, group] = await Promise.all([getMaterial(db, materialId), getGroup(db, groupId)]);
   if (!material || !group) notFound();
 

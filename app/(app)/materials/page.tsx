@@ -4,8 +4,9 @@ import { Layers, Plus } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
+import { assistantMaterialAccess } from "@/services/assistants/assistants.service";
 import { listMaterials } from "@/services/materials/materials.service";
 import { MaterialsBrowser } from "./materials-browser";
 import { MaterialFormDialog } from "./material-form-dialog";
@@ -13,10 +14,15 @@ import { MaterialFormDialog } from "./material-form-dialog";
 export const metadata: Metadata = { title: "Материалы" };
 
 export default async function MaterialsPage() {
-  await requireTutor();
+  const user = await requireStaff();
+  const isTutor = user.role === "TUTOR";
 
   const db = createServerSupabaseClient();
-  const materials = await listMaterials(db);
+  let materials = await listMaterials(db);
+  if (!isTutor) {
+    const access = await assistantMaterialAccess(db, user.id);
+    materials = materials.filter((m) => access.has(m.id));
+  }
 
   const addButton = (
     <Button>
@@ -29,16 +35,16 @@ export default async function MaterialsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Материалы"
-        description="Конструктор учебных материалов."
-        actions={<MaterialFormDialog trigger={addButton} />}
+        description={isTutor ? "Конструктор учебных материалов." : "Материалы, выданные вам главным преподавателем."}
+        actions={isTutor ? <MaterialFormDialog trigger={addButton} /> : null}
       />
 
       {materials.length === 0 ? (
         <EmptyState
           icon={Layers}
           title="Пока нет материалов"
-          description="Создайте материал и наполните его разделами, уроками и упражнениями."
-          action={<MaterialFormDialog trigger={addButton} />}
+          description={isTutor ? "Создайте материал и наполните его разделами, уроками и упражнениями." : "Главный преподаватель ещё не выдал вам материалы."}
+          action={isTutor ? <MaterialFormDialog trigger={addButton} /> : undefined}
         />
       ) : (
         <MaterialsBrowser materials={materials} />
