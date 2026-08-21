@@ -53,6 +53,17 @@ export async function setReaction(db: Db, studentId: string, itemId: string, rea
 }
 
 /** Map of item id → the student's submission, for a set of items. */
+/** Tutor/assistant correction of a student's free-text answer. */
+export async function setEditedAnswer(db: Db, studentId: string, itemId: string, text: string | null): Promise<void> {
+  const value = text && text.trim() !== "" ? text : null;
+  const { error } = await db
+    .from("material_item_submissions")
+    .update({ edited_answer: value })
+    .eq("student_id", studentId)
+    .eq("item_id", itemId);
+  if (error) throw new Error(error.message);
+}
+
 export async function getSubmissionsForItems(
   db: Db,
   studentId: string,

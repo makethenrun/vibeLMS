@@ -15,7 +15,7 @@ import * as items from "@/services/materials/items.service";
 import { setMaterialGroups } from "@/services/materials/material-groups.service";
 import { setItemPins } from "@/services/materials/item-pins.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
-import { gradeSubmission, setReaction } from "@/services/materials/submissions.service";
+import { gradeSubmission, setEditedAnswer, setReaction } from "@/services/materials/submissions.service";
 
 type Dir = "up" | "down";
 
@@ -423,6 +423,20 @@ export async function gradeSubmissionAction(
     return fail(getErrorMessage(e));
   }
   revalidatePath(`/materials/${materialId}/results`);
+  return ok();
+}
+
+export async function setEditedAnswerAction(studentId: string, itemId: string, text: string | null): Promise<ActionResult> {
+  const denied = await requireStaffResult();
+  if (denied) return denied;
+  if (text !== null && text.length > 8000) return fail("Слишком длинный текст");
+  const db = createServerSupabaseClient();
+  try {
+    await setEditedAnswer(db, studentId, itemId, text);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/learn", "layout");
   return ok();
 }
 

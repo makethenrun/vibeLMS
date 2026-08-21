@@ -518,6 +518,7 @@ export interface Database {
           answer: Json;
           score: number | null;
           reaction: string | null;
+          edited_answer: string | null;
           submitted_at: string;
         };
         Insert: {
@@ -527,6 +528,7 @@ export interface Database {
           answer?: Json;
           score?: number | null;
           reaction?: string | null;
+          edited_answer?: string | null;
           submitted_at?: string;
         };
         Update: {
@@ -536,6 +538,7 @@ export interface Database {
           answer?: Json;
           score?: number | null;
           reaction?: string | null;
+          edited_answer?: string | null;
           submitted_at?: string;
         };
         Relationships: [];
