@@ -15,7 +15,7 @@ async function requireTutor(): Promise<ActionResult | null> {
 export async function createAssistantAction(login: string, password: string): Promise<ActionResult> {
   const denied = await requireTutor();
   if (denied) return denied;
-  const l = login.trim();
+  const l = login.trim().toLowerCase();
   if (l.length < 3) return fail("Логин: минимум 3 символа");
   if (password.length < 4) return fail("Пароль: минимум 4 символа");
   const db = createServerSupabaseClient();
