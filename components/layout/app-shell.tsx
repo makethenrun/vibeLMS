@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import type { UserRole } from "@/lib/db/database.types";
 import { Breadcrumbs } from "./breadcrumbs";
+import { Messenger } from "./messenger";
 import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 
@@ -87,6 +88,7 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
           </Sheet>
 
           <Breadcrumbs className="min-w-0 flex-1" />
+          {role !== "STUDENT" ? <Messenger /> : null}
           <UserMenu login={login} role={role} />
         </header>
 
