@@ -12,11 +12,13 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getWeekEnd, getWeekStart, parseDateParam, shiftWeek, toDateParam } from "@/lib/utils/date";
 import { getStudentGroupIds, listGroups } from "@/services/groups/groups.service";
 import { listLessonsBetween } from "@/services/lessons/lessons.service";
-import { assistantGroupIds } from "@/services/assistants/assistants.service";
+import { assistantGroupIds, assistantMaterialAccess } from "@/services/assistants/assistants.service";
+import { listMaterials } from "@/services/materials/materials.service";
 import { listSessionHistory, type SessionHistoryRow } from "@/services/materials/live-session.service";
 import type { LessonWithGroup } from "@/types";
 import { LessonDialog } from "./lesson-dialog";
 import { SessionHistory } from "./session-history";
+import { StartSessionDialog } from "./start-session-dialog";
 import { WeekCalendar } from "./week-calendar";
 
 export const metadata: Metadata = { title: "Занятия" };
@@ -58,6 +60,23 @@ export default async function LessonsPage({
     history = await listSessionHistory(db, { role: "STUDENT", userId: user.id, studentId: student?.studentId, groupIds });
   }
 
+  // Groups + materials the current staff member may run a live session with.
+  const isStaff = user.role === "TUTOR" || user.role === "ASSISTANT";
+  let sessionGroups: { id: string; name: string }[] = [];
+  let sessionMaterials: { id: string; title: string }[] = [];
+  if (isStaff) {
+    const [allGroups, allMaterials] = await Promise.all([listGroups(db), listMaterials(db)]);
+    if (isTutor) {
+      sessionGroups = allGroups.map((g) => ({ id: g.id, name: g.name }));
+      sessionMaterials = allMaterials.map((m) => ({ id: m.id, title: m.title }));
+    } else {
+      const gset = new Set(await assistantGroupIds(db, user.id));
+      const mAccess = await assistantMaterialAccess(db, user.id);
+      sessionGroups = allGroups.filter((g) => gset.has(g.id)).map((g) => ({ id: g.id, name: g.name }));
+      sessionMaterials = allMaterials.filter((m) => mAccess.has(m.id)).map((m) => ({ id: m.id, title: m.title }));
+    }
+  }
+
   const prevWeek = toDateParam(shiftWeek(weekStart, -1));
   const nextWeek = toDateParam(shiftWeek(weekStart, 1));
   const rangeLabel = `${format(weekStart, "d MMM", { locale: ru })} — ${format(weekEnd, "d MMM yyyy", { locale: ru })}`;
@@ -68,17 +87,22 @@ export default async function LessonsPage({
         title="Занятия"
         description={rangeLabel}
         actions={
-          isTutor ? (
-            <LessonDialog
-              mode="create"
-              groups={groups}
-              trigger={
-                <Button>
-                  <Plus className="h-4 w-4" />
-                  Создать занятие
-                </Button>
-              }
-            />
+          isStaff ? (
+            <>
+              <StartSessionDialog groups={sessionGroups} materials={sessionMaterials} />
+              {isTutor ? (
+                <LessonDialog
+                  mode="create"
+                  groups={groups}
+                  trigger={
+                    <Button>
+                      <Plus className="h-4 w-4" />
+                      Создать занятие
+                    </Button>
+                  }
+                />
+              ) : null}
+            </>
           ) : undefined
         }
       />
