@@ -40,19 +40,22 @@ export const EXTERNAL_LINKS: ExternalLink[] = [
   { label: "Pinyin TypeIt", href: "https://pinyin.typeit.org", icon: Keyboard },
 ];
 
+const ALL: UserRole[] = ["TUTOR", "STUDENT", "ASSISTANT"];
 const BOTH: UserRole[] = ["TUTOR", "STUDENT"];
+const STAFF: UserRole[] = ["TUTOR", "ASSISTANT"];
 const TUTOR_ONLY: UserRole[] = ["TUTOR"];
 const STUDENT_ONLY: UserRole[] = ["STUDENT"];
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard, roles: BOTH },
+  { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard, roles: ALL },
   { label: "Ученики", href: "/students", icon: Users, roles: TUTOR_ONLY },
-  { label: "Группы", href: "/groups", icon: UsersRound, roles: TUTOR_ONLY },
+  { label: "Ассистенты", href: "/assistants", icon: UsersRound, roles: TUTOR_ONLY },
+  { label: "Группы", href: "/groups", icon: UsersRound, roles: STAFF },
   { label: "Занятия", href: "/lessons", icon: CalendarDays, roles: BOTH },
-  { label: "Материалы", href: "/materials", icon: Library, roles: TUTOR_ONLY },
+  { label: "Материалы", href: "/materials", icon: Library, roles: STAFF },
   { label: "Обучение", href: "/learn", icon: GraduationCap, roles: STUDENT_ONLY },
-  { label: "Файлы", href: "/files", icon: FileText, roles: BOTH },
-  { label: "Словарь", href: "/dictionary", icon: BookA, roles: BOTH },
+  { label: "Файлы", href: "/files", icon: FileText, roles: ALL },
+  { label: "Словарь", href: "/dictionary", icon: BookA, roles: ALL },
   { label: "Домашние задания", href: "/homework", icon: ClipboardList, roles: BOTH },
   { label: "Оплаты", href: "/payments", icon: Wallet, roles: TUTOR_ONLY },
   { label: "Статистика", href: "/statistics", icon: BarChart3, roles: TUTOR_ONLY },

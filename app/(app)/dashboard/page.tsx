@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   CalendarClock,
   CheckCircle2,
@@ -65,6 +66,7 @@ function UpcomingLessonsCard({ lessons }: { lessons: LessonWithGroup[] }) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
+  if (user.role === "ASSISTANT") redirect("/materials");
   const db = createServerSupabaseClient();
 
   if (user.role === "TUTOR") {

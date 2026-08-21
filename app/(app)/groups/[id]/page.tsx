@@ -6,8 +6,9 @@ import { Layers, Pencil, Radio } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
+import { assistantMaterialAccess, canAccessGroup } from "@/services/assistants/assistants.service";
 import { getGroupWithMembers, listAddableStudents } from "@/services/groups/groups.service";
 import { listGroupMaterials } from "@/services/materials/material-groups.service";
 import { GroupDialog } from "../group-dialog";
@@ -20,15 +21,21 @@ export default async function GroupDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireTutor();
+  const user = await requireStaff();
+  const isTutor = user.role === "TUTOR";
   const { id } = await params;
 
   const db = createServerSupabaseClient();
+  if (!(await canAccessGroup(db, user, id))) notFound();
   const group = await getGroupWithMembers(db, id);
   if (!group) notFound();
 
-  const addable = await listAddableStudents(db, id);
-  const materials = await listGroupMaterials(db, id);
+  const addable = isTutor ? await listAddableStudents(db, id) : [];
+  let materials = await listGroupMaterials(db, id);
+  if (!isTutor) {
+    const access = await assistantMaterialAccess(db, user.id);
+    materials = materials.filter((m) => access.has(m.id));
+  }
 
   return (
     <div className="space-y-6">
@@ -36,20 +43,41 @@ export default async function GroupDetailPage({
         title={group.name}
         description="Состав группы"
         actions={
-          <GroupDialog
-            mode="edit"
-            group={group}
-            trigger={
-              <Button variant="outline">
-                <Pencil className="h-4 w-4" />
-                Переименовать
-              </Button>
-            }
-          />
+          isTutor ? (
+            <GroupDialog
+              mode="edit"
+              group={group}
+              trigger={
+                <Button variant="outline">
+                  <Pencil className="h-4 w-4" />
+                  Переименовать
+                </Button>
+              }
+            />
+          ) : null
         }
       />
 
-      <GroupMembers groupId={group.id} members={group.members} addable={addable} />
+      {isTutor ? (
+        <GroupMembers groupId={group.id} members={group.members} addable={addable} />
+      ) : (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Участники ({group.members.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {group.members.length === 0 ? (
+              <p className="text-sm text-muted-foreground">В группе нет учеников.</p>
+            ) : (
+              <ul className="divide-y text-sm">
+                {group.members.map((m) => (
+                  <li key={m.id} className="py-2">{m.full_name}</li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-2">

@@ -11,7 +11,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = "TUTOR" | "STUDENT";
+export type UserRole = "TUTOR" | "STUDENT" | "ASSISTANT";
 export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";
@@ -454,6 +454,18 @@ export interface Database {
         Row: { material_id: string; group_id: string; created_at: string };
         Insert: { material_id: string; group_id: string; created_at?: string };
         Update: { material_id?: string; group_id?: string; created_at?: string };
+        Relationships: [];
+      };
+      assistant_groups: {
+        Row: { assistant_id: string; group_id: string };
+        Insert: { assistant_id: string; group_id: string };
+        Update: { assistant_id?: string; group_id?: string };
+        Relationships: [];
+      };
+      assistant_materials: {
+        Row: { assistant_id: string; material_id: string; can_edit: boolean };
+        Insert: { assistant_id: string; material_id: string; can_edit?: boolean };
+        Update: { assistant_id?: string; material_id?: string; can_edit?: boolean };
         Relationships: [];
       };
       material_item_pins: {

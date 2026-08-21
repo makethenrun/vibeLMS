@@ -5,7 +5,8 @@ import { BarChart3, Pencil } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
+import { canViewMaterial } from "@/services/assistants/assistants.service";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
@@ -25,10 +26,11 @@ export default async function MaterialOverviewPage({
 }: {
   params: Promise<{ materialId: string }>;
 }) {
-  await requireTutor();
+  const user = await requireStaff();
   const { materialId } = await params;
 
   const db = createServerSupabaseClient();
+  if (!(await canViewMaterial(db, user, materialId))) notFound();
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 

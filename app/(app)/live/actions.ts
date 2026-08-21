@@ -2,11 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getStudentOrNull, getTutorOrNull } from "@/lib/auth/guards";
+import { getStaffOrNull, getStudentOrNull } from "@/lib/auth/guards";
+import type { Db } from "@/lib/db/supabase";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
 import { itemsForScope, type ScopeKind } from "@/lib/materials/scope";
+import { canAccessGroup, canViewMaterial } from "@/services/assistants/assistants.service";
 import type { ItemSubmissionRow } from "@/types";
+import type { CurrentUser } from "@/lib/auth/current-user";
 import * as live from "@/services/materials/live-session.service";
 import { getMaterialTree } from "@/services/materials/material-tree.service";
 
@@ -14,10 +17,23 @@ function validDrawing(drawing: string | null): boolean {
   return drawing === null || (typeof drawing === "string" && drawing.startsWith("data:image/") && drawing.length <= 3_000_000);
 }
 
+/** Staff allowed to drive a session: the tutor, or an assistant for that group. */
+async function sessionStaff(db: Db, sessionId: string): Promise<CurrentUser | null> {
+  const user = await getStaffOrNull();
+  if (!user) return null;
+  if (user.role === "TUTOR") return user;
+  const session = await live.getSession(db, sessionId);
+  if (!session) return null;
+  return (await canAccessGroup(db, user, session.group_id)) ? user : null;
+}
+
 export async function startSessionAction(materialId: string, groupId: string): Promise<ActionResult<{ sessionId: string }>> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
+  const user = await getStaffOrNull();
+  if (!user) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
+  if (user.role === "ASSISTANT" && !((await canAccessGroup(db, user, groupId)) && (await canViewMaterial(db, user, materialId)))) {
+    return fail("Нет доступа к группе или материалу");
+  }
   try {
     const session = await live.startSession(db, groupId, materialId);
     // Students should see a lesson right away.
@@ -32,9 +48,8 @@ export async function startSessionAction(materialId: string, groupId: string): P
 }
 
 export async function setActiveScopeAction(sessionId: string, kind: ScopeKind, id: string | null): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
   try {
     await live.setActiveScope(db, sessionId, kind, id);
     return ok();
@@ -44,9 +59,8 @@ export async function setActiveScopeAction(sessionId: string, kind: ScopeKind, i
 }
 
 export async function setFocusedItemAction(sessionId: string, itemId: string | null): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
   try {
     await live.setFocusedItem(db, sessionId, itemId);
     return ok();
@@ -56,10 +70,9 @@ export async function setFocusedItemAction(sessionId: string, itemId: string | n
 }
 
 export async function saveTutorDrawingAction(sessionId: string, itemId: string, drawing: string | null): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
   if (!validDrawing(drawing)) return fail("Некорректный рисунок");
   const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
   try {
     await live.upsertDrawing(db, sessionId, itemId, live.TUTOR_AUTHOR, null, drawing);
     return ok();
@@ -83,9 +96,8 @@ export async function saveStudentDrawingAction(sessionId: string, itemId: string
 }
 
 export async function endSessionAction(sessionId: string): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
   try {
     await live.endSession(db, sessionId);
     revalidatePath("/learn", "layout");
@@ -106,9 +118,8 @@ export async function pollSessionResultsAction(
   tutorDrawings: Record<string, string>;
   watchDrawings: Record<string, string>;
 }>> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
   try {
     const session = await live.getSession(db, sessionId);
     if (!session) return fail("Сессия не найдена");

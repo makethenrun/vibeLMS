@@ -19,6 +19,19 @@ export async function requireTutor(): Promise<CurrentUser> {
   return user;
 }
 
+/** Page-loader guard: requires staff (TUTOR or ASSISTANT) or redirects. */
+export async function requireStaff(): Promise<CurrentUser> {
+  const user = await requireUser();
+  if (user.role !== "TUTOR" && user.role !== "ASSISTANT") redirect("/dashboard");
+  return user;
+}
+
+/** Server-Action guard: returns staff (TUTOR or ASSISTANT) or null. */
+export async function getStaffOrNull(): Promise<CurrentUser | null> {
+  const user = await getCurrentUser();
+  return user && (user.role === "TUTOR" || user.role === "ASSISTANT") ? user : null;
+}
+
 /** Page-loader guard: requires a STUDENT with a linked profile. */
 export async function requireStudent(): Promise<CurrentStudent> {
   const user = await requireUser();

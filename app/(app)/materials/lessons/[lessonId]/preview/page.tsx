@@ -6,7 +6,8 @@ import { Pencil } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
+import { canEditMaterial, canViewMaterial } from "@/services/assistants/assistants.service";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
@@ -26,13 +27,15 @@ export default async function LessonPreviewPage({
   params: Promise<{ lessonId: string }>;
   searchParams: Promise<{ m?: string }>;
 }) {
-  await requireTutor();
+  const user = await requireStaff();
   const { lessonId } = await params;
   const { m } = await searchParams;
 
   const db = createServerSupabaseClient();
   const ctx = await lessonContext(db, lessonId);
   if (!ctx) notFound();
+  if (!(await canViewMaterial(db, user, ctx.materialId))) notFound();
+  const canEdit = await canEditMaterial(db, user, ctx.materialId);
 
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
@@ -54,11 +57,13 @@ export default async function LessonPreviewPage({
           tree={<StudentModuleTree lessonHref={`/materials/lessons/${lessonId}/preview`} modules={modules} activeModuleId={active?.id} />}
           treeTitle="Модули и упражнения"
           navActions={
-            <Button asChild size="icon" variant="outline" className="h-11 w-11 rounded-full" title="К редактированию">
-              <Link href={`/materials/lessons/${lessonId}`} aria-label="К редактированию">
-                <Pencil className="h-5 w-5" />
-              </Link>
-            </Button>
+            canEdit ? (
+              <Button asChild size="icon" variant="outline" className="h-11 w-11 rounded-full" title="К редактированию">
+                <Link href={`/materials/lessons/${lessonId}`} aria-label="К редактированию">
+                  <Pencil className="h-5 w-5" />
+                </Link>
+              </Button>
+            ) : undefined
           }
         >
           {active ? (
