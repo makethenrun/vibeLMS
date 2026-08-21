@@ -456,6 +456,33 @@ export interface Database {
         Update: { material_id?: string; group_id?: string; created_at?: string };
         Relationships: [];
       };
+      messages: {
+        Row: {
+          id: string;
+          sender_id: string;
+          recipient_id: string;
+          body: string;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          sender_id: string;
+          recipient_id: string;
+          body: string;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          sender_id?: string;
+          recipient_id?: string;
+          body?: string;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Relationships: [];
+      };
       assistant_groups: {
         Row: { assistant_id: string; group_id: string };
         Insert: { assistant_id: string; group_id: string };
