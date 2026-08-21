@@ -391,6 +391,7 @@ export interface Database {
           active_node_id: string | null;
           focused_item_id: string | null;
           drawing: string | null;
+          host_id: string | null;
           created_at: string;
           updated_at: string;
           ended_at: string | null;
@@ -404,6 +405,7 @@ export interface Database {
           active_node_id?: string | null;
           focused_item_id?: string | null;
           drawing?: string | null;
+          host_id?: string | null;
           created_at?: string;
           updated_at?: string;
           ended_at?: string | null;
@@ -417,10 +419,17 @@ export interface Database {
           active_node_id?: string | null;
           focused_item_id?: string | null;
           drawing?: string | null;
+          host_id?: string | null;
           created_at?: string;
           updated_at?: string;
           ended_at?: string | null;
         };
+        Relationships: [];
+      };
+      live_session_attendance: {
+        Row: { session_id: string; student_id: string; first_seen: string };
+        Insert: { session_id: string; student_id: string; first_seen?: string };
+        Update: { session_id?: string; student_id?: string; first_seen?: string };
         Relationships: [];
       };
       live_drawings: {

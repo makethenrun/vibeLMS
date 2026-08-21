@@ -37,15 +37,96 @@ export async function getActiveSession(db: Db, groupId: string): Promise<LiveSes
 }
 
 /** Ends any active session for the group, then starts a fresh one. */
-export async function startSession(db: Db, groupId: string, materialId: string): Promise<LiveSessionRow> {
+export async function startSession(db: Db, groupId: string, materialId: string, hostId: string): Promise<LiveSessionRow> {
   await db.from("live_sessions").update({ ended_at: new Date().toISOString() }).eq("group_id", groupId).is("ended_at", null);
   const { data, error } = await db
     .from("live_sessions")
-    .insert({ group_id: groupId, material_id: materialId })
+    .insert({ group_id: groupId, material_id: materialId, host_id: hostId })
     .select()
     .single();
   if (error) throw new Error(error.message);
   return data;
+}
+
+/** Marks a student present in a session (first poll). No-op if already marked. */
+export async function recordAttendance(db: Db, sessionId: string, studentId: string): Promise<void> {
+  await db
+    .from("live_session_attendance")
+    .upsert({ session_id: sessionId, student_id: studentId }, { onConflict: "session_id,student_id", ignoreDuplicates: true });
+}
+
+export interface SessionHistoryRow {
+  id: string;
+  groupName: string;
+  hostLogin: string | null;
+  startedAt: string;
+  endedAt: string;
+  attended?: boolean;
+}
+
+function twoMonthsAgo(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 2);
+  return d.toISOString();
+}
+
+/** Retention: drop ended sessions older than two months (cascades attendance/drawings). */
+export async function purgeOldSessions(db: Db): Promise<void> {
+  await db.from("live_sessions").delete().not("ended_at", "is", null).lt("ended_at", twoMonthsAgo());
+}
+
+export async function listSessionHistory(
+  db: Db,
+  viewer: { role: "TUTOR" | "ASSISTANT" | "STUDENT"; userId: string; studentId?: string; groupIds?: string[] },
+): Promise<SessionHistoryRow[]> {
+  await purgeOldSessions(db);
+
+  let query = db
+    .from("live_sessions")
+    .select("id, group_id, host_id, created_at, ended_at")
+    .not("ended_at", "is", null)
+    .gte("ended_at", twoMonthsAgo())
+    .order("ended_at", { ascending: false })
+    .limit(300);
+
+  if (viewer.role === "ASSISTANT") query = query.eq("host_id", viewer.userId);
+  if (viewer.role === "STUDENT") {
+    if (!viewer.groupIds || viewer.groupIds.length === 0) return [];
+    query = query.in("group_id", viewer.groupIds);
+  }
+
+  const { data } = await query;
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const { data: groups } = await db.from("groups").select("id, name").in("id", [...new Set(rows.map((r) => r.group_id))]);
+  const groupName = new Map((groups ?? []).map((g) => [g.id, g.name] as const));
+
+  const hostIds = [...new Set(rows.map((r) => r.host_id).filter((v): v is string => Boolean(v)))];
+  const hostLogin = new Map<string, string>();
+  if (hostIds.length > 0) {
+    const { data: hosts } = await db.from("users").select("id, login").in("id", hostIds);
+    for (const h of hosts ?? []) hostLogin.set(h.id, h.login);
+  }
+
+  let attended = new Set<string>();
+  if (viewer.role === "STUDENT" && viewer.studentId) {
+    const { data: att } = await db
+      .from("live_session_attendance")
+      .select("session_id")
+      .eq("student_id", viewer.studentId)
+      .in("session_id", rows.map((r) => r.id));
+    attended = new Set((att ?? []).map((a) => a.session_id));
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    groupName: groupName.get(r.group_id) ?? "—",
+    hostLogin: r.host_id ? hostLogin.get(r.host_id) ?? "—" : null,
+    startedAt: r.created_at,
+    endedAt: r.ended_at as string,
+    attended: viewer.role === "STUDENT" ? attended.has(r.id) : undefined,
+  }));
 }
 
 export async function setActiveScope(db: Db, sessionId: string, kind: ScopeKind, id: string | null): Promise<void> {

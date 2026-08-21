@@ -12,8 +12,11 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getWeekEnd, getWeekStart, parseDateParam, shiftWeek, toDateParam } from "@/lib/utils/date";
 import { getStudentGroupIds, listGroups } from "@/services/groups/groups.service";
 import { listLessonsBetween } from "@/services/lessons/lessons.service";
+import { assistantGroupIds } from "@/services/assistants/assistants.service";
+import { listSessionHistory, type SessionHistoryRow } from "@/services/materials/live-session.service";
 import type { LessonWithGroup } from "@/types";
 import { LessonDialog } from "./lesson-dialog";
+import { SessionHistory } from "./session-history";
 import { WeekCalendar } from "./week-calendar";
 
 export const metadata: Metadata = { title: "Занятия" };
@@ -37,14 +40,22 @@ export default async function LessonsPage({
 
   const range = { from: weekStart.toISOString(), to: weekEnd.toISOString() };
 
+  let history: SessionHistoryRow[] = [];
+
   if (isTutor) {
     const groupList = await listGroups(db);
     groups = groupList.map((group) => ({ id: group.id, name: group.name }));
     lessons = await listLessonsBetween(db, range);
+    history = await listSessionHistory(db, { role: "TUTOR", userId: user.id });
+  } else if (user.role === "ASSISTANT") {
+    const groupIds = await assistantGroupIds(db, user.id);
+    lessons = groupIds.length ? await listLessonsBetween(db, { ...range, groupIds }) : [];
+    history = await listSessionHistory(db, { role: "ASSISTANT", userId: user.id });
   } else {
     const student = await getCurrentStudent();
     const groupIds = student ? await getStudentGroupIds(db, student.studentId) : [];
     lessons = await listLessonsBetween(db, { ...range, groupIds });
+    history = await listSessionHistory(db, { role: "STUDENT", userId: user.id, studentId: student?.studentId, groupIds });
   }
 
   const prevWeek = toDateParam(shiftWeek(weekStart, -1));
@@ -94,6 +105,8 @@ export default async function LessonsPage({
         isTutor={isTutor}
         groups={groups}
       />
+
+      <SessionHistory rows={history} role={user.role} />
     </div>
   );
 }

@@ -51,7 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Ученики", href: "/students", icon: Users, roles: TUTOR_ONLY },
   { label: "Ассистенты", href: "/assistants", icon: UsersRound, roles: TUTOR_ONLY },
   { label: "Группы", href: "/groups", icon: UsersRound, roles: STAFF },
-  { label: "Занятия", href: "/lessons", icon: CalendarDays, roles: BOTH },
+  { label: "Занятия", href: "/lessons", icon: CalendarDays, roles: ALL },
   { label: "Материалы", href: "/materials", icon: Library, roles: STAFF },
   { label: "Обучение", href: "/learn", icon: GraduationCap, roles: STUDENT_ONLY },
   { label: "Файлы", href: "/files", icon: FileText, roles: ALL },

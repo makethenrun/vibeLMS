@@ -35,7 +35,7 @@ export async function startSessionAction(materialId: string, groupId: string): P
     return fail("Нет доступа к группе или материалу");
   }
   try {
-    const session = await live.startSession(db, groupId, materialId);
+    const session = await live.startSession(db, groupId, materialId, user.id);
     // Students should see a lesson right away.
     const tree = await getMaterialTree(db, materialId);
     const firstLesson = tree[0]?.lessons[0]?.id ?? null;
@@ -154,6 +154,8 @@ export async function pollStudentSessionAction(
     if (!(await live.studentInSession(db, student.studentId, sessionId))) return fail("Нет доступа");
     const session = await live.getSession(db, sessionId);
     if (!session) return fail("Сессия не найдена");
+    // Mark the student present (only while the session is still running).
+    if (!session.ended_at) await live.recordAttendance(db, sessionId, student.studentId);
     const state = live.toState(session);
     const tree = await getMaterialTree(db, session.material_id);
     const itemIds = itemsForScope(tree, state.kind, state.scopeId);
