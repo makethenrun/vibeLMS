@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Pin, PinOff, Radio, Square } from "lucide-react";
+import { ChevronDown, ChevronRight, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ export function SessionConsole({
   const [watchDrawings, setWatchDrawings] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
   const polling = useRef(false);
   const expandedRef = useRef<string | null>(null);
   expandedRef.current = expanded;
@@ -131,13 +132,19 @@ export function SessionConsole({
           </h1>
           <p className="text-sm text-muted-foreground">{materialTitle}</p>
         </div>
-        <LoadingButton variant="outline" loading={ending} onClick={end} className="text-destructive">
-          <Square className="h-4 w-4" />
-          Завершить занятие
-        </LoadingButton>
+        <div className="flex items-center gap-2">
+          <Button variant={resultsOpen ? "default" : "outline"} onClick={() => setResultsOpen((o) => !o)}>
+            <Users className="h-4 w-4" />
+            Результаты · {doneCount}/{results.length}
+          </Button>
+          <LoadingButton variant="outline" loading={ending} onClick={end} className="text-destructive">
+            <Square className="h-4 w-4" />
+            Завершить занятие
+          </LoadingButton>
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
+      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* Exercises tree */}
         <aside className="h-fit rounded-lg border bg-card p-2 lg:sticky lg:top-4">
           <p className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Упражнения</p>
@@ -178,12 +185,19 @@ export function SessionConsole({
           )}
         </main>
 
-        {/* Live results */}
-        <aside className="h-fit rounded-lg border bg-card p-3 lg:sticky lg:top-4">
-          <p className="pb-2 text-xs font-semibold text-muted-foreground">
-            Результаты · выполнили {doneCount}/{results.length}
-          </p>
-          {scopeItemIds.length === 0 ? (
+        {/* Live results — wide slide-over toggled from the header */}
+        {resultsOpen ? (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setResultsOpen(false)} aria-hidden />
+            <aside className="fixed bottom-0 right-0 top-14 z-50 flex w-[min(760px,calc(100vw-4rem))] flex-col border-l bg-card shadow-xl">
+              <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+                <p className="text-sm font-semibold">Результаты · выполнили {doneCount}/{results.length}</p>
+                <button type="button" onClick={() => setResultsOpen(false)} aria-label="Закрыть" className="rounded p-1 hover:bg-accent">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3">
+                {scopeItemIds.length === 0 ? (
             <p className="text-xs text-muted-foreground">Нет активного упражнения.</p>
           ) : (
             <ul className="space-y-1">
@@ -233,10 +247,13 @@ export function SessionConsole({
                   </li>
                 );
               })}
-              {results.length === 0 ? <li className="text-xs text-muted-foreground">В группе нет учеников.</li> : null}
-            </ul>
-          )}
-        </aside>
+                  {results.length === 0 ? <li className="text-xs text-muted-foreground">В группе нет учеников.</li> : null}
+                </ul>
+                )}
+              </div>
+            </aside>
+          </>
+        ) : null}
       </div>
     </div>
   );
