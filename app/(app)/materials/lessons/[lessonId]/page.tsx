@@ -62,12 +62,6 @@ export default async function LessonPage({
                     Результаты
                   </Link>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href={`/materials/lessons/${lessonId}/preview`}>
-                    <Eye className="h-4 w-4" />
-                    Просмотр как ученик
-                  </Link>
-                </Button>
                 <LessonBackgroundDialog
                   lessonId={lessonId}
                   backgroundUrl={background.url}
@@ -84,6 +78,13 @@ export default async function LessonPage({
         <Workspace
           tree={<ModuleTree lessonId={lessonId} modules={modules} activeModuleId={active?.id} />}
           treeTitle="Модули"
+          navActions={
+            <Button asChild size="icon" variant="outline" className="h-11 w-11 rounded-full" title="Просмотр как ученик">
+              <Link href={`/materials/lessons/${lessonId}/preview`} aria-label="Просмотр как ученик">
+                <Eye className="h-5 w-5" />
+              </Link>
+            </Button>
+          }
         >
           {active ? (
             <ModulePane module={active} availableGroups={availableGroups} pins={pins} />

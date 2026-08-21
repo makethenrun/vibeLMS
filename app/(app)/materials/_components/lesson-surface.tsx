@@ -9,7 +9,8 @@ export interface LessonBackgroundView {
 }
 
 function bgStyle(bg: LessonBackgroundView): CSSProperties {
-  const base: CSSProperties = { backgroundImage: `url("${bg.url}")`, backgroundPosition: `center ${bg.position}` };
+  // `fixed` keeps the picture pinned to the viewport — it doesn't scroll away.
+  const base: CSSProperties = { backgroundImage: `url("${bg.url}")`, backgroundPosition: `center ${bg.position}`, backgroundAttachment: "fixed" };
   if (bg.fit === "tile") return { ...base, backgroundRepeat: "repeat", backgroundSize: `${bg.scale}%` };
   return { ...base, backgroundRepeat: "no-repeat", backgroundSize: bg.fit };
 }
