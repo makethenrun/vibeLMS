@@ -147,6 +147,7 @@ export function StudentItem({
             content={item.content as unknown as FreeContent}
             initialAnswer={answer.text ?? ""}
             initialScore={initialScore}
+            editedAnswer={cleared ? null : submission?.edited_answer ?? null}
           />
         );
       }

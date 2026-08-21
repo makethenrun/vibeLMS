@@ -21,6 +21,7 @@ import {
   setFocusedItemAction,
 } from "@/app/(app)/live/actions";
 import { ExerciseTree } from "./exercise-tree";
+import { FreeAnswerEditor } from "./free-answer-editor";
 
 export function SessionConsole({
   sessionId,
@@ -228,15 +229,26 @@ export function SessionConsole({
                           <PreviewProvider>
                             {scopeItemIds.map((id) => {
                               const item = itemById.get(id);
-                              return item ? (
-                                <div key={id} className="relative">
-                                  <StudentItem item={item} submission={r.submissions[id]} drawingOverride={null} />
-                                  {watchDrawings[id] ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={watchDrawings[id]} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
+                              if (!item) return null;
+                              const sub = r.submissions[id];
+                              return (
+                                <div key={id} className="space-y-2">
+                                  <div className="relative">
+                                    <StudentItem item={item} submission={sub} drawingOverride={null} />
+                                    {watchDrawings[id] ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={watchDrawings[id]} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
+                                    ) : null}
+                                  </div>
+                                  {item.type === "FREE" && sub ? (
+                                    <FreeAnswerEditor
+                                      studentId={r.studentId}
+                                      itemId={id}
+                                      initial={sub.edited_answer ?? ((sub.answer as { text?: string })?.text ?? "")}
+                                    />
                                   ) : null}
                                 </div>
-                              ) : null;
+                              );
                             })}
                           </PreviewProvider>
                         ) : (
