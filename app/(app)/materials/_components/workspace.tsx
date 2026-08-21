@@ -10,10 +10,12 @@ export function Workspace({
   children,
   tree,
   treeTitle,
+  navActions,
 }: {
   children: ReactNode;
   tree: ReactNode;
   treeTitle: string;
+  navActions?: ReactNode;
 }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -21,7 +23,7 @@ export function Workspace({
       <aside className="order-first h-fit rounded-lg border bg-card p-4 shadow-sm lg:order-last lg:sticky lg:top-4">
         <h2 className="mb-3 text-sm font-semibold">{treeTitle}</h2>
         {tree}
-        <DictionaryFab />
+        <DictionaryFab extra={navActions} />
       </aside>
     </div>
   );

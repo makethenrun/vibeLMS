@@ -46,23 +46,20 @@ export default async function LessonPreviewPage({
           <PageHeader
             title={ctx.title}
             description="Так урок видит ученик. Ответы проверяются, но не сохраняются."
-            actions={
-              <>
-                <Badge variant="secondary">Просмотр как ученик</Badge>
-                <Button asChild variant="outline">
-                  <Link href={`/materials/lessons/${lessonId}`}>
-                    <Pencil className="h-4 w-4" />
-                    К редактированию
-                  </Link>
-                </Button>
-              </>
-            }
+            actions={<Badge variant="secondary">Просмотр как ученик</Badge>}
           />
         }
       >
         <Workspace
           tree={<StudentModuleTree lessonHref={`/materials/lessons/${lessonId}/preview`} modules={modules} activeModuleId={active?.id} />}
           treeTitle="Модули и упражнения"
+          navActions={
+            <Button asChild size="icon" variant="outline" className="h-11 w-11 rounded-full" title="К редактированию">
+              <Link href={`/materials/lessons/${lessonId}`} aria-label="К редактированию">
+                <Pencil className="h-5 w-5" />
+              </Link>
+            </Button>
+          }
         >
           {active ? (
             <PreviewProvider>

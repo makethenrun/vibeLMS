@@ -71,7 +71,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
                 onValueChange={(v) => setValues((prev) => ({ ...prev, [key]: v }))}
                 disabled={locked}
               >
-                <SelectTrigger className={cn("inline-flex h-8 w-40 align-middle", feedbackClass(locked, ok))}>
+                <SelectTrigger className={cn("inline-flex h-8 w-40 border-2 border-primary/60 bg-primary/5 align-middle", feedbackClass(locked, ok))}>
                   <SelectValue placeholder="…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -88,7 +88,7 @@ export function GapsSolve({ itemId, content, initialScore, initialAnswer }: Gaps
               disabled={locked}
               value={values[key] ?? ""}
               onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
-              className={cn("inline-flex h-8 w-32 align-middle", feedbackClass(locked, ok))}
+              className={cn("inline-flex h-8 w-32 border-2 border-primary/60 bg-primary/5 align-middle", feedbackClass(locked, ok))}
             />
           );
         })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BookA, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import type { DictionaryEntry } from "@/types";
 import { listDictionaryAction } from "@/app/(app)/dictionary/actions";
 
-export function DictionaryFab() {
+export function DictionaryFab({ extra }: { extra?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<DictionaryEntry[] | null>(null);
   const [q, setQ] = useState("");
@@ -29,7 +29,8 @@ export function DictionaryFab() {
 
   return (
     <div className="mt-3 border-t pt-3">
-      <div className="flex justify-center">
+      <div className="flex items-center justify-center gap-2">
+        {extra}
         <Button
           type="button"
           size="icon"
