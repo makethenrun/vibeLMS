@@ -16,38 +16,57 @@ function bgStyle(bg: LessonBackgroundView): CSSProperties {
 }
 
 /**
- * Paints an optional lesson background behind the whole page. Header and module
- * heading are placed in white blocks (via `header`) so they read over it.
- * `dim` (0..80) darkens the image. With no background it renders plainly.
+ * Paints an optional lesson background behind the whole page, edge to edge.
+ * `header` (title) sits in a white block; `actions` float over the background;
+ * `topSlot` (e.g. breadcrumbs) renders above them. `dim` (0..80) darkens it.
  */
 export function LessonSurface({
   background,
   header,
+  actions,
+  topSlot,
   children,
 }: {
   background: LessonBackgroundView;
   header?: ReactNode;
+  actions?: ReactNode;
+  topSlot?: ReactNode;
   children: ReactNode;
 }) {
   if (!background.url) {
     return (
       <div className="space-y-6">
-        {header}
+        {topSlot}
+        {header || actions ? (
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>{header}</div>
+            {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+          </div>
+        ) : null}
         {children}
       </div>
     );
   }
 
+  const bar = (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      {header ? <div className="rounded-lg bg-card/95 p-4 shadow-sm">{header}</div> : <div />}
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </div>
+  );
+
   return (
-    <div className="relative">
-      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-xl" style={bgStyle(background)} />
+    // Full-bleed: escape the main content padding so the background reaches the edges.
+    <div className="relative -mx-4 -mt-4 md:-mx-6 md:-mt-6">
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={bgStyle(background)} />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-xl"
+        className="pointer-events-none absolute inset-0"
         style={{ backgroundColor: `rgba(0,0,0,${Math.min(80, Math.max(0, background.dim)) / 100})` }}
       />
-      <div className="relative space-y-6 p-4 sm:p-6">
-        {header ? <div className="rounded-lg bg-card/95 p-4 shadow-sm">{header}</div> : null}
+      <div className="relative space-y-6 p-4 md:p-6">
+        {topSlot}
+        {bar}
         {children}
       </div>
     </div>

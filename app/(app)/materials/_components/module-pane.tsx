@@ -13,9 +13,10 @@ interface ModulePaneProps {
   module: ModuleWithItems;
   availableGroups: Group[];
   pins: Record<string, string[]>;
+  onBackground?: boolean;
 }
 
-export function ModulePane({ module, availableGroups, pins }: ModulePaneProps) {
+export function ModulePane({ module, availableGroups, pins, onBackground = false }: ModulePaneProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importOpen, setImportOpen] = useState(false);
 
@@ -31,7 +32,7 @@ export function ModulePane({ module, availableGroups, pins }: ModulePaneProps) {
   return (
     <section id={`module-${module.id}`} className="scroll-mt-20 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">{module.title}</h3>
+        <h3 className={onBackground ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{module.title}</h3>
         {selected.size > 0 ? (
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4" />

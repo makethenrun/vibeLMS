@@ -42,16 +42,16 @@ export default async function LessonPreviewPage({
   const background = await getLessonBackground(db, lessonId);
 
   return (
-    <div className="space-y-6">
+    <>
       <LessonSurface
         background={background}
         header={
           <PageHeader
             title={ctx.title}
             description="Так урок видит ученик. Ответы проверяются, но не сохраняются."
-            actions={<Badge variant="secondary">Просмотр как ученик</Badge>}
           />
         }
+        actions={<Badge variant="secondary">Просмотр как ученик</Badge>}
       >
         <Workspace
           tree={<StudentModuleTree lessonHref={`/materials/lessons/${lessonId}/preview`} modules={modules} activeModuleId={active?.id} />}
@@ -82,6 +82,6 @@ export default async function LessonPreviewPage({
           )}
         </Workspace>
       </LessonSurface>
-    </div>
+    </>
   );
 }
