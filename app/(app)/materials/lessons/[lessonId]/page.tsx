@@ -50,33 +50,33 @@ export default async function LessonPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <Breadcrumbs crumbs={ctx.crumbs} />
+    <>
       <LessonSurface
         background={background}
+        topSlot={<Breadcrumbs crumbs={ctx.crumbs} />}
         header={
           <PageHeader
             title={ctx.title}
             description="Один модуль на странице; переключайтесь в списке справа."
-            actions={
-              <>
-                <Button asChild variant="outline">
-                  <Link href={`/materials/${ctx.materialId}/results`}>
-                    <BarChart3 className="h-4 w-4" />
-                    Результаты
-                  </Link>
-                </Button>
-                <LessonBackgroundDialog
-                  lessonId={lessonId}
-                  backgroundUrl={background.url}
-                  dim={background.dim}
-                  fit={background.fit}
-                  position={background.position}
-                  scale={background.scale}
-                />
-              </>
-            }
           />
+        }
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link href={`/materials/${ctx.materialId}/results`}>
+                <BarChart3 className="h-4 w-4" />
+                Результаты
+              </Link>
+            </Button>
+            <LessonBackgroundDialog
+              lessonId={lessonId}
+              backgroundUrl={background.url}
+              dim={background.dim}
+              fit={background.fit}
+              position={background.position}
+              scale={background.scale}
+            />
+          </>
         }
       >
         <Workspace
@@ -91,7 +91,7 @@ export default async function LessonPage({
           }
         >
           {active ? (
-            <ModulePane module={active} availableGroups={availableGroups} pins={pins} />
+            <ModulePane module={active} availableGroups={availableGroups} pins={pins} onBackground={Boolean(background.url)} />
           ) : (
             <p className="text-sm text-muted-foreground">
               В уроке пока нет модулей. Добавьте первый модуль в списке справа.
@@ -99,6 +99,6 @@ export default async function LessonPage({
           )}
         </Workspace>
       </LessonSurface>
-    </div>
+    </>
   );
 }
