@@ -64,30 +64,22 @@ export interface SessionHistoryRow {
   attended?: boolean;
 }
 
-function twoMonthsAgo(): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 2);
-  return d.toISOString();
-}
-
-/** Retention: drop ended sessions older than two months (cascades attendance/drawings). */
-export async function purgeOldSessions(db: Db): Promise<void> {
-  await db.from("live_sessions").delete().not("ended_at", "is", null).lt("ended_at", twoMonthsAgo());
+/** Deletes one session (cascades attendance/drawings). */
+export async function deleteLiveSession(db: Db, sessionId: string): Promise<void> {
+  const { error } = await db.from("live_sessions").delete().eq("id", sessionId);
+  if (error) throw new Error(error.message);
 }
 
 export async function listSessionHistory(
   db: Db,
   viewer: { role: "TUTOR" | "ASSISTANT" | "STUDENT"; userId: string; studentId?: string; groupIds?: string[] },
 ): Promise<SessionHistoryRow[]> {
-  await purgeOldSessions(db);
-
   let query = db
     .from("live_sessions")
     .select("id, group_id, host_id, created_at, ended_at")
     .not("ended_at", "is", null)
-    .gte("ended_at", twoMonthsAgo())
     .order("ended_at", { ascending: false })
-    .limit(300);
+    .limit(500);
 
   if (viewer.role === "ASSISTANT") query = query.eq("host_id", viewer.userId);
   if (viewer.role === "STUDENT") {

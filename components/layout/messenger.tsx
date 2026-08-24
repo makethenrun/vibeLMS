@@ -1,16 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, MessageCircle, Send, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, MessageCircle, Send, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/lib/db/database.types";
 import type { MessageRow } from "@/types";
 import type { Peer } from "@/services/messages/messages.service";
-import { listPeersAction, openConversationAction, sendMessageAction, unreadCountAction } from "@/app/(app)/messages/actions";
+import {
+  deleteMessageAction,
+  listPeersAction,
+  openConversationAction,
+  sendMessageAction,
+  unreadCountAction,
+} from "@/app/(app)/messages/actions";
 
-export function Messenger() {
+export function Messenger({ role }: { role: UserRole }) {
+  const isTutor = role === "TUTOR";
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [peers, setPeers] = useState<Peer[]>([]);
@@ -18,11 +26,11 @@ export function Messenger() {
   const [thread, setThread] = useState<MessageRow[]>([]);
   const [meId, setMeId] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const [query, setQuery] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const busy = useRef(false);
 
-  // Unread badge — poll always, so a closed messenger still lights up.
   useEffect(() => {
     let alive = true;
     async function tick() {
@@ -56,7 +64,6 @@ export function Messenger() {
     }
   }, []);
 
-  // Peer list polling while open on the list.
   useEffect(() => {
     if (!open || peer) return;
     loadPeers();
@@ -64,7 +71,6 @@ export function Messenger() {
     return () => clearInterval(id);
   }, [open, peer, loadPeers]);
 
-  // Conversation polling while a peer is open.
   useEffect(() => {
     if (!open || !peer) return;
     loadThread(peer.id);
@@ -75,6 +81,11 @@ export function Messenger() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [thread]);
+
+  const filteredPeers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? peers.filter((p) => p.name.toLowerCase().includes(q)) : peers;
+  }, [peers, query]);
 
   async function send() {
     if (!peer || text.trim() === "") return;
@@ -87,16 +98,14 @@ export function Messenger() {
     else setText(body);
   }
 
+  async function remove(id: string) {
+    setThread((prev) => prev.filter((m) => m.id !== id));
+    await deleteMessageAction(id);
+  }
+
   return (
     <div className="relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Сообщения"
-        title="Сообщения"
-        className="relative"
-      >
+      <Button variant="ghost" size="icon" onClick={() => setOpen((o) => !o)} aria-label="Сообщения" title="Сообщения" className="relative">
         <MessageCircle className="h-5 w-5" />
         {unread > 0 ? (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
@@ -108,14 +117,14 @@ export function Messenger() {
       {open ? (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute right-0 top-11 z-50 flex h-[26rem] w-80 flex-col overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-xl">
+          <div className="absolute right-0 top-11 z-50 flex h-[28rem] w-80 flex-col overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-xl">
             <div className="flex items-center gap-2 border-b px-3 py-2">
               {peer ? (
                 <button type="button" onClick={() => setPeer(null)} aria-label="Назад" className="rounded p-1 hover:bg-accent">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
               ) : null}
-              <p className="flex-1 truncate text-sm font-semibold">{peer ? peer.login : "Сообщения"}</p>
+              <p className="flex-1 truncate text-sm font-semibold">{peer ? peer.name : "Сообщения"}</p>
               <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть" className="rounded p-1 hover:bg-accent">
                 <X className="h-4 w-4" />
               </button>
@@ -127,61 +136,66 @@ export function Messenger() {
                   {thread.length === 0 ? (
                     <p className="pt-4 text-center text-xs text-muted-foreground">Сообщений пока нет.</p>
                   ) : (
-                    thread.map((m) => (
-                      <div key={m.id} className={cn("flex", m.sender_id === meId ? "justify-end" : "justify-start")}>
-                        <div
-                          className={cn(
-                            "max-w-[80%] whitespace-pre-wrap break-words rounded-lg px-3 py-1.5 text-sm",
-                            m.sender_id === meId ? "bg-primary text-primary-foreground" : "bg-muted",
-                          )}
-                        >
-                          {m.body}
+                    thread.map((m) => {
+                      const mine = m.sender_id === meId;
+                      return (
+                        <div key={m.id} className={cn("group flex items-center gap-1", mine ? "justify-end" : "justify-start")}>
+                          {isTutor ? (
+                            <button
+                              type="button"
+                              onClick={() => remove(m.id)}
+                              aria-label="Удалить сообщение"
+                              className={cn("rounded p-1 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100", mine ? "order-first" : "order-last")}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          ) : null}
+                          <div className={cn("max-w-[80%] whitespace-pre-wrap break-words rounded-lg px-3 py-1.5 text-sm", mine ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                            {m.body}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                   <div ref={bottomRef} />
                 </div>
-                <form
-                  className="flex items-center gap-2 border-t p-2"
-                  onSubmit={(e) => { e.preventDefault(); void send(); }}
-                >
-                  <Input
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Сообщение…"
-                    className="h-9"
-                  />
+                <form className="flex items-center gap-2 border-t p-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
+                  <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Сообщение…" className="h-9" />
                   <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={sending || text.trim() === ""} aria-label="Отправить">
                     <Send className="h-4 w-4" />
                   </Button>
                 </form>
               </>
             ) : (
-              <div className="flex-1 overflow-y-auto p-2">
-                {peers.length === 0 ? (
-                  <p className="pt-4 text-center text-xs text-muted-foreground">Нет собеседников.</p>
-                ) : (
-                  <ul className="space-y-1">
-                    {peers.map((p) => (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => { setThread([]); setPeer(p); }}
-                          className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-accent"
-                        >
-                          <span className="truncate">{p.login}</span>
-                          {p.unread > 0 ? (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-                              {p.unread}
-                            </span>
-                          ) : null}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <>
+                <div className="border-b p-2">
+                  <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск…" className="h-8" />
+                </div>
+                <div className="flex-1 overflow-y-auto p-2">
+                  {filteredPeers.length === 0 ? (
+                    <p className="pt-4 text-center text-xs text-muted-foreground">Никого не найдено.</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {filteredPeers.map((p) => (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            onClick={() => { setThread([]); setPeer(p); }}
+                            className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-accent"
+                          >
+                            <span className="truncate">{p.name}</span>
+                            {p.unread > 0 ? (
+                              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                                {p.unread}
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </>

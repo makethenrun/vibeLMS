@@ -88,7 +88,7 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
           </Sheet>
 
           <Breadcrumbs className="min-w-0 flex-1" />
-          {role !== "STUDENT" ? <Messenger /> : null}
+          <Messenger role={role} />
           <UserMenu login={login} role={role} />
         </header>
 

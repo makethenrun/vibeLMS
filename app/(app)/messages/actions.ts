@@ -1,13 +1,13 @@
 "use server";
 
-import { getStaffOrNull } from "@/lib/auth/guards";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
 import type { MessageRow } from "@/types";
 import * as messages from "@/services/messages/messages.service";
 
 export async function listPeersAction(): Promise<ActionResult<{ peers: messages.Peer[] }>> {
-  const user = await getStaffOrNull();
+  const user = await getCurrentUser();
   if (!user) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
   try {
@@ -18,7 +18,7 @@ export async function listPeersAction(): Promise<ActionResult<{ peers: messages.
 }
 
 export async function unreadCountAction(): Promise<ActionResult<{ count: number }>> {
-  const user = await getStaffOrNull();
+  const user = await getCurrentUser();
   if (!user) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
   try {
@@ -29,7 +29,7 @@ export async function unreadCountAction(): Promise<ActionResult<{ count: number 
 }
 
 export async function openConversationAction(peerId: string): Promise<ActionResult<{ meId: string; messages: MessageRow[] }>> {
-  const user = await getStaffOrNull();
+  const user = await getCurrentUser();
   if (!user) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
   try {
@@ -43,7 +43,7 @@ export async function openConversationAction(peerId: string): Promise<ActionResu
 }
 
 export async function sendMessageAction(peerId: string, body: string): Promise<ActionResult<{ message: MessageRow }>> {
-  const user = await getStaffOrNull();
+  const user = await getCurrentUser();
   if (!user) return fail("Недостаточно прав");
   const text = body.trim();
   if (text === "") return fail("Пустое сообщение");
@@ -52,6 +52,19 @@ export async function sendMessageAction(peerId: string, body: string): Promise<A
   try {
     if (!(await messages.isPeer(db, user, peerId))) return fail("Нет доступа");
     return ok({ message: await messages.sendMessage(db, user.id, peerId, text) });
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
+/** Deleting messages is reserved for the main tutor. */
+export async function deleteMessageAction(messageId: string): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "TUTOR") return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    await messages.deleteMessage(db, messageId);
+    return ok();
   } catch (e) {
     return fail(getErrorMessage(e));
   }
