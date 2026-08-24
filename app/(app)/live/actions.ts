@@ -58,6 +58,23 @@ export async function setActiveScopeAction(sessionId: string, kind: ScopeKind, i
   }
 }
 
+/** Delete a session from history — tutor: any; assistant: only sessions they hosted. */
+export async function deleteSessionAction(sessionId: string): Promise<ActionResult> {
+  const user = await getStaffOrNull();
+  if (!user) return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    const session = await live.getSession(db, sessionId);
+    if (!session) return ok();
+    if (user.role !== "TUTOR" && session.host_id !== user.id) return fail("Можно удалять только свои занятия");
+    await live.deleteLiveSession(db, sessionId);
+    revalidatePath("/lessons");
+    return ok();
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
 export async function setFocusedItemAction(sessionId: string, itemId: string | null): Promise<ActionResult> {
   const db = createServerSupabaseClient();
   if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
