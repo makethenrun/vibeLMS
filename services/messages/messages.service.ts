@@ -112,10 +112,23 @@ export async function markRead(db: Db, userId: string, peerId: string): Promise<
     .is("read_at", null);
 }
 
-export async function sendMessage(db: Db, senderId: string, recipientId: string, body: string): Promise<MessageRow> {
+export async function sendMessage(
+  db: Db,
+  senderId: string,
+  recipientId: string,
+  body: string,
+  attachmentUrl?: string | null,
+  attachmentName?: string | null,
+): Promise<MessageRow> {
   const { data, error } = await db
     .from("messages")
-    .insert({ sender_id: senderId, recipient_id: recipientId, body })
+    .insert({
+      sender_id: senderId,
+      recipient_id: recipientId,
+      body,
+      attachment_url: attachmentUrl ?? null,
+      attachment_name: attachmentName ?? null,
+    })
     .select()
     .single();
   if (error) throw new Error(error.message);

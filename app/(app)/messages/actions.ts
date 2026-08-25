@@ -42,16 +42,24 @@ export async function openConversationAction(peerId: string): Promise<ActionResu
   }
 }
 
-export async function sendMessageAction(peerId: string, body: string): Promise<ActionResult<{ message: MessageRow }>> {
+export async function sendMessageAction(
+  peerId: string,
+  body: string,
+  attachmentUrl?: string | null,
+  attachmentName?: string | null,
+): Promise<ActionResult<{ message: MessageRow }>> {
   const user = await getCurrentUser();
   if (!user) return fail("Недостаточно прав");
   const text = body.trim();
-  if (text === "") return fail("Пустое сообщение");
+  const attach = attachmentUrl && attachmentUrl.trim() !== "" ? attachmentUrl.trim() : null;
+  if (text === "" && !attach) return fail("Пустое сообщение");
   if (text.length > 4000) return fail("Слишком длинное сообщение");
+  if (attach && !attach.startsWith("http")) return fail("Некорректный файл");
   const db = createServerSupabaseClient();
   try {
     if (!(await messages.isPeer(db, user, peerId))) return fail("Нет доступа");
-    return ok({ message: await messages.sendMessage(db, user.id, peerId, text) });
+    const message = await messages.sendMessage(db, user.id, peerId, text, attach, attach ? attachmentName ?? "файл" : null);
+    return ok({ message });
   } catch (e) {
     return fail(getErrorMessage(e));
   }

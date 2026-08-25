@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, MessageCircle, Send, Trash2, X } from "lucide-react";
+import { ChevronLeft, Loader2, MessageCircle, Paperclip, Send, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,10 @@ export function Messenger({ role }: { role: UserRole }) {
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
   const [sending, setSending] = useState(false);
+  const [attachment, setAttachment] = useState<{ url: string; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
 
   useEffect(() => {
@@ -87,15 +91,34 @@ export function Messenger({ role }: { role: UserRole }) {
     return q ? peers.filter((p) => p.name.toLowerCase().includes(q)) : peers;
   }, [peers, query]);
 
+  async function handleFile(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "chat");
+      const res = await fetch("/api/storage/upload", { method: "POST", body: fd });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) throw new Error(data.error ?? "Ошибка загрузки");
+      setAttachment({ url: data.url, name: file.name });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка загрузки");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function send() {
-    if (!peer || text.trim() === "") return;
+    if (!peer || (text.trim() === "" && !attachment)) return;
     setSending(true);
     const body = text;
+    const att = attachment;
     setText("");
-    const r = await sendMessageAction(peer.id, body);
+    setAttachment(null);
+    const r = await sendMessageAction(peer.id, body, att?.url ?? null, att?.name ?? null);
     setSending(false);
     if (r.success) setThread((prev) => [...prev, r.data.message]);
-    else setText(body);
+    else { setText(body); setAttachment(att); }
   }
 
   async function remove(id: string) {
@@ -150,8 +173,21 @@ export function Messenger({ role }: { role: UserRole }) {
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           ) : null}
-                          <div className={cn("max-w-[80%] whitespace-pre-wrap break-words rounded-lg px-3 py-1.5 text-sm", mine ? "bg-primary text-primary-foreground" : "bg-muted")}>
-                            {m.body}
+                          <div className={cn("max-w-[80%] space-y-1 rounded-lg px-3 py-1.5 text-sm", mine ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                            {m.body ? <div className="whitespace-pre-wrap break-words">{m.body}</div> : null}
+                            {m.attachment_url ? (
+                              /\.(png|jpe?g|webp|gif)$/i.test(m.attachment_url) ? (
+                                <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="block">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={m.attachment_url} alt={m.attachment_name ?? ""} className="max-h-40 rounded" />
+                                </a>
+                              ) : (
+                                <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 break-all underline">
+                                  <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                                  {m.attachment_name ?? "файл"}
+                                </a>
+                              )
+                            ) : null}
                           </div>
                         </div>
                       );
@@ -159,12 +195,32 @@ export function Messenger({ role }: { role: UserRole }) {
                   )}
                   <div ref={bottomRef} />
                 </div>
-                <form className="flex items-center gap-2 border-t p-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-                  <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Сообщение…" className="h-9" />
-                  <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={sending || text.trim() === ""} aria-label="Отправить">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </form>
+                <div className="space-y-2 border-t p-2">
+                  {attachment ? (
+                    <div className="flex items-center gap-2 rounded bg-muted px-2 py-1 text-xs">
+                      <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                      <span className="flex-1 truncate">{attachment.name}</span>
+                      <button type="button" onClick={() => setAttachment(null)} aria-label="Убрать файл" className="rounded p-0.5 hover:bg-accent">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : null}
+                  <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); e.target.value = ""; }}
+                    />
+                    <Button type="button" size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Прикрепить файл">
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                    </Button>
+                    <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Сообщение…" className="h-9" />
+                    <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={sending || (text.trim() === "" && !attachment)} aria-label="Отправить">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </form>
+                </div>
               </>
             ) : (
               <>

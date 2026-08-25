@@ -471,6 +471,8 @@ export interface Database {
           sender_id: string;
           recipient_id: string;
           body: string;
+          attachment_url: string | null;
+          attachment_name: string | null;
           created_at: string;
           read_at: string | null;
         };
@@ -479,6 +481,8 @@ export interface Database {
           sender_id: string;
           recipient_id: string;
           body: string;
+          attachment_url?: string | null;
+          attachment_name?: string | null;
           created_at?: string;
           read_at?: string | null;
         };
@@ -487,6 +491,8 @@ export interface Database {
           sender_id?: string;
           recipient_id?: string;
           body?: string;
+          attachment_url?: string | null;
+          attachment_name?: string | null;
           created_at?: string;
           read_at?: string | null;
         };
