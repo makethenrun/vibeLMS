@@ -5,7 +5,7 @@ import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { uploadFile } from "@/services/storage/storage.service";
 
-const ALLOWED_FOLDERS = new Set(["materials", "submissions"]);
+const ALLOWED_FOLDERS = new Set(["materials", "submissions", "chat"]);
 
 export async function POST(request: Request): Promise<NextResponse> {
   const user = await getCurrentUser();
@@ -31,8 +31,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     ? folderValue
     : "materials";
 
-  // Students may only upload homework submissions, not library materials.
-  if (user.role === "STUDENT" && folder !== "submissions") {
+  // Students may only upload homework submissions and chat attachments.
+  if (user.role === "STUDENT" && folder !== "submissions" && folder !== "chat") {
     return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
   }
 
