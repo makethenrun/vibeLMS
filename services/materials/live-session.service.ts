@@ -37,14 +37,41 @@ export async function getActiveSession(db: Db, groupId: string): Promise<LiveSes
 }
 
 /** Ends any active session for the group, then starts a fresh one. */
+/** A scheduled (not cancelled) lesson for the group near `now`, to link a session to. */
+async function findScheduledLesson(db: Db, groupId: string): Promise<string | null> {
+  const now = Date.now();
+  const from = new Date(now - 4 * 3600 * 1000).toISOString(); // started up to 4h after
+  const to = new Date(now + 2 * 3600 * 1000).toISOString(); // or up to 2h before
+  const { data } = await db
+    .from("lessons")
+    .select("id, start_time")
+    .eq("group_id", groupId)
+    .neq("status", "CANCELLED")
+    .gte("start_time", from)
+    .lte("start_time", to)
+    .order("start_time", { ascending: true });
+  if (!data || data.length === 0) return null;
+  // Closest scheduled lesson to now.
+  let best = data[0];
+  let bestDiff = Math.abs(new Date(best.start_time).getTime() - now);
+  for (const l of data) {
+    const diff = Math.abs(new Date(l.start_time).getTime() - now);
+    if (diff < bestDiff) { best = l; bestDiff = diff; }
+  }
+  return best.id;
+}
+
 export async function startSession(db: Db, groupId: string, materialId: string, hostId: string): Promise<LiveSessionRow> {
   await db.from("live_sessions").update({ ended_at: new Date().toISOString() }).eq("group_id", groupId).is("ended_at", null);
+  const lessonId = await findScheduledLesson(db, groupId);
   const { data, error } = await db
     .from("live_sessions")
-    .insert({ group_id: groupId, material_id: materialId, host_id: hostId })
+    .insert({ group_id: groupId, material_id: materialId, host_id: hostId, lesson_id: lessonId })
     .select()
     .single();
   if (error) throw new Error(error.message);
+  // Reflect "conducted" on the calendar lesson too.
+  if (lessonId) await db.from("lessons").update({ status: "COMPLETED" }).eq("id", lessonId).neq("status", "CANCELLED");
   return data;
 }
 
@@ -55,13 +82,18 @@ export async function recordAttendance(db: Db, sessionId: string, studentId: str
     .upsert({ session_id: sessionId, student_id: studentId }, { onConflict: "session_id,student_id", ignoreDuplicates: true });
 }
 
+export type SessionStatus = "conducted" | "not_conducted" | "cancelled" | "unplanned";
+
 export interface SessionHistoryRow {
   id: string;
+  title: string | null;
   groupName: string;
   hostLogin: string | null;
   startedAt: string;
-  endedAt: string;
+  endedAt: string | null;
+  status: SessionStatus;
   attended?: boolean;
+  deleteSessionId?: string;
 }
 
 /** Deletes one session (cascades attendance/drawings). */
@@ -70,55 +102,128 @@ export async function deleteLiveSession(db: Db, sessionId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
+interface SessRow { id: string; group_id: string; host_id: string | null; lesson_id: string | null; created_at: string; ended_at: string | null }
+
+async function groupNameMap(db: Db, groupIds: string[]): Promise<Map<string, string>> {
+  if (groupIds.length === 0) return new Map();
+  const { data } = await db.from("groups").select("id, name").in("id", [...new Set(groupIds)]);
+  return new Map((data ?? []).map((g) => [g.id, g.name] as const));
+}
+
+async function hostLoginMap(db: Db, hostIds: (string | null)[]): Promise<Map<string, string>> {
+  const ids = [...new Set(hostIds.filter((v): v is string => Boolean(v)))];
+  const map = new Map<string, string>();
+  if (ids.length === 0) return map;
+  const { data } = await db.from("users").select("id, login").in("id", ids);
+  for (const h of data ?? []) map.set(h.id, h.login);
+  return map;
+}
+
 export async function listSessionHistory(
   db: Db,
   viewer: { role: "TUTOR" | "ASSISTANT" | "STUDENT"; userId: string; studentId?: string; groupIds?: string[] },
 ): Promise<SessionHistoryRow[]> {
-  let query = db
+  // Assistant: only the sessions they hosted (planned → conducted, else unplanned).
+  if (viewer.role === "ASSISTANT") {
+    const { data } = await db
+      .from("live_sessions")
+      .select("id, group_id, host_id, lesson_id, created_at, ended_at")
+      .eq("host_id", viewer.userId)
+      .not("ended_at", "is", null)
+      .order("ended_at", { ascending: false })
+      .limit(500);
+    const rows = (data ?? []) as SessRow[];
+    const names = await groupNameMap(db, rows.map((r) => r.group_id));
+    return rows.map((r) => ({
+      id: `s:${r.id}`,
+      title: null,
+      groupName: names.get(r.group_id) ?? "—",
+      hostLogin: null,
+      startedAt: r.created_at,
+      endedAt: r.ended_at,
+      status: (r.lesson_id ? "conducted" : "unplanned") as SessionStatus,
+      deleteSessionId: r.id,
+    }));
+  }
+
+  const now = new Date().toISOString();
+  const groupFilter = viewer.role === "STUDENT" ? viewer.groupIds ?? [] : null;
+  if (viewer.role === "STUDENT" && (!groupFilter || groupFilter.length === 0)) return [];
+
+  // Past scheduled lessons.
+  let lq = db
+    .from("lessons")
+    .select("id, title, group_id, start_time, end_time, status")
+    .lt("start_time", now)
+    .order("start_time", { ascending: false })
+    .limit(500);
+  if (groupFilter) lq = lq.in("group_id", groupFilter);
+  const { data: lessons } = await lq;
+
+  // Ended live sessions.
+  let sq = db
     .from("live_sessions")
-    .select("id, group_id, host_id, created_at, ended_at")
+    .select("id, group_id, host_id, lesson_id, created_at, ended_at")
     .not("ended_at", "is", null)
     .order("ended_at", { ascending: false })
     .limit(500);
+  if (groupFilter) sq = sq.in("group_id", groupFilter);
+  const { data: sessData } = await sq;
+  const sessions = (sessData ?? []) as SessRow[];
 
-  if (viewer.role === "ASSISTANT") query = query.eq("host_id", viewer.userId);
-  if (viewer.role === "STUDENT") {
-    if (!viewer.groupIds || viewer.groupIds.length === 0) return [];
-    query = query.in("group_id", viewer.groupIds);
+  const sessionByLesson = new Map<string, SessRow>();
+  const unplanned: SessRow[] = [];
+  for (const s of sessions) {
+    if (s.lesson_id) { if (!sessionByLesson.has(s.lesson_id)) sessionByLesson.set(s.lesson_id, s); }
+    else unplanned.push(s);
   }
 
-  const { data } = await query;
-  const rows = data ?? [];
-  if (rows.length === 0) return [];
-
-  const { data: groups } = await db.from("groups").select("id, name").in("id", [...new Set(rows.map((r) => r.group_id))]);
-  const groupName = new Map((groups ?? []).map((g) => [g.id, g.name] as const));
-
-  const hostIds = [...new Set(rows.map((r) => r.host_id).filter((v): v is string => Boolean(v)))];
-  const hostLogin = new Map<string, string>();
-  if (hostIds.length > 0) {
-    const { data: hosts } = await db.from("users").select("id, login").in("id", hostIds);
-    for (const h of hosts ?? []) hostLogin.set(h.id, h.login);
-  }
+  const names = await groupNameMap(db, [...(lessons ?? []).map((l) => l.group_id), ...sessions.map((s) => s.group_id)]);
+  const hosts = await hostLoginMap(db, sessions.map((s) => s.host_id));
 
   let attended = new Set<string>();
-  if (viewer.role === "STUDENT" && viewer.studentId) {
+  if (viewer.role === "STUDENT" && viewer.studentId && sessions.length > 0) {
     const { data: att } = await db
       .from("live_session_attendance")
       .select("session_id")
       .eq("student_id", viewer.studentId)
-      .in("session_id", rows.map((r) => r.id));
+      .in("session_id", sessions.map((s) => s.id));
     attended = new Set((att ?? []).map((a) => a.session_id));
   }
 
-  return rows.map((r) => ({
-    id: r.id,
-    groupName: groupName.get(r.group_id) ?? "—",
-    hostLogin: r.host_id ? hostLogin.get(r.host_id) ?? "—" : null,
-    startedAt: r.created_at,
-    endedAt: r.ended_at as string,
-    attended: viewer.role === "STUDENT" ? attended.has(r.id) : undefined,
-  }));
+  const rows: SessionHistoryRow[] = [];
+
+  for (const l of lessons ?? []) {
+    const sess = sessionByLesson.get(l.id);
+    const status: SessionStatus = l.status === "CANCELLED" ? "cancelled" : l.status === "COMPLETED" || sess ? "conducted" : "not_conducted";
+    rows.push({
+      id: `l:${l.id}`,
+      title: l.title,
+      groupName: names.get(l.group_id) ?? "—",
+      hostLogin: sess?.host_id ? hosts.get(sess.host_id) ?? "—" : null,
+      startedAt: l.start_time,
+      endedAt: l.end_time,
+      status,
+      attended: viewer.role === "STUDENT" ? (sess ? attended.has(sess.id) : false) : undefined,
+    });
+  }
+
+  for (const s of unplanned) {
+    rows.push({
+      id: `s:${s.id}`,
+      title: null,
+      groupName: names.get(s.group_id) ?? "—",
+      hostLogin: s.host_id ? hosts.get(s.host_id) ?? "—" : null,
+      startedAt: s.created_at,
+      endedAt: s.ended_at,
+      status: "unplanned",
+      attended: viewer.role === "STUDENT" ? attended.has(s.id) : undefined,
+      deleteSessionId: viewer.role === "TUTOR" ? s.id : undefined,
+    });
+  }
+
+  rows.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  return rows;
 }
 
 export async function setActiveScope(db: Db, sessionId: string, kind: ScopeKind, id: string | null): Promise<void> {
