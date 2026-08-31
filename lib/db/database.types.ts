@@ -392,6 +392,7 @@ export interface Database {
           focused_item_id: string | null;
           drawing: string | null;
           host_id: string | null;
+          lesson_id: string | null;
           created_at: string;
           updated_at: string;
           ended_at: string | null;
@@ -406,6 +407,7 @@ export interface Database {
           focused_item_id?: string | null;
           drawing?: string | null;
           host_id?: string | null;
+          lesson_id?: string | null;
           created_at?: string;
           updated_at?: string;
           ended_at?: string | null;
@@ -420,6 +422,7 @@ export interface Database {
           focused_item_id?: string | null;
           drawing?: string | null;
           host_id?: string | null;
+          lesson_id?: string | null;
           created_at?: string;
           updated_at?: string;
           ended_at?: string | null;
