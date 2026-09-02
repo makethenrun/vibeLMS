@@ -4,7 +4,7 @@ import type { Db } from "@/lib/db/supabase";
 import type { ItemRow, MaterialItemType, Student } from "@/types";
 
 /** Item types that produce a score (auto or manual). */
-export const GRADABLE_TYPES: MaterialItemType[] = ["QUIZ", "GAPS", "IMAGE_TASK", "SENTENCE_TASK", "MATCH", "FREE"];
+export const GRADABLE_TYPES: MaterialItemType[] = ["QUIZ", "GAPS", "IMAGE_TASK", "SENTENCE_TASK", "MATCH", "FREE", "CARDS"];
 
 export interface MaterialItemFlat {
   item: ItemRow;

@@ -1,6 +1,7 @@
 import {
   getMatchTable,
   wordOrderTokens,
+  type CardsContent,
   type GapsContent,
   type ImageTaskContent,
   type ItemContent,
@@ -39,6 +40,21 @@ export interface MatchAnswer {
   table?: Record<string, string>;
   // Legacy two-column form: row index → chosen right.
   match?: Record<string, string>;
+}
+export interface CardsAnswer {
+  picked: number[]; // pool indices shown, in order
+  answers: string[]; // student's typed answer per shown card
+}
+
+export function scoreCards(content: CardsContent, answer: CardsAnswer): number {
+  const picked = answer.picked ?? [];
+  if (picked.length === 0) return 0;
+  let correct = 0;
+  picked.forEach((idx, i) => {
+    const card = content.cards[idx];
+    if (card && norm(answer.answers?.[i] ?? "") === norm(card.answer)) correct += 1;
+  });
+  return pct(correct, picked.length);
 }
 
 function matchTableScore(source: { columns: string[]; rows: string[][] }, answer: MatchAnswer): number {
@@ -165,6 +181,8 @@ export function checkItem(content: ItemContent, answer: unknown): number | null 
       return scoreSentenceTask(content, answer as SentenceTaskAnswer);
     case "MATCH":
       return matchTableScore(getMatchTable(content as MatchContent), answer as MatchAnswer);
+    case "CARDS":
+      return scoreCards(content as CardsContent, answer as CardsAnswer);
     case "FREE":
       return null;
     default:

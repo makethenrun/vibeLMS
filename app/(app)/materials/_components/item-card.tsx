@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Brush, ChevronDown, ChevronUp, Pin, StickyNote, Trash2 } from "lucide-react";
+import { BookA, Brush, ChevronDown, ChevronUp, Pin, Plus, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -22,6 +22,7 @@ import type {
   FreeContent,
   GapsContent,
   ImageContent,
+  CardsContent,
   ImageTaskContent,
   InfoContent,
   ItemContent,
@@ -37,6 +38,7 @@ import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider"
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
 import { deleteItemAction, moveItemAction, setItemDrawingAction, setItemPinsAction, updateItemAction, updateItemMetaAction } from "../actions";
 import { AudioEditor } from "./item-editors/audio-editor";
+import { CardsEditor } from "./item-editors/cards-editor";
 import { CarouselEditor } from "./item-editors/carousel-editor";
 import { FreeEditor } from "./item-editors/free-editor";
 import { GapsEditor } from "./item-editors/gaps-editor";
@@ -49,7 +51,7 @@ import { QuizEditor } from "./item-editors/quiz-editor";
 import { SentenceTaskEditor } from "./item-editors/sentence-task-editor";
 import { VideoEditor } from "./item-editors/video-editor";
 
-const SOLVABLE_TYPES: MaterialItemType[] = ["QUIZ", "GAPS", "FREE", "MATCH", "IMAGE_TASK", "SENTENCE_TASK"];
+const SOLVABLE_TYPES: MaterialItemType[] = ["QUIZ", "GAPS", "FREE", "MATCH", "IMAGE_TASK", "SENTENCE_TASK", "CARDS"];
 
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Обучающая информация",
@@ -64,6 +66,7 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   LINK: "Ссылка",
   IMAGE_TASK: "Упражнение с изображениями",
   SENTENCE_TASK: "Работа с предложениями",
+  CARDS: "Случайные карточки",
 };
 
 interface ItemCardProps {
@@ -93,7 +96,11 @@ export function ItemCard({
   const [fontFamily, setFontFamily] = useState<string | null>(item.font_family);
   const [fontSize, setFontSize] = useState<string | null>(item.font_size);
   const [explanation, setExplanation] = useState(item.explanation ?? "");
+  const [vocab, setVocab] = useState<{ term: string; translation: string }[]>(
+    Array.isArray(item.vocab) ? (item.vocab as { term: string; translation: string }[]) : [],
+  );
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
+  const [vocabOpen, setVocabOpen] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
 
@@ -125,6 +132,7 @@ export function ItemCard({
     fontFamily?: string | null;
     fontSize?: string | null;
     explanation?: string;
+    vocab?: { term: string; translation: string }[];
   }) {
     const result = await updateItemMetaAction(item.id, {
       title: next?.title ?? title,
@@ -134,6 +142,7 @@ export function ItemCard({
       fontFamily: next?.fontFamily !== undefined ? next.fontFamily : fontFamily,
       fontSize: next?.fontSize !== undefined ? next.fontSize : fontSize,
       explanation: next?.explanation ?? explanation,
+      vocab: next?.vocab ?? vocab,
     });
     if (result.success) router.refresh();
     else toast.error(result.error);
@@ -179,6 +188,8 @@ export function ItemCard({
         return <FreeEditor content={item.content as unknown as FreeContent} onSave={onSave} />;
       case "MATCH":
         return <MatchEditor content={item.content as unknown as MatchContent} onSave={onSave} />;
+      case "CARDS":
+        return <CardsEditor content={item.content as unknown as CardsContent} onSave={onSave} />;
       default:
         return null;
     }
@@ -232,6 +243,10 @@ export function ItemCard({
           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setNoteOpen((o) => !o)}
             aria-label="Заметка" title={note || "Заметка"}>
             <StickyNote className={note ? "h-4 w-4 text-primary" : "h-4 w-4"} />
+          </Button>
+          <Button size="icon" variant="ghost" className={vocab.length > 0 ? "h-8 w-8 text-primary" : "h-8 w-8"}
+            onClick={() => setVocabOpen((o) => !o)} aria-label="Новые слова" title="Новые слова">
+            <BookA className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
@@ -351,6 +366,39 @@ export function ItemCard({
                 Сохранить заметку
               </Button>
             </div>
+          </div>
+        ) : null}
+
+        {vocabOpen ? (
+          <div className="space-y-2 rounded-md bg-green-50/60 p-2">
+            <p className="text-xs font-medium text-muted-foreground">Новые слова (показываются ученику рядом с упражнением)</p>
+            {vocab.map((v, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  className="h-8"
+                  placeholder="слово"
+                  value={v.term}
+                  onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, term: e.target.value } : x)))}
+                  onBlur={() => saveMeta({ vocab })}
+                />
+                <span className="text-muted-foreground">—</span>
+                <Input
+                  className="h-8"
+                  placeholder="перевод"
+                  value={v.translation}
+                  onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, translation: e.target.value } : x)))}
+                  onBlur={() => saveMeta({ vocab })}
+                />
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" aria-label="Удалить слово"
+                  onClick={() => { const next = vocab.filter((_, j) => j !== i); setVocab(next); void saveMeta({ vocab: next }); }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => setVocab((prev) => [...prev, { term: "", translation: "" }])}>
+              <Plus className="h-4 w-4" />
+              Слово
+            </Button>
           </div>
         ) : null}
       </CardHeader>

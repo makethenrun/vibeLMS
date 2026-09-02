@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useState } from "react";
+import { Fragment, useContext, useEffect, useState } from "react";
 import { ExternalLink, Lightbulb, RotateCcw, StickyNote } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Carousel } from "@/app/(app)/materials/_components/media/carousel";
 import { VideoEmbed } from "@/app/(app)/materials/_components/media/video-embed";
 import type {
   AudioContent,
+  CardsContent,
   CarouselContent,
   FreeContent,
   GapsContent,
@@ -34,6 +35,7 @@ import { InfoView } from "./info-view";
 import { QuizSolve } from "./quiz-solve";
 import { GapsDragSolve } from "./solves/gaps-drag-solve";
 import { ImageTaskSolve } from "./solves/image-task-solve";
+import { CardsSolve } from "./solves/cards-solve";
 import { MatchColumnsSolve } from "./solves/match-columns-solve";
 import { SentenceSolve } from "./solves/sentence-solve";
 import { ReviewContext } from "./submit-context";
@@ -51,6 +53,7 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
   LINK: "Ссылка",
   IMAGE_TASK: "Упражнение с изображениями",
   SENTENCE_TASK: "Работа с предложениями",
+  CARDS: "Случайные карточки",
 };
 
 const NOT_YET_INTERACTIVE = "Интерактивное прохождение этого формата появится в следующем обновлении.";
@@ -66,6 +69,8 @@ interface SavedAnswer {
   selected?: number[];
   pairs?: Record<string, string>;
   table?: Record<string, string>;
+  picked?: number[];
+  answers?: string[];
 }
 
 export function StudentItem({
@@ -96,6 +101,9 @@ export function StudentItem({
   const canRetry = !review && !item.retry_disabled && submission !== undefined && !cleared;
   const hasNote = Boolean(item.note) && !item.note_hidden;
   const [notesOpen, setNotesOpen] = useState(false);
+  const vocab = Array.isArray(item.vocab)
+    ? (item.vocab as { term: string; translation: string }[]).filter((v) => v.term || v.translation)
+    : [];
   const showExplanation =
     !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
   // Remount the solve on retake / new submission so its internal state resets.
@@ -142,6 +150,8 @@ export function StudentItem({
         const table = getMatchTable(c);
         return <MatchColumnsSolve itemId={item.id} content={c} columns={table.columns} rows={table.rows} initialScore={initialScore} initialAnswer={savedAnswer} />;
       }
+      case "CARDS":
+        return <CardsSolve itemId={item.id} content={item.content as unknown as CardsContent} initialScore={initialScore} initialAnswer={savedAnswer} />;
       case "FREE": {
         const answer = (cleared ? {} : submission?.answer ?? {}) as { text?: string };
         return (
@@ -189,26 +199,43 @@ export function StudentItem({
             <FormattedText text={item.note} />
           </div>
         ) : null}
-        <DrawableBlock
-          initial={drawingOverride !== undefined ? drawingOverride : item.drawing}
-          onSave={saveDrawing}
-          autoSave={liveDraw}
-          startActive={drawStartActive}
-        >
-          <div key={solveKey} style={itemTextStyle(item.font_family, item.font_size)}>{render()}</div>
-        </DrawableBlock>
-        {showExplanation ? (
-          <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
-            <p><FormattedText text={item.explanation} /></p>
+        <div className={vocab.length > 0 ? "flex flex-col gap-4 md:flex-row" : undefined}>
+          <div className={vocab.length > 0 ? "min-w-0 flex-1 space-y-3" : "space-y-3"}>
+            <DrawableBlock
+              initial={drawingOverride !== undefined ? drawingOverride : item.drawing}
+              onSave={saveDrawing}
+              autoSave={liveDraw}
+              startActive={drawStartActive}
+            >
+              <div key={solveKey} style={itemTextStyle(item.font_family, item.font_size)}>{render()}</div>
+            </DrawableBlock>
+            {showExplanation ? (
+              <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <Lightbulb className="mt-0.5 h-4 w-4 shrink-0" />
+                <p><FormattedText text={item.explanation} /></p>
+              </div>
+            ) : null}
+            {canRetry ? (
+              <Button size="sm" variant="outline" onClick={() => setCleared(true)}>
+                <RotateCcw className="h-4 w-4" />
+                Пройти заново
+              </Button>
+            ) : null}
           </div>
-        ) : null}
-        {canRetry ? (
-          <Button size="sm" variant="outline" onClick={() => setCleared(true)}>
-            <RotateCcw className="h-4 w-4" />
-            Пройти заново
-          </Button>
-        ) : null}
+          {vocab.length > 0 ? (
+            <aside className="h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56">
+              <p className="mb-2 text-xs font-semibold text-green-800">Новые слова</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                {vocab.map((v, i) => (
+                  <Fragment key={i}>
+                    <span className="break-words font-medium"><FormattedText text={v.term} /></span>
+                    <span className="break-words text-muted-foreground"><FormattedText text={v.translation} /></span>
+                  </Fragment>
+                ))}
+              </div>
+            </aside>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   );

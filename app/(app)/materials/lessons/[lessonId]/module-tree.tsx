@@ -34,6 +34,7 @@ const ITEM_LABELS: Record<MaterialItemType, string> = {
   LINK: "Ссылка",
   IMAGE_TASK: "Упражнение с изображениями",
   SENTENCE_TASK: "Работа с предложениями",
+  CARDS: "Случайные карточки",
 };
 
 interface ModuleTreeProps {

@@ -10,7 +10,7 @@ import type { ScopeKind, TreeSection } from "@/lib/materials/scope";
 const TYPE_LABELS: Record<MaterialItemType, string> = {
   INFO: "Инфо", QUIZ: "Тест", GAPS: "Пропуски", FREE: "Свободный ответ", MATCH: "Сопоставление",
   AUDIO: "Аудио", VIDEO: "Видео", IMAGE: "Изображение", CAROUSEL: "Карусель", LINK: "Ссылка",
-  IMAGE_TASK: "Картинки", SENTENCE_TASK: "Предложения",
+  IMAGE_TASK: "Картинки", SENTENCE_TASK: "Предложения", CARDS: "Карточки",
 };
 
 /** A container row: chevron toggles expand, the label selects the whole scope. */
