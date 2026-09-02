@@ -28,6 +28,7 @@ const TYPE_LABELS: { type: MaterialItemType; label: string }[] = [
   { type: "SENTENCE_TASK", label: "Работа с предложениями" },
   { type: "GAPS", label: "Заполнить пропуски" },
   { type: "FREE", label: "Свободный ответ" },
+  { type: "CARDS", label: "Случайные карточки" },
 ];
 
 export function AddItemMenu({ moduleId }: { moduleId: string }) {

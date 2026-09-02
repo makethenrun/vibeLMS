@@ -162,6 +162,21 @@ export const freeContentSchema = z.object({
   sampleAnswer: z.string().trim().max(4000).nullable(),
 });
 
+export const cardsContentSchema = z.object({
+  type: z.literal("CARDS"),
+  prompt: z.string().trim().max(1000).nullable().default(null),
+  // How many random cards from the pool the student gets each attempt.
+  count: z.coerce.number().int().min(1).max(50).default(3),
+  cards: z
+    .array(z.object({
+      imageUrl: z.string().trim().max(1000).default(""),
+      hint: z.string().trim().max(500).default(""),
+      answer: nonEmpty.max(300),
+    }))
+    .min(1, "Добавьте карточку")
+    .max(50),
+});
+
 export const matchContentSchema = z.object({
   type: z.literal("MATCH"),
   prompt: z.string().trim().max(1000).nullable(),
@@ -204,6 +219,7 @@ export const itemContentSchema = z
     gapsContentSchema,
     freeContentSchema,
     matchContentSchema,
+    cardsContentSchema,
   ])
   .superRefine((v, ctx) => {
     if (v.type === "MATCH") {
@@ -281,6 +297,7 @@ export type SentenceTaskVariant = SentenceTaskContent["variant"];
 export type GapsContent = z.infer<typeof gapsContentSchema>;
 export type FreeContent = z.infer<typeof freeContentSchema>;
 export type MatchContent = z.infer<typeof matchContentSchema>;
+export type CardsContent = z.infer<typeof cardsContentSchema>;
 export type ItemContent = z.infer<typeof itemContentSchema>;
 
 function defaultQuestion(): MaterialQuestion {
@@ -332,5 +349,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
         rows: [["dog", "собака"], ["cat", "кошка"]],
         pairs: [],
       };
+    case "CARDS":
+      return { type: "CARDS", prompt: null, count: 3, cards: [{ imageUrl: "", hint: "", answer: "ответ" }] };
   }
 }

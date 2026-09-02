@@ -15,7 +15,7 @@ export type UserRole = "TUTOR" | "STUDENT" | "ASSISTANT";
 export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";
-export type MaterialItemType = "INFO" | "QUIZ" | "GAPS" | "FREE" | "MATCH" | "AUDIO" | "VIDEO" | "IMAGE" | "CAROUSEL" | "LINK" | "IMAGE_TASK" | "SENTENCE_TASK";
+export type MaterialItemType = "INFO" | "QUIZ" | "GAPS" | "FREE" | "MATCH" | "AUDIO" | "VIDEO" | "IMAGE" | "CAROUSEL" | "LINK" | "IMAGE_TASK" | "SENTENCE_TASK" | "CARDS";
 export type HomeworkType = "FILE" | "QUIZ";
 
 export interface Database {
@@ -341,6 +341,7 @@ export interface Database {
           font_size: string | null;
           explanation: string | null;
           drawing: string | null;
+          vocab: Json | null;
           content: Json;
           created_at: string;
           updated_at: string;
@@ -358,6 +359,7 @@ export interface Database {
           font_size?: string | null;
           explanation?: string | null;
           drawing?: string | null;
+          vocab?: Json | null;
           content?: Json;
           created_at?: string;
           updated_at?: string;
@@ -375,6 +377,7 @@ export interface Database {
           font_size?: string | null;
           explanation?: string | null;
           drawing?: string | null;
+          vocab?: Json | null;
           content?: Json;
           created_at?: string;
           updated_at?: string;

@@ -33,5 +33,6 @@ export const itemMetaSchema = z.object({
   fontFamily: z.string().max(200).nullable().default(null),
   fontSize: z.string().max(20).nullable().default(null),
   explanation: z.string().trim().max(2000, "Максимум 2000 символов").optional().or(z.literal("")),
+  vocab: z.array(z.object({ term: z.string().trim().max(200), translation: z.string().trim().max(200) })).max(200).default([]),
 });
 export type ItemMetaInput = z.infer<typeof itemMetaSchema>;

@@ -48,6 +48,16 @@ describe("checkItem", () => {
     expect(checkItem(gaps, { blanks: { "1": "[b]went[/b]", "2": "[c=#fde68a]saw[/c]" } })).toBe(100);
   });
 
+  it("scores random cards", () => {
+    const c = { type: "CARDS" as const, prompt: null, count: 2, cards: [
+      { imageUrl: "", hint: "", answer: "dog" },
+      { imageUrl: "", hint: "", answer: "cat" },
+      { imageUrl: "", hint: "", answer: "bird" },
+    ] };
+    expect(checkItem(c, { picked: [0, 1], answers: ["dog", "cat"] })).toBe(100);
+    expect(checkItem(c, { picked: [0, 2], answers: ["dog", "fish"] })).toBe(50);
+  });
+
   it("scores word-marker gaps", () => {
     const g = { type: "GAPS" as const, mode: "INPUT" as const, text: "Небо {{голубое}}.", blanks: [{ index: "голубое", answers: ["голубое"], options: null }], bank: [] };
     expect(checkItem(g, { blanks: { "голубое": "голубое" } })).toBe(100);
