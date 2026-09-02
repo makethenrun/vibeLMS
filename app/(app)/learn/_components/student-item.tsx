@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
-import { ExternalLink, Lightbulb, RotateCcw } from "lucide-react";
+import { ExternalLink, Lightbulb, RotateCcw, StickyNote } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +93,8 @@ export function StudentItem({
   const initialScore = cleared ? undefined : submission ? submission.score : undefined;
   const savedAnswer = cleared ? undefined : (submission?.answer as unknown as SavedAnswer | undefined);
   const canRetry = !review && !item.retry_disabled && submission !== undefined && !cleared;
+  const hasNote = Boolean(item.note) && !item.note_hidden;
+  const [notesOpen, setNotesOpen] = useState(false);
   const showExplanation =
     !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
   // Remount the solve on retake / new submission so its internal state resets.
@@ -162,12 +164,30 @@ export function StudentItem({
         <CardTitle className="text-sm font-medium">
           {item.title ? <FormattedText text={item.title} /> : TYPE_LABELS[item.type]}
         </CardTitle>
-        {reactionPicker ??
-          (submission?.reaction ? (
-            <span className="text-xl" title="Реакция преподавателя">{submission.reaction}</span>
-          ) : null)}
+        <div className="flex items-center gap-2">
+          {hasNote ? (
+            <Button
+              size="sm"
+              variant={notesOpen ? "default" : "outline"}
+              className="h-7"
+              onClick={() => setNotesOpen((o) => !o)}
+            >
+              <StickyNote className="h-4 w-4" />
+              Заметка
+            </Button>
+          ) : null}
+          {reactionPicker ??
+            (submission?.reaction ? (
+              <span className="text-xl" title="Реакция преподавателя">{submission.reaction}</span>
+            ) : null)}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
+        {hasNote && notesOpen ? (
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            <FormattedText text={item.note} />
+          </div>
+        ) : null}
         <DrawableBlock
           initial={drawingOverride !== undefined ? drawingOverride : item.drawing}
           onSave={saveDrawing}

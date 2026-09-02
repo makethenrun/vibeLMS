@@ -81,13 +81,13 @@ export function FormatBar() {
               <Highlighter className="h-4 w-4" />
             </Button>
             {colors ? (
-              <div className="absolute bottom-11 right-0 grid grid-cols-4 gap-1 rounded-md border bg-background p-1.5 shadow-lg">
+              <div className="absolute bottom-12 right-0 grid grid-cols-4 gap-2 rounded-lg border bg-background p-2 shadow-lg">
                 {COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     aria-label={`Цвет ${c}`}
-                    className="h-6 w-6 rounded-full border"
+                    className="h-7 w-7 rounded-full border shadow-sm transition-transform hover:scale-110"
                     style={{ backgroundColor: c }}
                     onMouseDown={noBlur}
                     onClick={() => {

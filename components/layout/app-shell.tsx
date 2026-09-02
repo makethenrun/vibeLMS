@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { UserRole } from "@/lib/db/database.types";
+import { BreadcrumbProvider } from "./breadcrumb-context";
 import { Breadcrumbs } from "./breadcrumbs";
 import { Messenger } from "./messenger";
 import { SidebarNav } from "./sidebar-nav";
@@ -47,6 +48,7 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
+    <BreadcrumbProvider>
     <div className="flex min-h-screen">
       {/* Spacer reserving the collapsed rail width so content never reflows */}
       <div className="hidden w-16 shrink-0 md:block" aria-hidden="true" />
@@ -95,5 +97,6 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>
+    </BreadcrumbProvider>
   );
 }

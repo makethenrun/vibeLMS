@@ -12,6 +12,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getLessonBackground } from "@/services/materials/lessons.service";
+import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
 import { LessonSurface } from "../../../_components/lesson-surface";
 import { Workspace } from "../../../_components/workspace";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
@@ -43,6 +44,7 @@ export default async function LessonPreviewPage({
 
   return (
     <>
+      <PageBreadcrumbs crumbs={[...ctx.crumbs, { label: "Просмотр", href: `/materials/lessons/${lessonId}/preview` }]} />
       <LessonSurface
         background={background}
         header={

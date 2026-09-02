@@ -13,7 +13,7 @@ import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getAccessibleGroups } from "@/services/materials/material-groups.service";
 import { getLessonBackground } from "@/services/materials/lessons.service";
 import { getPinsForItems } from "@/services/materials/item-pins.service";
-import { Breadcrumbs } from "../../_components/breadcrumbs";
+import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
 import { LessonBackgroundDialog } from "../../_components/lesson-background-dialog";
 import { LessonSurface } from "../../_components/lesson-surface";
 import { ModulePane } from "../../_components/module-pane";
@@ -51,9 +51,9 @@ export default async function LessonPage({
 
   return (
     <>
+      <PageBreadcrumbs crumbs={ctx.crumbs} />
       <LessonSurface
         background={background}
-        topSlot={<Breadcrumbs crumbs={ctx.crumbs} />}
         header={
           <PageHeader
             title={ctx.title}
