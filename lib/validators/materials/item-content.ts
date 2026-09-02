@@ -81,8 +81,11 @@ export const sentenceTaskContentSchema = z.object({
     .enum(["WORD_ORDER", "SORT_COLUMNS", "SENTENCE_ORDER", "WORD_FROM_LETTERS", "MATCH_PAIRS"])
     .default("WORD_ORDER"),
   prompt: z.string().trim().max(1000).nullable().default(null),
-  // WORD_ORDER: the sentence tokens in correct order.
+  // WORD_ORDER (legacy single sentence): the tokens in correct order.
   words: z.array(z.string().trim().max(200)).max(50).default([]),
+  // WORD_ORDER: one or more sentences, each a raw string (words separated by
+  // space or "/"). Each sentence is ordered independently by the student.
+  wordSentences: z.array(z.string().trim().max(600)).max(30).default([]),
   // SENTENCE_ORDER: sentences in correct order.
   sentences: z.array(z.string().trim().max(500)).max(30).default([]),
   // WORD_FROM_LETTERS: the target word, plus optional distractor letters.
@@ -131,6 +134,17 @@ const blankSchema = z.object({
 
 /** Matches a {{placeholder}} whose content is a word or number (not braces). */
 export const GAP_RE = /\{\{([^{}]+)\}\}/g;
+
+/** Word tokens per sentence for a WORD_ORDER task (words split on space or "/"). */
+export function wordOrderTokens(content: { wordSentences?: string[]; words?: string[] }): string[][] {
+  if (content.wordSentences && content.wordSentences.length > 0) {
+    return content.wordSentences
+      .map((s) => s.split(/[\s/]+/).map((w) => w.trim()).filter(Boolean))
+      .filter((t) => t.length > 0);
+  }
+  if (content.words && content.words.length > 0) return [content.words];
+  return [];
+}
 
 export const gapsContentSchema = z.object({
   type: z.literal("GAPS"),
@@ -297,6 +311,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
         variant: "WORD_ORDER",
         prompt: null,
         words: [],
+        wordSentences: ["I have never been to London"],
         sentences: [],
         word: "",
         extraLetters: "",
