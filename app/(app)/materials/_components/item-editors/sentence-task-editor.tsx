@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { LoadingButton } from "@/components/shared/loading-button";
 import {
   Select,
@@ -46,20 +45,12 @@ function parseList(v: string): string[] {
   return v.split(",").map((s) => s.trim()).filter((s) => s !== "");
 }
 
-/**
- * Tokens for "arrange the words": if the text contains a slash, split on it so a
- * token can be a whole phrase / sentence ("I woke up/I had breakfast"); else
- * split on whitespace as usual.
- */
-function parseOrderTokens(v: string): string[] {
-  const parts = v.includes("/") ? v.split("/") : v.split(/\s+/);
-  return parts.map((s) => s.trim()).filter(Boolean);
-}
-
 export function SentenceTaskEditor({ content, onSave }: EditorProps) {
   const [variant, setVariant] = useState<SentenceTaskVariant>(content.variant ?? "WORD_ORDER");
   const [prompt, setPrompt] = useState(content.prompt ?? "");
-  const [wordOrderText, setWordOrderText] = useState(content.words.join(" "));
+  const [wordSentences, setWordSentences] = useState<string[]>(
+    content.wordSentences?.length ? content.wordSentences : content.words.length ? [content.words.join(" ")] : [""],
+  );
   const [sentences, setSentences] = useState<string[]>(content.sentences.length ? content.sentences : [""]);
   const [word, setWord] = useState(content.word);
   const [extraLetters, setExtraLetters] = useState(content.extraLetters);
@@ -82,7 +73,8 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       type: "SENTENCE_TASK" as const,
       variant,
       prompt: prompt.trim() || null,
-      words: variant === "WORD_ORDER" ? parseOrderTokens(wordOrderText) : [],
+      words: [],
+      wordSentences: variant === "WORD_ORDER" ? wordSentences.map((s) => s.trim()).filter(Boolean) : [],
       sentences: variant === "SENTENCE_ORDER" ? sentences.map((s) => s.trim()).filter(Boolean) : [],
       word: variant === "WORD_FROM_LETTERS" ? word.trim() : "",
       extraLetters: variant === "WORD_FROM_LETTERS" ? extraLetters.trim() : "",
@@ -126,11 +118,28 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       <Input placeholder="Инструкция (необязательно)" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
 
       {variant === "WORD_ORDER" ? (
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Предложение (слова через пробел, в правильном порядке)</label>
-          <Textarea value={wordOrderText} onChange={(e) => setWordOrderText(e.target.value)} rows={2} placeholder="I like green tea" />
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Предложения (слова в правильном порядке)</label>
+          {wordSentences.map((s, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <span className="w-5 text-xs text-muted-foreground">{i + 1}.</span>
+              <Input
+                value={s}
+                onChange={(e) => setWordSentences((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
+                placeholder="I like green tea"
+              />
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" disabled={wordSentences.length <= 1}
+                onClick={() => setWordSentences((prev) => prev.filter((_, j) => j !== i))} aria-label="Удалить предложение">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button size="sm" variant="outline" onClick={() => setWordSentences((prev) => [...prev, ""])}>
+            <Plus className="h-4 w-4" />
+            Добавить предложение
+          </Button>
           <p className="text-xs text-muted-foreground">
-            Ученик получит перемешанные элементы и соберёт их по порядку. Разделяйте пробелом. Через <code>/</code> можно задать элемент из нескольких слов или несколько предложений: <code>I woke up/I had breakfast</code>.
+            Слова в предложении разделяйте пробелом или <code>/</code> (например, если слово состоит из нескольких частей). Каждое предложение ученик собирает отдельно.
           </p>
         </div>
       ) : null}

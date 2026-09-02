@@ -59,6 +59,7 @@ interface SavedAnswer {
   questions?: { selected: string[]; text: string }[];
   blanks?: Record<string, string>;
   order?: string[];
+  orders?: string[][];
   letters?: string[];
   assign?: Record<string, number>;
   match?: Record<string, string>;

@@ -1,5 +1,6 @@
 import {
   getMatchTable,
+  wordOrderTokens,
   type GapsContent,
   type ImageTaskContent,
   type ItemContent,
@@ -26,7 +27,8 @@ export interface ImageTaskAnswer {
   selected?: number[]; // SELECT_IMAGES: chosen image indices
 }
 export interface SentenceTaskAnswer {
-  order?: string[]; // WORD_ORDER / SENTENCE_ORDER
+  order?: string[]; // SENTENCE_ORDER / legacy single WORD_ORDER
+  orders?: string[][]; // WORD_ORDER: one order per sentence
   letters?: string[]; // WORD_FROM_LETTERS
   assign?: Record<string, number>; // SORT_COLUMNS: item → column index
   match?: Record<string, string>; // MATCH_PAIRS (legacy): left index → chosen right
@@ -115,8 +117,17 @@ export function scoreImageTask(content: ImageTaskContent, answer: ImageTaskAnswe
 
 export function scoreSentenceTask(content: SentenceTaskContent, answer: SentenceTaskAnswer): number {
   switch (content.variant) {
-    case "WORD_ORDER":
-      return orderScore(content.words, answer.order ?? []);
+    case "WORD_ORDER": {
+      const sentences = wordOrderTokens(content);
+      const orders = answer.orders ?? (answer.order ? [answer.order] : []);
+      let correct = 0;
+      let total = 0;
+      sentences.forEach((s, i) => {
+        const so = orders[i] ?? [];
+        s.forEach((w, j) => { total += 1; if (norm(so[j] ?? "") === norm(w)) correct += 1; });
+      });
+      return pct(correct, total);
+    }
     case "SENTENCE_ORDER":
       return orderScore(content.sentences, answer.order ?? []);
     case "WORD_FROM_LETTERS":
