@@ -46,6 +46,16 @@ function parseList(v: string): string[] {
   return v.split(",").map((s) => s.trim()).filter((s) => s !== "");
 }
 
+/**
+ * Tokens for "arrange the words": if the text contains a slash, split on it so a
+ * token can be a whole phrase / sentence ("I woke up/I had breakfast"); else
+ * split on whitespace as usual.
+ */
+function parseOrderTokens(v: string): string[] {
+  const parts = v.includes("/") ? v.split("/") : v.split(/\s+/);
+  return parts.map((s) => s.trim()).filter(Boolean);
+}
+
 export function SentenceTaskEditor({ content, onSave }: EditorProps) {
   const [variant, setVariant] = useState<SentenceTaskVariant>(content.variant ?? "WORD_ORDER");
   const [prompt, setPrompt] = useState(content.prompt ?? "");
@@ -72,7 +82,7 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       type: "SENTENCE_TASK" as const,
       variant,
       prompt: prompt.trim() || null,
-      words: variant === "WORD_ORDER" ? wordOrderText.split(/\s+/).filter(Boolean) : [],
+      words: variant === "WORD_ORDER" ? parseOrderTokens(wordOrderText) : [],
       sentences: variant === "SENTENCE_ORDER" ? sentences.map((s) => s.trim()).filter(Boolean) : [],
       word: variant === "WORD_FROM_LETTERS" ? word.trim() : "",
       extraLetters: variant === "WORD_FROM_LETTERS" ? extraLetters.trim() : "",
@@ -119,7 +129,9 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
         <div className="space-y-1">
           <label className="text-sm font-medium">Предложение (слова через пробел, в правильном порядке)</label>
           <Textarea value={wordOrderText} onChange={(e) => setWordOrderText(e.target.value)} rows={2} placeholder="I like green tea" />
-          <p className="text-xs text-muted-foreground">Ученик получит перемешанные слова и соберёт предложение.</p>
+          <p className="text-xs text-muted-foreground">
+            Ученик получит перемешанные элементы и соберёт их по порядку. Разделяйте пробелом. Через <code>/</code> можно задать элемент из нескольких слов или несколько предложений: <code>I woke up/I had breakfast</code>.
+          </p>
         </div>
       ) : null}
 

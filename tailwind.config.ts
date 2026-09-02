@@ -18,6 +18,23 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        // Latin/Cyrillic use the system sans; CJK glyphs fall through to SimSun.
+        sans: [
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+          "SimSun",
+          "宋体",
+          "Apple Color Emoji",
+          "Segoe UI Emoji",
+        ],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

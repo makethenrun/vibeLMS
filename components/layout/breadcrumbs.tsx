@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useBreadcrumbOverride } from "./breadcrumb-context";
 
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: "Дашборд",
@@ -24,30 +25,34 @@ const UUID_PREFIX = /^[0-9a-f]{8}-[0-9a-f]{4}-/i;
 
 export function Breadcrumbs({ className }: { className?: string }) {
   const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean);
+  const { crumbs: override } = useBreadcrumbOverride();
 
-  if (segments.length === 0) return null;
+  // A page may supply its own crumbs (e.g. material sub-pages that have no
+  // index route for intermediate segments).
+  const items = override
+    ? override.map((c) => ({ label: c.label, href: c.href }))
+    : pathname
+        .split("/")
+        .filter(Boolean)
+        .map((segment, index, arr) => ({
+          label: UUID_PREFIX.test(segment) ? "Детали" : SEGMENT_LABELS[segment] ?? decodeURIComponent(segment),
+          href: `/${arr.slice(0, index + 1).join("/")}`,
+        }));
+
+  if (items.length === 0) return null;
 
   return (
-    <nav
-      className={cn("flex items-center gap-1.5 text-sm text-muted-foreground", className)}
-      aria-label="Хлебные крошки"
-    >
-      {segments.map((segment, index) => {
-        const href = `/${segments.slice(0, index + 1).join("/")}`;
-        const isLast = index === segments.length - 1;
-        const label = UUID_PREFIX.test(segment)
-          ? "Детали"
-          : (SEGMENT_LABELS[segment] ?? decodeURIComponent(segment));
-
+    <nav className={cn("flex items-center gap-1.5 text-sm text-muted-foreground", className)} aria-label="Хлебные крошки">
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
         return (
-          <Fragment key={href}>
+          <Fragment key={`${item.href}-${index}`}>
             {index > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
             {isLast ? (
-              <span className="truncate font-medium text-foreground">{label}</span>
+              <span className="truncate font-medium text-foreground">{item.label}</span>
             ) : (
-              <Link href={href} className="truncate transition-colors hover:text-foreground">
-                {label}
+              <Link href={item.href} className="truncate transition-colors hover:text-foreground">
+                {item.label}
               </Link>
             )}
           </Fragment>

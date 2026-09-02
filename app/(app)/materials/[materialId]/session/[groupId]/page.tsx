@@ -10,6 +10,7 @@ import { itemsForScope } from "@/lib/materials/scope";
 import { getMaterialItemsFlat } from "@/services/materials/results.service";
 import { getMaterialTree } from "@/services/materials/material-tree.service";
 import { getActiveSession, getDrawings, getSessionStudents, TUTOR_AUTHOR, toState } from "@/services/materials/live-session.service";
+import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
 import { SessionConsole } from "./session-console";
 import { StartSessionScreen } from "./start-session";
 
@@ -30,10 +31,22 @@ export default async function SessionPage({
   const [material, group] = await Promise.all([getMaterial(db, materialId), getGroup(db, groupId)]);
   if (!material || !group) notFound();
 
+  const crumbs = (
+    <PageBreadcrumbs
+      crumbs={[
+        { label: "Материалы", href: "/materials" },
+        { label: material.title, href: `/materials/${materialId}` },
+        { label: `Занятие · ${group.name}`, href: `/materials/${materialId}/session/${groupId}` },
+      ]}
+    />
+  );
+
   const session = await getActiveSession(db, groupId);
 
   if (!session || session.material_id !== materialId) {
     return (
+      <>
+      {crumbs}
       <StartSessionScreen
         materialId={materialId}
         groupId={groupId}
@@ -41,6 +54,7 @@ export default async function SessionPage({
         groupName={group.name}
         conflict={Boolean(session && session.material_id !== materialId)}
       />
+      </>
     );
   }
 
@@ -56,6 +70,8 @@ export default async function SessionPage({
   const initialTutorDrawings = await getDrawings(db, session.id, scopeItemIds, TUTOR_AUTHOR);
 
   return (
+    <>
+    {crumbs}
     <SessionConsole
       sessionId={session.id}
       materialTitle={material.title}
@@ -67,5 +83,6 @@ export default async function SessionPage({
       initialState={state}
       initialTutorDrawings={initialTutorDrawings}
     />
+    </>
   );
 }

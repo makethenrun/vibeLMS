@@ -32,7 +32,6 @@ function shuffle<T>(arr: T[]): T[] {
 
 // 300×300 rounded square (per design).
 const IMG = "aspect-square w-full max-w-[200px] rounded-2xl border object-cover";
-const FRAME = "aspect-square w-full max-w-[200px] flex-col gap-2 rounded-2xl border text-lg font-semibold";
 // eslint-disable-next-line @next/next/no-img-element
 const emojiImg = (url: string) => <img src={url} alt="" className="h-full w-full rounded-2xl object-cover" />;
 
@@ -120,9 +119,11 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {content.images.map((img, i) => {
             const on = selected.includes(i);
-            const border = locked
-              ? on === img.correct ? "border-green-500" : "border-red-500"
-              : on ? "border-primary" : "border-transparent";
+            const border = !on
+              ? "border-transparent"
+              : locked
+                ? img.correct ? "border-green-500" : "border-red-500"
+                : "border-primary";
             return (
               <button key={i} type="button" disabled={locked}
                 onClick={() => setSelected((prev) => (on ? prev.filter((x) => x !== i) : [...prev, i]))}
@@ -135,29 +136,29 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
         </div>
       ) : content.variant === "DRAG_WORD_TO_IMAGE" ? (
         <FillDnd chips={wordChips} value={dragValue} onChange={setDragValue} disabled={locked}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {content.pairs.map((p, i) => (
-                <DropSlot key={i} id={`p${i}`} className={cn("flex w-full max-w-[200px] flex-col items-center gap-2 rounded-2xl border p-3", feedbackClass(locked, isCorrect(wordLabel.get(dragValue[`p${i}`] ?? ""), [p.word])))}>
+                <DropSlot key={i} id={`p${i}`} className={cn("flex flex-col items-center gap-2 rounded-2xl border p-2", feedbackClass(locked, isCorrect(wordLabel.get(dragValue[`p${i}`] ?? ""), [p.word])))}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.imageUrl} alt="" className="aspect-square w-full rounded-xl object-cover" />
                 </DropSlot>
               ))}
             </div>
-            <Bank className="h-fit flex-col items-stretch gap-4 border-none p-0" chipClassName={`flex items-center justify-center ${FRAME}`} />
+            <Bank chipClassName="min-w-20 justify-center px-4 py-3 text-base font-semibold" />
           </div>
         </FillDnd>
       ) : content.variant === "DRAG_IMAGE_TO_WORD" ? (
         <FillDnd chips={imageChips} value={dragValue} onChange={setDragValue} disabled={locked}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {content.pairs.map((p, k) => (
-                <DropSlot key={k} id={`l${k}`} className={cn(`flex items-center justify-center ${FRAME}`, feedbackClass(locked, isCorrect(imageLabel.get(dragValue[`l${k}`] ?? ""), [p.word])))}>
-                  <span>{p.word}</span>
+                <DropSlot key={k} id={`l${k}`} className={cn("flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border p-2 text-center text-base font-semibold", feedbackClass(locked, isCorrect(imageLabel.get(dragValue[`l${k}`] ?? ""), [p.word])))}>
+                  <span><FormattedText text={p.word} /></span>
                 </DropSlot>
               ))}
             </div>
-            <Bank className="h-fit flex-col items-stretch gap-4 border-none p-0" chipClassName={`overflow-hidden border p-0 ${IMG.replace("object-cover", "")}`} />
+            <Bank chipClassName="h-20 w-20 overflow-hidden border p-0 sm:h-24 sm:w-24" />
           </div>
         </FillDnd>
       ) : (
