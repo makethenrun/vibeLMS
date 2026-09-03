@@ -75,49 +75,62 @@ export function MatchColumnsSolve({ itemId, content, columns, rows, initialScore
     await submit({ table } as unknown as Json, content);
   }
 
+  const T = targetCols.length;
+
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
         <ScoreBadge score={score} />
       </div>
 
-      <div className="flex flex-wrap items-start gap-4">
-        {/* Anchor column (fixed) */}
-        <div className="space-y-2">
-          <div className="h-7 text-xs font-medium text-muted-foreground">
-            {columns[0] ? <FormattedText text={columns[0]} /> : " "}
-          </div>
-          {rows.map((row, r) => (
-            <div key={r} className={`${CELL} font-medium`}>
-              <FormattedText text={row[0] ?? ""} />
+      {/* Left: anchor + gap columns. Right: one word bank per gap column.
+          Each gap column keeps its own DnD context; FillDnd renders no wrapper
+          element, so its slot block and its bank land in separate grid cells. */}
+      <div className="overflow-x-auto">
+        <div
+          className="grid items-start gap-x-8 gap-y-3"
+          style={{ gridTemplateColumns: `max-content repeat(${T}, max-content) minmax(9rem, 1fr)` }}
+        >
+          {/* Anchor column (fixed), spanning all bank rows */}
+          <div className="space-y-2" style={{ gridColumn: 1, gridRow: `1 / ${T + 1}` }}>
+            <div className="h-7 text-xs font-medium text-muted-foreground">
+              {columns[0] ? <FormattedText text={columns[0]} /> : " "}
             </div>
-          ))}
-        </div>
-
-        {/* Draggable columns */}
-        {targetCols.map((c) => (
-          <FillDnd key={c} chips={chipsByCol[c]} value={values[c] ?? {}} onChange={(v) => setColumnValue(c, v)} disabled={locked}>
-            <div className="space-y-2">
-              <div className="h-7 text-xs font-medium text-muted-foreground">
-                {columns[c] ? <FormattedText text={columns[c]} /> : " "}
+            {rows.map((row, r) => (
+              <div key={r} className={`${CELL} font-medium`}>
+                <FormattedText text={row[0] ?? ""} />
               </div>
-              {rows.map((row, r) => (
-                <DropSlot
-                  key={r}
-                  id={`r${r}`}
-                  className={cn(
-                    `${CELL} min-w-36 border-dashed`,
-                    feedbackClass(locked, isCorrect(chipsByCol[c].find((ch) => ch.id === values[c]?.[`r${r}`])?.label, [row[c] ?? ""])),
-                  )}
-                  placeholder={<span className="text-xs text-muted-foreground">перетащите</span>}
-                />
-              ))}
-              <div className="pt-2">
+            ))}
+          </div>
+
+          {/* Gap columns on the left; their word banks on the right */}
+          {targetCols.map((c, k) => (
+            <FillDnd key={c} chips={chipsByCol[c]} value={values[c] ?? {}} onChange={(v) => setColumnValue(c, v)} disabled={locked}>
+              <div className="space-y-2" style={{ gridColumn: k + 2, gridRow: `1 / ${T + 1}` }}>
+                <div className="h-7 text-xs font-medium text-muted-foreground">
+                  {columns[c] ? <FormattedText text={columns[c]} /> : " "}
+                </div>
+                {rows.map((row, r) => (
+                  <DropSlot
+                    key={r}
+                    id={`r${r}`}
+                    className={cn(
+                      `${CELL} min-w-36 border-dashed`,
+                      feedbackClass(locked, isCorrect(chipsByCol[c].find((ch) => ch.id === values[c]?.[`r${r}`])?.label, [row[c] ?? ""])),
+                    )}
+                    placeholder={<span className="text-xs text-muted-foreground">перетащите</span>}
+                  />
+                ))}
+              </div>
+              <div className="space-y-1" style={{ gridColumn: T + 2, gridRow: k + 1 }}>
+                {columns[c] ? (
+                  <div className="text-xs font-medium text-muted-foreground"><FormattedText text={columns[c]} /></div>
+                ) : null}
                 <Bank className="flex-col items-stretch" chipClassName="justify-center" />
               </div>
-            </div>
-          </FillDnd>
-        ))}
+            </FillDnd>
+          ))}
+        </div>
       </div>
 
       {!locked ? <LoadingButton size="sm" loading={saving} onClick={onSubmit}>Проверить</LoadingButton> : null}
