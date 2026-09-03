@@ -34,13 +34,16 @@ export function VideoEditor({ content, onSave }: EditorProps) {
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        <label className="text-sm font-medium">Ссылка на видео (YouTube, Vimeo или прямая)</label>
+        <label className="text-sm font-medium">Ссылка на видео</label>
         <Input
           placeholder="https://youtube.com/watch?v=…"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
-        <p className="text-xs text-muted-foreground">Видео не загружается на платформу — воспроизводится по ссылке.</p>
+        <p className="text-xs text-muted-foreground">
+          YouTube, Vimeo, VK Video, RuTube, Dailymotion, Google Drive, Bilibili или прямая ссылка на файл. Видео не
+          загружается на платформу — воспроизводится по ссылке.
+        </p>
       </div>
       {url ? <VideoEmbed url={url} /> : null}
       <LoadingButton size="sm" loading={saving} onClick={handleSave}>
