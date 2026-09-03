@@ -342,6 +342,7 @@ export interface Database {
           explanation: string | null;
           drawing: string | null;
           vocab: Json | null;
+          unnumbered: boolean;
           content: Json;
           created_at: string;
           updated_at: string;
@@ -360,6 +361,7 @@ export interface Database {
           explanation?: string | null;
           drawing?: string | null;
           vocab?: Json | null;
+          unnumbered?: boolean;
           content?: Json;
           created_at?: string;
           updated_at?: string;
@@ -378,6 +380,7 @@ export interface Database {
           explanation?: string | null;
           drawing?: string | null;
           vocab?: Json | null;
+          unnumbered?: boolean;
           content?: Json;
           created_at?: string;
           updated_at?: string;

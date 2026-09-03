@@ -75,6 +75,7 @@ interface SavedAnswer {
 
 export function StudentItem({
   item,
+  number,
   submission,
   reactionPicker,
   saveDrawing,
@@ -83,6 +84,7 @@ export function StudentItem({
   drawStartActive,
 }: {
   item: ItemRow;
+  number?: string | null;
   submission?: ItemSubmissionRow;
   reactionPicker?: import("react").ReactNode;
   saveDrawing?: (dataUrl: string | null) => Promise<void>;
@@ -172,8 +174,9 @@ export function StudentItem({
   return (
     <Card id={`item-${item.id}`} className="scroll-mt-20">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 border-b py-2">
-        <CardTitle className="text-sm font-medium">
-          {item.title ? <FormattedText text={item.title} /> : TYPE_LABELS[item.type]}
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+          {number ? <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{number}</span> : null}
+          <span>{item.title ? <FormattedText text={item.title} /> : TYPE_LABELS[item.type]}</span>
         </CardTitle>
         <div className="flex items-center gap-2">
           {hasNote ? (

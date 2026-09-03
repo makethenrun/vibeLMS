@@ -70,8 +70,8 @@ export function ImageAnnotate({
   }
 
   return (
-    <div className="space-y-2">
-      <div ref={wrapRef} className="relative inline-block max-w-full">
+    <div className="space-y-2 text-center">
+      <div ref={wrapRef} className="relative inline-block max-w-full text-left">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt={caption ?? ""} onLoad={resize} className="block max-h-80 rounded-lg border" />
         {annotations ? (
@@ -88,7 +88,7 @@ export function ImageAnnotate({
         />
       </div>
       {caption ? <p className="text-sm text-muted-foreground"><FormattedText text={caption} /></p> : null}
-      <div className="flex gap-2">
+      <div className="flex justify-center gap-2">
         <Button size="sm" variant={draw ? "default" : "outline"} onClick={() => setDraw((d) => !d)}>
           <Pencil className="h-4 w-4" />
           {draw ? "Рисование включено" : "Рисовать пометки"}

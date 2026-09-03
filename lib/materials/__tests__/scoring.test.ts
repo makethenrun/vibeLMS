@@ -49,13 +49,21 @@ describe("checkItem", () => {
   });
 
   it("scores random cards", () => {
-    const c = { type: "CARDS" as const, prompt: null, count: 2, cards: [
+    const c = { type: "CARDS" as const, prompt: null, mode: "ANSWER" as const, count: 2, cards: [
       { imageUrl: "", hint: "", answer: "dog" },
       { imageUrl: "", hint: "", answer: "cat" },
       { imageUrl: "", hint: "", answer: "bird" },
     ] };
     expect(checkItem(c, { picked: [0, 1], answers: ["dog", "cat"] })).toBe(100);
     expect(checkItem(c, { picked: [0, 2], answers: ["dog", "fish"] })).toBe(50);
+  });
+
+  it("does not score hint-only cards", () => {
+    const c = { type: "CARDS" as const, prompt: null, mode: "HINT_ONLY" as const, count: 2, cards: [
+      { imageUrl: "", hint: "подсказка", answer: "" },
+      { imageUrl: "", hint: "подсказка", answer: "" },
+    ] };
+    expect(checkItem(c, { picked: [0, 1], answers: [] })).toBeNull();
   });
 
   it("scores word-marker gaps", () => {

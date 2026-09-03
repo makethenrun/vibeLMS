@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormattedText } from "@/components/shared/formatted-text";
 import { cn } from "@/lib/utils";
+import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import type { MaterialItemType, ModuleWithItems } from "@/types";
 
 const ITEM_LABELS: Record<MaterialItemType, string> = {
@@ -40,8 +41,9 @@ export function StudentModuleTree({
 
   return (
     <ul className="space-y-2 text-sm">
-      {modules.map((module) => {
+      {modules.map((module, mIndex) => {
         const isCollapsed = collapsed[module.id] ?? false;
+        const numbers = numberItems(module.items);
         return (
           <li key={module.id} className="space-y-1">
             <div className="flex items-center gap-1">
@@ -56,7 +58,7 @@ export function StudentModuleTree({
                 href={`${lessonHref}?m=${module.id}`}
                 className={cn("flex-1 truncate rounded px-2 py-1 font-medium hover:bg-accent", module.id === activeModuleId && "bg-accent")}
               >
-                {module.title}
+                {mIndex + 1}. {module.title}
               </Link>
             </div>
             {isCollapsed ? null : (
@@ -70,6 +72,7 @@ export function StudentModuleTree({
                         href={`${lessonHref}?m=${module.id}#item-${item.id}`}
                         className="block truncate rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
+                        {(() => { const l = itemLabel(mIndex + 1, numbers.get(item.id)); return l ? `${l} ` : ""; })()}
                         {item.title ? <FormattedText text={item.title} /> : ITEM_LABELS[item.type]}
                       </Link>
                     </li>

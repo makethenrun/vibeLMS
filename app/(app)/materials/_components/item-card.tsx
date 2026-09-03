@@ -71,6 +71,7 @@ const TYPE_LABELS: Record<MaterialItemType, string> = {
 
 interface ItemCardProps {
   item: ItemRow;
+  number: string | null;
   canUp: boolean;
   canDown: boolean;
   availableGroups: Group[];
@@ -81,6 +82,7 @@ interface ItemCardProps {
 
 export function ItemCard({
   item,
+  number,
   canUp,
   canDown,
   availableGroups,
@@ -99,6 +101,7 @@ export function ItemCard({
   const [vocab, setVocab] = useState<{ term: string; translation: string }[]>(
     Array.isArray(item.vocab) ? (item.vocab as { term: string; translation: string }[]) : [],
   );
+  const [unnumbered, setUnnumbered] = useState(item.unnumbered);
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
   const [vocabOpen, setVocabOpen] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
@@ -133,6 +136,7 @@ export function ItemCard({
     fontSize?: string | null;
     explanation?: string;
     vocab?: { term: string; translation: string }[];
+    unnumbered?: boolean;
   }) {
     const result = await updateItemMetaAction(item.id, {
       title: next?.title ?? title,
@@ -143,6 +147,7 @@ export function ItemCard({
       fontSize: next?.fontSize !== undefined ? next.fontSize : fontSize,
       explanation: next?.explanation ?? explanation,
       vocab: next?.vocab ?? vocab,
+      unnumbered: next?.unnumbered ?? unnumbered,
     });
     if (result.success) router.refresh();
     else toast.error(result.error);
@@ -207,6 +212,11 @@ export function ItemCard({
             onChange={onToggleSelect}
             aria-label="Выбрать для импорта"
           />
+          {number ? (
+            <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary" title="Номер упражнения">
+              {number}
+            </span>
+          ) : null}
           <Input
             value={title}
             placeholder={`(${TYPE_LABELS[item.type]})`}
@@ -284,6 +294,18 @@ export function ItemCard({
         {pinnedNames.length > 0 ? (
           <p className="text-xs text-primary">Закреплено: {pinnedNames.join(", ")}</p>
         ) : null}
+
+        <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={unnumbered}
+            onChange={(e) => {
+              setUnnumbered(e.target.checked);
+              void saveMeta({ unnumbered: e.target.checked });
+            }}
+          />
+          Без номера (номер перейдёт следующему)
+        </label>
 
         {SOLVABLE_TYPES.includes(item.type) ? (
           <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">

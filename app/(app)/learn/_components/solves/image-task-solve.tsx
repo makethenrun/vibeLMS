@@ -116,7 +116,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
       </div>
 
       {content.variant === "SELECT_IMAGES" ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 justify-items-center gap-4 sm:grid-cols-3">
           {content.images.map((img, i) => {
             const on = selected.includes(i);
             const border = !on
@@ -162,7 +162,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
           </div>
         </FillDnd>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid justify-items-center gap-6 sm:grid-cols-2">
           {content.pairs.map((p, i) => (
             <div key={i} className="flex w-full max-w-[200px] flex-col items-stretch gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}

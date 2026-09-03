@@ -5,20 +5,23 @@ import { Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { Group, ModuleWithItems } from "@/types";
+import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import { AddItemMenu } from "./add-item-menu";
 import { ImportDialog } from "./import-dialog";
 import { ItemCard } from "./item-card";
 
 interface ModulePaneProps {
   module: ModuleWithItems;
+  moduleNumber: number;
   availableGroups: Group[];
   pins: Record<string, string[]>;
   onBackground?: boolean;
 }
 
-export function ModulePane({ module, availableGroups, pins, onBackground = false }: ModulePaneProps) {
+export function ModulePane({ module, moduleNumber, availableGroups, pins, onBackground = false }: ModulePaneProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importOpen, setImportOpen] = useState(false);
+  const numbers = numberItems(module.items);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -32,7 +35,7 @@ export function ModulePane({ module, availableGroups, pins, onBackground = false
   return (
     <section id={`module-${module.id}`} className="scroll-mt-20 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className={onBackground ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{module.title}</h3>
+        <h3 className={onBackground ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{moduleNumber}. {module.title}</h3>
         {selected.size > 0 ? (
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4" />
@@ -49,6 +52,7 @@ export function ModulePane({ module, availableGroups, pins, onBackground = false
             <ItemCard
               key={item.id}
               item={item}
+              number={itemLabel(moduleNumber, numbers.get(item.id))}
               canUp={index > 0}
               canDown={index < module.items.length - 1}
               availableGroups={availableGroups}

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/utils/action-result";
+import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import type { MaterialItemType, ModuleWithItems } from "@/types";
 import {
   createModuleAction,
@@ -95,6 +96,7 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
         <ul className="space-y-3">
           {modules.map((module, mIndex) => {
             const isCollapsed = collapsed[module.id] ?? false;
+            const numbers = numberItems(module.items);
             return (
               <li key={module.id} className="space-y-1">
                 <div className="flex items-center gap-1">
@@ -113,7 +115,7 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
                       module.id === activeModuleId && "bg-accent",
                     )}
                   >
-                    {module.title}
+                    {mIndex + 1}. {module.title}
                   </Link>
                   <RowMenu
                     busy={busy}
@@ -138,7 +140,7 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
                             href={`/materials/lessons/${lessonId}?m=${module.id}#item-${item.id}`}
                             className="flex-1 truncate rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                           >
-                            {item.title || ITEM_LABELS[item.type]}
+                            {(() => { const l = itemLabel(mIndex + 1, numbers.get(item.id)); return l ? `${l} ` : ""; })()}{item.title || ITEM_LABELS[item.type]}
                           </Link>
                           <RowMenu
                             busy={busy}

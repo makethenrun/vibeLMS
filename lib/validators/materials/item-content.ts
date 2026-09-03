@@ -165,13 +165,18 @@ export const freeContentSchema = z.object({
 export const cardsContentSchema = z.object({
   type: z.literal("CARDS"),
   prompt: z.string().trim().max(1000).nullable().default(null),
+  // ANSWER: student types an answer and is scored. HINT_ONLY: student only
+  // flips cards to read the hint — no input, no score (study/review mode).
+  mode: z.enum(["ANSWER", "HINT_ONLY"]).default("ANSWER"),
   // How many random cards from the pool the student gets each attempt.
   count: z.coerce.number().int().min(1).max(50).default(3),
   cards: z
     .array(z.object({
       imageUrl: z.string().trim().max(1000).default(""),
       hint: z.string().trim().max(500).default(""),
-      answer: nonEmpty.max(300),
+      // Required in ANSWER mode (enforced in the union superRefine); optional
+      // in HINT_ONLY mode where there is nothing to check.
+      answer: z.string().trim().max(300).default(""),
     }))
     .min(1, "Добавьте карточку")
     .max(50),
@@ -239,6 +244,14 @@ export const itemContentSchema = z
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Строка ${i + 1}: заполните все столбцы`, path: ["matchRows"] });
         }
       }
+    }
+
+    if (v.type === "CARDS" && v.mode === "ANSWER") {
+      v.cards.forEach((c, i) => {
+        if (c.answer.trim() === "") {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Карточка ${i + 1}: укажите ответ`, path: ["cards", i, "answer"] });
+        }
+      });
     }
 
     if (v.type === "GAPS") {
@@ -350,6 +363,6 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
         pairs: [],
       };
     case "CARDS":
-      return { type: "CARDS", prompt: null, count: 3, cards: [{ imageUrl: "", hint: "", answer: "ответ" }] };
+      return { type: "CARDS", prompt: null, mode: "ANSWER", count: 3, cards: [{ imageUrl: "", hint: "", answer: "ответ" }] };
   }
 }
