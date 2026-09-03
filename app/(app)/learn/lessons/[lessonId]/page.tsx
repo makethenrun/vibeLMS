@@ -8,6 +8,7 @@ import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getSubmissionsForItems } from "@/services/materials/submissions.service";
 import { getLessonBackground } from "@/services/materials/lessons.service";
+import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import { lessonMaterialId, studentHasMaterialAccess } from "@/services/materials/student-access.service";
 import { LessonSurface } from "@/app/(app)/materials/_components/lesson-surface";
 import { Workspace } from "@/app/(app)/materials/_components/workspace";
@@ -50,14 +51,22 @@ export default async function StudentLessonPage({
           treeTitle="Модули и упражнения"
         >
           {active ? (
-            <section className="space-y-4">
-              <h2 className={active && background.url ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{active.title}</h2>
-              {active.items.length === 0 ? (
-                <p className="text-sm text-muted-foreground">В модуле пока нет элементов.</p>
-              ) : (
-                active.items.map((item) => <StudentItem key={item.id} item={item} submission={submissions[item.id]} />)
-              )}
-            </section>
+            (() => {
+              const moduleNumber = modules.indexOf(active) + 1;
+              const numbers = numberItems(active.items);
+              return (
+                <section className="space-y-4">
+                  <h2 className={active && background.url ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{moduleNumber}. {active.title}</h2>
+                  {active.items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">В модуле пока нет элементов.</p>
+                  ) : (
+                    active.items.map((item) => (
+                      <StudentItem key={item.id} item={item} number={itemLabel(moduleNumber, numbers.get(item.id))} submission={submissions[item.id]} />
+                    ))
+                  )}
+                </section>
+              );
+            })()
           ) : (
             <p className="text-sm text-muted-foreground">В уроке пока нет модулей.</p>
           )}

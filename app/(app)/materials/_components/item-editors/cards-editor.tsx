@@ -27,6 +27,7 @@ interface UploadResponse {
 
 export function CardsEditor({ content, onSave }: EditorProps) {
   const [prompt, setPrompt] = useState(content.prompt ?? "");
+  const [mode, setMode] = useState<"ANSWER" | "HINT_ONLY">(content.mode);
   const [count, setCount] = useState(content.count);
   const [cards, setCards] = useState<CardDraft[]>(content.cards.length ? content.cards.map((c) => ({ ...c })) : [{ imageUrl: "", hint: "", answer: "" }]);
   const [saving, setSaving] = useState(false);
@@ -55,10 +56,13 @@ export function CardsEditor({ content, onSave }: EditorProps) {
   }
 
   async function handleSave() {
-    const filtered = cards.filter((c) => c.answer.trim());
+    // ANSWER mode needs a correct answer per card; HINT_ONLY keeps any card
+    // that has an image or a hint to show.
+    const filtered = cards.filter((c) => (mode === "ANSWER" ? c.answer.trim() : c.imageUrl.trim() || c.hint.trim()));
     const candidate = {
       type: "CARDS" as const,
       prompt: prompt.trim() || null,
+      mode,
       count: Math.max(1, Math.min(count, filtered.length || 1)),
       cards: filtered,
     };
@@ -80,6 +84,23 @@ export function CardsEditor({ content, onSave }: EditorProps) {
       <div className="space-y-1">
         <label className="text-sm font-medium">Инструкция (необязательно)</label>
         <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Посмотрите на картинку и напишите слово" />
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Режим</label>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant={mode === "ANSWER" ? "default" : "outline"} onClick={() => setMode("ANSWER")}>
+            С ответами
+          </Button>
+          <Button type="button" size="sm" variant={mode === "HINT_ONLY" ? "default" : "outline"} onClick={() => setMode("HINT_ONLY")}>
+            Без ответов (только подсказки)
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {mode === "ANSWER"
+            ? "Ученик пишет ответ, задание оценивается."
+            : "Ученик листает и переворачивает карточки, чтобы увидеть подсказку. Без ввода и без оценки."}
+        </p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -114,7 +135,9 @@ export function CardsEditor({ content, onSave }: EditorProps) {
                 />
               </div>
               <Input value={card.hint} onChange={(e) => update(i, { hint: e.target.value })} placeholder="Подсказка (обратная сторона)" className="h-8" />
-              <Input value={card.answer} onChange={(e) => update(i, { answer: e.target.value })} placeholder="Правильный ответ" className="h-8" />
+              {mode === "ANSWER" ? (
+                <Input value={card.answer} onChange={(e) => update(i, { answer: e.target.value })} placeholder="Правильный ответ" className="h-8" />
+              ) : null}
             </div>
             <Button type="button" size="icon" variant="ghost" className="text-destructive" disabled={cards.length <= 1}
               onClick={() => setCards((prev) => prev.filter((_, j) => j !== i))} aria-label="Удалить карточку">

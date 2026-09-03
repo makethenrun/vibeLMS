@@ -34,6 +34,7 @@ export function CardsSolve({
   initialScore: number | null | undefined;
   initialAnswer?: { picked?: number[]; answers?: string[] };
 }) {
+  const hintOnly = content.mode === "HINT_ONLY";
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const picked = useMemo(
     () => (initialAnswer?.picked && initialAnswer.picked.length > 0 ? initialAnswer.picked : randomPick(content.cards.length, content.count)),
@@ -56,18 +57,18 @@ export function CardsSolve({
     setPos((p) => Math.min(picked.length - 1, Math.max(0, p + delta)));
   }
   async function onSubmit() {
-    await submit({ picked, answers } as unknown as Json, content);
+    await submit({ picked, answers: hintOnly ? [] : answers } as unknown as Json, content);
   }
 
   if (!card) return <p className="text-sm text-muted-foreground">Нет карточек.</p>;
 
-  const ok = locked ? isCorrect(answers[pos], [card.answer]) : false;
+  const ok = locked && !hintOnly ? isCorrect(answers[pos], [card.answer]) : false;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">Карточка {pos + 1} из {picked.length}</span>
-        <ScoreBadge score={score} />
+        {hintOnly ? (locked ? <span className="text-xs text-muted-foreground">Просмотрено</span> : null) : <ScoreBadge score={score} />}
       </div>
 
       {/* Flip card: image on the front, hint on the back */}
@@ -95,13 +96,15 @@ export function CardsSolve({
         </button>
       </div>
 
-      <Input
-        value={answers[pos] ?? ""}
-        onChange={(e) => setAnswer(e.target.value)}
-        placeholder="Ваш ответ"
-        disabled={locked}
-        className={cn(locked && feedbackClass(true, ok))}
-      />
+      {hintOnly ? null : (
+        <Input
+          value={answers[pos] ?? ""}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder="Ваш ответ"
+          disabled={locked}
+          className={cn(locked && feedbackClass(true, ok))}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <Button type="button" size="sm" variant="outline" onClick={() => go(-1)} disabled={pos === 0}>
@@ -112,13 +115,45 @@ export function CardsSolve({
             Далее <ChevronRight className="h-4 w-4" />
           </Button>
         ) : isLastCard ? (
-          <LoadingButton size="sm" loading={saving} onClick={onSubmit} disabled={!answered}>Проверить</LoadingButton>
+          <LoadingButton size="sm" loading={saving} onClick={onSubmit} disabled={!hintOnly && !answered}>
+            {hintOnly ? "Готово" : "Проверить"}
+          </LoadingButton>
         ) : (
-          <Button type="button" size="sm" onClick={() => go(1)} disabled={!answered}>
+          <Button type="button" size="sm" onClick={() => go(1)} disabled={!hintOnly && !answered}>
             Далее <ChevronRight className="h-4 w-4" />
           </Button>
         )}
       </div>
+
+      {/* Review: after submitting in ANSWER mode, show each card with the answer. */}
+      {locked && !hintOnly ? (
+        <div className="space-y-1 rounded-lg border p-2">
+          <p className="text-xs font-medium text-muted-foreground">Ваши ответы</p>
+          <ul className="space-y-1">
+            {picked.map((cardIdx, i) => {
+              const c = content.cards[cardIdx];
+              if (!c) return null;
+              const correct = isCorrect(answers[i], [c.answer]);
+              return (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                    {c.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={c.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </span>
+                  <span className={cn("flex-1 rounded-md px-2 py-1 text-sm", feedbackClass(true, correct))}>
+                    {answers[i]?.trim() ? answers[i] : <span className="text-muted-foreground">—</span>}
+                    {!correct ? <span className="ml-1 text-xs text-green-700">({c.answer})</span> : null}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

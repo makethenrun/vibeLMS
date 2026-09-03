@@ -91,7 +91,7 @@ export default async function LessonPage({
           }
         >
           {active ? (
-            <ModulePane module={active} availableGroups={availableGroups} pins={pins} onBackground={Boolean(background.url)} />
+            <ModulePane module={active} moduleNumber={modules.indexOf(active) + 1} availableGroups={availableGroups} pins={pins} onBackground={Boolean(background.url)} />
           ) : (
             <p className="text-sm text-muted-foreground">
               В уроке пока нет модулей. Добавьте первый модуль в списке справа.
