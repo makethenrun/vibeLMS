@@ -88,11 +88,11 @@ export function MatchColumnsSolve({ itemId, content, columns, rows, initialScore
           element, so its slot block and its bank land in separate grid cells. */}
       <div className="overflow-x-auto">
         <div
-          className="grid items-start gap-x-8 gap-y-3"
-          style={{ gridTemplateColumns: `max-content repeat(${T}, max-content) minmax(9rem, 1fr)` }}
+          className="grid items-start gap-x-6"
+          style={{ gridTemplateColumns: `max-content repeat(${T}, max-content) 1.5rem repeat(${T}, minmax(8rem, 11rem))` }}
         >
-          {/* Anchor column (fixed), spanning all bank rows */}
-          <div className="space-y-2" style={{ gridColumn: 1, gridRow: `1 / ${T + 1}` }}>
+          {/* Anchor column (fixed) */}
+          <div className="space-y-2" style={{ gridColumn: 1, gridRow: 1 }}>
             <div className="h-7 text-xs font-medium text-muted-foreground">
               {columns[0] ? <FormattedText text={columns[0]} /> : " "}
             </div>
@@ -103,10 +103,10 @@ export function MatchColumnsSolve({ itemId, content, columns, rows, initialScore
             ))}
           </div>
 
-          {/* Gap columns on the left; their word banks on the right */}
+          {/* Gap columns on the left; their word banks in matching columns on the right */}
           {targetCols.map((c, k) => (
             <FillDnd key={c} chips={chipsByCol[c]} value={values[c] ?? {}} onChange={(v) => setColumnValue(c, v)} disabled={locked}>
-              <div className="space-y-2" style={{ gridColumn: k + 2, gridRow: `1 / ${T + 1}` }}>
+              <div className="space-y-2" style={{ gridColumn: k + 2, gridRow: 1 }}>
                 <div className="h-7 text-xs font-medium text-muted-foreground">
                   {columns[c] ? <FormattedText text={columns[c]} /> : " "}
                 </div>
@@ -122,11 +122,11 @@ export function MatchColumnsSolve({ itemId, content, columns, rows, initialScore
                   />
                 ))}
               </div>
-              <div className="space-y-1" style={{ gridColumn: T + 2, gridRow: k + 1 }}>
-                {columns[c] ? (
-                  <div className="text-xs font-medium text-muted-foreground"><FormattedText text={columns[c]} /></div>
-                ) : null}
-                <Bank className="flex-col items-stretch" chipClassName="justify-center" />
+              <div className="space-y-1" style={{ gridColumn: 3 + T + k, gridRow: 1 }}>
+                <div className="h-7 text-xs font-medium text-muted-foreground">
+                  {columns[c] ? <FormattedText text={columns[c]} /> : " "}
+                </div>
+                <Bank className="flex-col items-stretch" chipClassName="justify-center px-3" />
               </div>
             </FillDnd>
           ))}

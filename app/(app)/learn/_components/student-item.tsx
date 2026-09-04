@@ -104,8 +104,9 @@ export function StudentItem({
   const hasNote = Boolean(item.note) && !item.note_hidden;
   const [notesOpen, setNotesOpen] = useState(false);
   const vocab = Array.isArray(item.vocab)
-    ? (item.vocab as { term: string; translation: string }[]).filter((v) => v.term || v.translation)
+    ? (item.vocab as { term: string; pinyin?: string; translation: string }[]).filter((v) => v.term || v.pinyin || v.translation)
     : [];
+  const vocabHasPinyin = vocab.some((v) => v.pinyin);
   const showExplanation =
     !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
   // Remount the solve on retake / new submission so its internal state resets.
@@ -226,12 +227,13 @@ export function StudentItem({
             ) : null}
           </div>
           {vocab.length > 0 ? (
-            <aside className="h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56">
+            <aside className={vocabHasPinyin ? "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-72" : "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56"}>
               <p className="mb-2 text-xs font-semibold text-green-800">Новые слова</p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+              <div className={vocabHasPinyin ? "grid grid-cols-3 gap-x-3 gap-y-1 text-sm" : "grid grid-cols-2 gap-x-3 gap-y-1 text-sm"}>
                 {vocab.map((v, i) => (
                   <Fragment key={i}>
                     <span className="break-words font-medium"><FormattedText text={v.term} /></span>
+                    {vocabHasPinyin ? <span className="break-words text-muted-foreground"><FormattedText text={v.pinyin ?? ""} /></span> : null}
                     <span className="break-words text-muted-foreground"><FormattedText text={v.translation} /></span>
                   </Fragment>
                 ))}

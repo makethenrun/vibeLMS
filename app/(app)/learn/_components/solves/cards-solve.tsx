@@ -34,7 +34,9 @@ export function CardsSolve({
   initialScore: number | null | undefined;
   initialAnswer?: { picked?: number[]; answers?: string[] };
 }) {
-  const hintOnly = content.mode === "HINT_ONLY";
+  const studyMode = content.mode !== "ANSWER"; // HINT_ONLY or WORDS: flip-only, no score
+  const textFront = content.mode === "WORDS"; // word on the front, translation on the back
+  const backLabel = textFront ? "перевод" : "подсказка";
   const { score, saving, submit, locked } = useSubmit(itemId, initialScore);
   const picked = useMemo(
     () => (initialAnswer?.picked && initialAnswer.picked.length > 0 ? initialAnswer.picked : randomPick(content.cards.length, content.count)),
@@ -57,18 +59,18 @@ export function CardsSolve({
     setPos((p) => Math.min(picked.length - 1, Math.max(0, p + delta)));
   }
   async function onSubmit() {
-    await submit({ picked, answers: hintOnly ? [] : answers } as unknown as Json, content);
+    await submit({ picked, answers: studyMode ? [] : answers } as unknown as Json, content);
   }
 
   if (!card) return <p className="text-sm text-muted-foreground">Нет карточек.</p>;
 
-  const ok = locked && !hintOnly ? isCorrect(answers[pos], [card.answer]) : false;
+  const ok = locked && !studyMode ? isCorrect(answers[pos], [card.answer]) : false;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">Карточка {pos + 1} из {picked.length}</span>
-        {hintOnly ? (locked ? <span className="text-xs text-muted-foreground">Просмотрено</span> : null) : <ScoreBadge score={score} />}
+        {studyMode ? (locked ? <span className="text-xs text-muted-foreground">Просмотрено</span> : null) : <ScoreBadge score={score} />}
       </div>
 
       {/* Flip card: image on the front, hint on the back */}
@@ -79,24 +81,26 @@ export function CardsSolve({
           className={cn("relative block h-56 w-full transition-transform duration-500 [transform-style:preserve-3d]", flipped && "[transform:rotateY(180deg)]")}
           aria-label="Перевернуть карточку"
         >
-          <span className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border bg-card [backface-visibility:hidden]">
-            {card.imageUrl ? (
+          <span className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border bg-card p-4 text-center [backface-visibility:hidden]">
+            {textFront ? (
+              <span className="text-2xl font-semibold"><FormattedText text={card.answer} /></span>
+            ) : card.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={card.imageUrl} alt="" className="max-h-full max-w-full object-contain" />
             ) : (
               <ImageIcon className="h-10 w-10 text-muted-foreground" />
             )}
             <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[10px] text-muted-foreground">
-              <RotateCw className="h-3 w-3" /> подсказка
+              <RotateCw className="h-3 w-3" /> {backLabel}
             </span>
           </span>
           <span className="absolute inset-0 flex items-center justify-center rounded-2xl border bg-muted/40 p-4 text-center text-sm [backface-visibility:hidden] [transform:rotateY(180deg)]">
-            {card.hint ? <FormattedText text={card.hint} /> : <span className="text-muted-foreground">Подсказки нет</span>}
+            {card.hint ? <FormattedText text={card.hint} /> : <span className="text-muted-foreground">{textFront ? "Перевода нет" : "Подсказки нет"}</span>}
           </span>
         </button>
       </div>
 
-      {hintOnly ? null : (
+      {studyMode ? null : (
         <Input
           value={answers[pos] ?? ""}
           onChange={(e) => setAnswer(e.target.value)}
@@ -115,18 +119,18 @@ export function CardsSolve({
             Далее <ChevronRight className="h-4 w-4" />
           </Button>
         ) : isLastCard ? (
-          <LoadingButton size="sm" loading={saving} onClick={onSubmit} disabled={!hintOnly && !answered}>
-            {hintOnly ? "Готово" : "Проверить"}
+          <LoadingButton size="sm" loading={saving} onClick={onSubmit} disabled={!studyMode && !answered}>
+            {studyMode ? "Готово" : "Проверить"}
           </LoadingButton>
         ) : (
-          <Button type="button" size="sm" onClick={() => go(1)} disabled={!hintOnly && !answered}>
+          <Button type="button" size="sm" onClick={() => go(1)} disabled={!studyMode && !answered}>
             Далее <ChevronRight className="h-4 w-4" />
           </Button>
         )}
       </div>
 
       {/* Review: after submitting in ANSWER mode, show each card with the answer. */}
-      {locked && !hintOnly ? (
+      {locked && !studyMode ? (
         <div className="space-y-1 rounded-lg border p-2">
           <p className="text-xs font-medium text-muted-foreground">Ваши ответы</p>
           <ul className="space-y-1">

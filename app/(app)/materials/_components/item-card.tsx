@@ -98,8 +98,10 @@ export function ItemCard({
   const [fontFamily, setFontFamily] = useState<string | null>(item.font_family);
   const [fontSize, setFontSize] = useState<string | null>(item.font_size);
   const [explanation, setExplanation] = useState(item.explanation ?? "");
-  const [vocab, setVocab] = useState<{ term: string; translation: string }[]>(
-    Array.isArray(item.vocab) ? (item.vocab as { term: string; translation: string }[]) : [],
+  const [vocab, setVocab] = useState<{ term: string; pinyin: string; translation: string }[]>(
+    Array.isArray(item.vocab)
+      ? (item.vocab as { term: string; pinyin?: string; translation: string }[]).map((v) => ({ term: v.term, pinyin: v.pinyin ?? "", translation: v.translation }))
+      : [],
   );
   const [unnumbered, setUnnumbered] = useState(item.unnumbered);
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
@@ -135,7 +137,7 @@ export function ItemCard({
     fontFamily?: string | null;
     fontSize?: string | null;
     explanation?: string;
-    vocab?: { term: string; translation: string }[];
+    vocab?: { term: string; pinyin: string; translation: string }[];
     unnumbered?: boolean;
   }) {
     const result = await updateItemMetaAction(item.id, {
@@ -403,7 +405,13 @@ export function ItemCard({
                   onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, term: e.target.value } : x)))}
                   onBlur={() => saveMeta({ vocab })}
                 />
-                <span className="text-muted-foreground">—</span>
+                <Input
+                  className="h-8"
+                  placeholder="пиньинь"
+                  value={v.pinyin}
+                  onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, pinyin: e.target.value } : x)))}
+                  onBlur={() => saveMeta({ vocab })}
+                />
                 <Input
                   className="h-8"
                   placeholder="перевод"
@@ -417,7 +425,7 @@ export function ItemCard({
                 </Button>
               </div>
             ))}
-            <Button size="sm" variant="outline" onClick={() => setVocab((prev) => [...prev, { term: "", translation: "" }])}>
+            <Button size="sm" variant="outline" onClick={() => setVocab((prev) => [...prev, { term: "", pinyin: "", translation: "" }])}>
               <Plus className="h-4 w-4" />
               Слово
             </Button>

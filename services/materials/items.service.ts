@@ -58,7 +58,7 @@ export async function updateItemMeta(db: Db, id: string, meta: ItemMetaInput): P
       font_family: meta.fontFamily,
       font_size: meta.fontSize,
       explanation: nullable(meta.explanation),
-      vocab: (meta.vocab.filter((v) => v.term.trim() || v.translation.trim())) as unknown as Json,
+      vocab: (meta.vocab.filter((v) => v.term.trim() || v.pinyin.trim() || v.translation.trim())) as unknown as Json,
       unnumbered: meta.unnumbered,
       updated_at: new Date().toISOString(),
     })
