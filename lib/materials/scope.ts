@@ -26,6 +26,39 @@ export interface TreeSection {
   lessons: TreeLesson[];
 }
 
+export interface FlatTreeModule {
+  id: string;
+  title: string;
+  lessonId: string;
+}
+
+/** Every module across the tree, in reading order (section → lesson → module). */
+export function flatModules(tree: TreeSection[]): FlatTreeModule[] {
+  const out: FlatTreeModule[] = [];
+  for (const section of tree) {
+    for (const lesson of section.lessons) {
+      for (const mod of lesson.modules) out.push({ id: mod.id, title: mod.title, lessonId: lesson.id });
+    }
+  }
+  return out;
+}
+
+/** The module a scope belongs to: the module itself, or the item's module. */
+export function moduleIdForScope(tree: TreeSection[], kind: ScopeKind, id: string | null): string | null {
+  if (!id) return null;
+  if (kind === "module") return id;
+  if (kind === "item") {
+    for (const section of tree) {
+      for (const lesson of section.lessons) {
+        for (const mod of lesson.modules) {
+          if (mod.items.some((i) => i.id === id)) return mod.id;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /** Ordered item ids covered by a scope (item / module / lesson / whole section). */
 export function itemsForScope(tree: TreeSection[], kind: ScopeKind, id: string | null): string[] {
   if (!id) return [];

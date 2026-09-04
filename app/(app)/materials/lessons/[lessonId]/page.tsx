@@ -11,6 +11,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
+import { getMaterialModulesFlat } from "@/services/materials/module-order.service";
 import { getAccessibleGroups } from "@/services/materials/material-groups.service";
 import { getLessonBackground } from "@/services/materials/lessons.service";
 import { getPinsForItems } from "@/services/materials/item-pins.service";
@@ -45,11 +46,12 @@ export default async function LessonPage({
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
 
-  const [availableGroups, pins, background, sections] = await Promise.all([
+  const [availableGroups, pins, background, sections, flatModules] = await Promise.all([
     getAccessibleGroups(db, ctx.materialId),
     active ? getPinsForItems(db, active.items.map((i) => i.id)) : Promise.resolve({}),
     getLessonBackground(db, lessonId),
     getSectionsWithLessons(db, ctx.materialId),
+    getMaterialModulesFlat(db, ctx.materialId),
   ]);
 
   const materialNav = {
@@ -98,9 +100,9 @@ export default async function LessonPage({
         >
           {active ? (
             <div className="space-y-4">
-              <ModuleNav lessonId={lessonId} modules={modules} activeId={active.id} />
+              <ModuleNav modules={flatModules} activeModuleId={active.id} hrefFor={(l, m) => `/materials/lessons/${l}?m=${m}`} />
               <ModulePane module={active} moduleNumber={modules.indexOf(active) + 1} availableGroups={availableGroups} pins={pins} onBackground={Boolean(background.url)} />
-              <ModuleNav lessonId={lessonId} modules={modules} activeId={active.id} />
+              <ModuleNav modules={flatModules} activeModuleId={active.id} hrefFor={(l, m) => `/materials/lessons/${l}?m=${m}`} />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">

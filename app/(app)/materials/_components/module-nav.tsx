@@ -2,34 +2,35 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { ModuleWithItems } from "@/types";
+import type { FlatModule } from "@/services/materials/module-order.service";
 
-/** Prev/next module links within a lesson (shown above and below the module). */
+/**
+ * Prev/next module links across the whole material (shown above and below the
+ * module). When the current module is the first in its lesson, "back" points to
+ * the last module of the previous lesson; likewise "forward" past the last.
+ */
 export function ModuleNav({
-  lessonId,
   modules,
-  activeId,
-  basePath = "/materials/lessons",
+  activeModuleId,
+  hrefFor,
 }: {
-  lessonId: string;
-  modules: ModuleWithItems[];
-  activeId?: string;
-  basePath?: string;
+  modules: FlatModule[];
+  activeModuleId?: string;
+  hrefFor: (lessonId: string, moduleId: string) => string;
 }) {
   if (modules.length <= 1) return null;
-  const idx = modules.findIndex((m) => m.id === activeId);
+  const idx = modules.findIndex((m) => m.moduleId === activeModuleId);
+  if (idx === -1) return null;
   const prev = idx > 0 ? modules[idx - 1] : null;
-  const next = idx >= 0 && idx < modules.length - 1 ? modules[idx + 1] : null;
-  const prevNumber = idx; // 1-based number of the previous module
-  const nextNumber = idx + 2;
+  const next = idx < modules.length - 1 ? modules[idx + 1] : null;
 
   return (
     <div className="flex items-center justify-between gap-2">
       {prev ? (
         <Button asChild variant="outline" size="sm" className="max-w-[45%]">
-          <Link href={`${basePath}/${lessonId}?m=${prev.id}`}>
+          <Link href={hrefFor(prev.lessonId, prev.moduleId)}>
             <ChevronLeft className="h-4 w-4 shrink-0" />
-            <span className="truncate">{prevNumber}. {prev.title}</span>
+            <span className="truncate">{prev.title}</span>
           </Link>
         </Button>
       ) : (
@@ -37,8 +38,8 @@ export function ModuleNav({
       )}
       {next ? (
         <Button asChild variant="outline" size="sm" className="max-w-[45%]">
-          <Link href={`${basePath}/${lessonId}?m=${next.id}`}>
-            <span className="truncate">{nextNumber}. {next.title}</span>
+          <Link href={hrefFor(next.lessonId, next.moduleId)}>
+            <span className="truncate">{next.title}</span>
             <ChevronRight className="h-4 w-4 shrink-0" />
           </Link>
         </Button>
