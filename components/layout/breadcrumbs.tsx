@@ -10,6 +10,7 @@ import { useBreadcrumbOverride, type MaterialNav } from "./breadcrumb-context";
 
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: "Дашборд",
+  learn: "Обучение",
   students: "Ученики",
   groups: "Группы",
   lessons: "Занятия",

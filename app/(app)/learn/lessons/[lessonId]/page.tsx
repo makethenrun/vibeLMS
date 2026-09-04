@@ -12,6 +12,7 @@ import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import { lessonMaterialId, studentHasMaterialAccess } from "@/services/materials/student-access.service";
 import { LessonSurface } from "@/app/(app)/materials/_components/lesson-surface";
 import { Workspace } from "@/app/(app)/materials/_components/workspace";
+import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
 import { StudentItem } from "../../_components/student-item";
 import { StudentModuleTree } from "../../_components/student-module-tree";
 
@@ -40,8 +41,17 @@ export default async function StudentLessonPage({
   const submissions = active ? await getSubmissionsForItems(db, studentId, active.items.map((i) => i.id)) : {};
   const background = await getLessonBackground(db, lessonId);
 
+  const materialTitle = ctx.crumbs[1]?.label ?? "Материал";
+
   return (
     <div className="space-y-6">
+      <PageBreadcrumbs
+        crumbs={[
+          { label: "Обучение", href: "/learn" },
+          { label: materialTitle, href: `/learn/materials/${materialId}` },
+          { label: ctx.title, href: `/learn/lessons/${lessonId}` },
+        ]}
+      />
       <LessonSurface
         background={background}
         header={<PageHeader title={ctx.title} description="Пройдите упражнения модуля." />}
