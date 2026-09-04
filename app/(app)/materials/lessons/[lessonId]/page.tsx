@@ -10,12 +10,14 @@ import { canEditMaterial, canViewMaterial } from "@/services/assistants/assistan
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
+import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
 import { getAccessibleGroups } from "@/services/materials/material-groups.service";
 import { getLessonBackground } from "@/services/materials/lessons.service";
 import { getPinsForItems } from "@/services/materials/item-pins.service";
 import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
 import { LessonBackgroundDialog } from "../../_components/lesson-background-dialog";
 import { LessonSurface } from "../../_components/lesson-surface";
+import { ModuleNav } from "../../_components/module-nav";
 import { ModulePane } from "../../_components/module-pane";
 import { Workspace } from "../../_components/workspace";
 import { ModuleTree } from "./module-tree";
@@ -43,23 +45,27 @@ export default async function LessonPage({
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
 
-  const [availableGroups, pins, background] = await Promise.all([
+  const [availableGroups, pins, background, sections] = await Promise.all([
     getAccessibleGroups(db, ctx.materialId),
     active ? getPinsForItems(db, active.items.map((i) => i.id)) : Promise.resolve({}),
     getLessonBackground(db, lessonId),
+    getSectionsWithLessons(db, ctx.materialId),
   ]);
+
+  const materialNav = {
+    anchorHref: `/materials/${ctx.materialId}`,
+    sections: sections.map((s) => ({
+      title: s.title,
+      lessons: s.lessons.map((l) => ({ title: l.title, href: `/materials/lessons/${l.id}` })),
+    })),
+  };
 
   return (
     <>
-      <PageBreadcrumbs crumbs={ctx.crumbs} />
+      <PageBreadcrumbs crumbs={ctx.crumbs} materialNav={materialNav} />
       <LessonSurface
         background={background}
-        header={
-          <PageHeader
-            title={ctx.title}
-            description="Один модуль на странице; переключайтесь в списке справа."
-          />
-        }
+        header={<PageHeader title={ctx.title} />}
         actions={
           <>
             <Button asChild variant="outline">
@@ -91,7 +97,11 @@ export default async function LessonPage({
           }
         >
           {active ? (
-            <ModulePane module={active} moduleNumber={modules.indexOf(active) + 1} availableGroups={availableGroups} pins={pins} onBackground={Boolean(background.url)} />
+            <div className="space-y-4">
+              <ModuleNav lessonId={lessonId} modules={modules} activeId={active.id} />
+              <ModulePane module={active} moduleNumber={modules.indexOf(active) + 1} availableGroups={availableGroups} pins={pins} onBackground={Boolean(background.url)} />
+              <ModuleNav lessonId={lessonId} modules={modules} activeId={active.id} />
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">
               В уроке пока нет модулей. Добавьте первый модуль в списке справа.
