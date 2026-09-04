@@ -9,11 +9,13 @@ import {
   KeyRound,
   MoreHorizontal,
   Pencil,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,9 +135,20 @@ function StudentRow({ student }: { student: StudentWithAccount }) {
 }
 
 export function StudentsTable({ students }: { students: StudentWithAccount[] }) {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? students.filter((s) => s.full_name.toLowerCase().includes(q) || (s.login ?? "").toLowerCase().includes(q))
+    : students;
+
   return (
-    <div className="rounded-lg border">
-      <Table>
+    <div className="space-y-3">
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по ФИО или логину" className="pl-8" />
+      </div>
+      <div className="rounded-lg border">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>ФИО</TableHead>
@@ -146,11 +159,18 @@ export function StudentsTable({ students }: { students: StudentWithAccount[] }) 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {students.map((student) => (
-            <StudentRow key={student.id} student={student} />
-          ))}
+          {filtered.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                Ничего не найдено.
+              </TableCell>
+            </TableRow>
+          ) : (
+            filtered.map((student) => <StudentRow key={student.id} student={student} />)
+          )}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </div>
   );
 }

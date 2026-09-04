@@ -20,10 +20,10 @@ export default async function StudentsPage({
 }) {
   await requireTutor();
   const params = await searchParams;
-  const includeArchived = params.archived === "1";
+  const archivedOnly = params.archived === "1";
 
   const db = createServerSupabaseClient();
-  const students = await listStudents(db, { includeArchived });
+  const students = await listStudents(db, { archivedOnly });
 
   const addButton = (
     <Button>
@@ -41,20 +41,20 @@ export default async function StudentsPage({
       />
 
       <div className="flex items-center gap-2">
-        <Button asChild variant={includeArchived ? "outline" : "secondary"} size="sm">
+        <Button asChild variant={archivedOnly ? "outline" : "secondary"} size="sm">
           <Link href="/students">Активные</Link>
         </Button>
-        <Button asChild variant={includeArchived ? "secondary" : "outline"} size="sm">
-          <Link href="/students?archived=1">Все (с архивом)</Link>
+        <Button asChild variant={archivedOnly ? "secondary" : "outline"} size="sm">
+          <Link href="/students?archived=1">Архив</Link>
         </Button>
       </div>
 
       {students.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Пока нет учеников"
-          description="Добавьте первого ученика, чтобы начать вести расписание и задания."
-          action={<StudentDialog mode="create" trigger={addButton} />}
+          title={archivedOnly ? "В архиве пусто" : "Пока нет учеников"}
+          description={archivedOnly ? "Архивированные ученики появятся здесь." : "Добавьте первого ученика, чтобы начать вести расписание и задания."}
+          action={archivedOnly ? undefined : <StudentDialog mode="create" trigger={addButton} />}
         />
       ) : (
         <StudentsTable students={students} />

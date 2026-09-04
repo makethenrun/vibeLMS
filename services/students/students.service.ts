@@ -11,7 +11,7 @@ function normalizeNotes(notes: string | undefined): string | null {
 }
 
 export interface ListStudentsParams {
-  includeArchived?: boolean;
+  archivedOnly?: boolean;
   search?: string;
 }
 
@@ -24,7 +24,7 @@ export async function listStudents(
     .select("id, user_id, full_name, notes, is_archived, created_at")
     .order("full_name", { ascending: true });
 
-  if (!params.includeArchived) query = query.eq("is_archived", false);
+  query = query.eq("is_archived", Boolean(params.archivedOnly));
   if (params.search && params.search.trim() !== "") {
     query = query.ilike("full_name", `%${params.search.trim()}%`);
   }

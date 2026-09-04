@@ -9,12 +9,14 @@ import {
   KeyRound,
   MoreHorizontal,
   Pencil,
+  Search,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import {
   DropdownMenu,
@@ -51,6 +53,12 @@ interface Meta {
 function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow } & Meta) {
   const router = useRouter();
   const matById = new Map(assistant.materials.map((m) => [m.materialId, m.canEdit]));
+  const [groupQuery, setGroupQuery] = useState("");
+  const [materialQuery, setMaterialQuery] = useState("");
+  const gq = groupQuery.trim().toLowerCase();
+  const mq = materialQuery.trim().toLowerCase();
+  const visibleGroups = gq ? groups.filter((g) => g.name.toLowerCase().includes(gq)) : groups;
+  const visibleMaterials = mq ? materials.filter((m) => m.title.toLowerCase().includes(mq)) : materials;
 
   async function toggleGroup(groupId: string, on: boolean) {
     const next = on ? [...assistant.groupIds, groupId] : assistant.groupIds.filter((g) => g !== groupId);
@@ -74,14 +82,24 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
         {groups.length === 0 ? (
           <p className="text-xs text-muted-foreground">Нет групп.</p>
         ) : (
-          <div className="space-y-1">
-            {groups.map((g) => (
-              <label key={g.id} className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={assistant.groupIds.includes(g.id)} onChange={(e) => toggleGroup(g.id, e.target.checked)} />
-                {g.name}
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={groupQuery} onChange={(e) => setGroupQuery(e.target.value)} placeholder="Поиск групп" className="h-8 pl-8" />
+            </div>
+            <div className="space-y-1">
+              {visibleGroups.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Ничего не найдено.</p>
+              ) : (
+                visibleGroups.map((g) => (
+                  <label key={g.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={assistant.groupIds.includes(g.id)} onChange={(e) => toggleGroup(g.id, e.target.checked)} />
+                    {g.name}
+                  </label>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -90,8 +108,14 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
         {materials.length === 0 ? (
           <p className="text-xs text-muted-foreground">Нет материалов.</p>
         ) : (
-          <div className="space-y-1">
-            {materials.map((m) => {
+          <>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={materialQuery} onChange={(e) => setMaterialQuery(e.target.value)} placeholder="Поиск материалов" className="h-8 pl-8" />
+            </div>
+            <div className="space-y-1">
+              {visibleMaterials.length === 0 ? <p className="text-xs text-muted-foreground">Ничего не найдено.</p> : null}
+              {visibleMaterials.map((m) => {
               const assigned = matById.has(m.id);
               const canEdit = matById.get(m.id) ?? false;
               return (
@@ -111,7 +135,8 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
                 </div>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

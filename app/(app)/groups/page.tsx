@@ -8,7 +8,7 @@ import { requireStaff } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { assistantGroupIds } from "@/services/assistants/assistants.service";
 import { listGroups } from "@/services/groups/groups.service";
-import { GroupCard } from "./group-card";
+import { GroupsBrowser } from "./groups-browser";
 import { GroupDialog } from "./group-dialog";
 
 export const metadata: Metadata = { title: "Группы" };
@@ -47,11 +47,7 @@ export default async function GroupsPage() {
           action={isTutor ? <GroupDialog mode="create" trigger={addButton} /> : undefined}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {groups.map((group) => (
-            <GroupCard key={group.id} group={group} readOnly={!isTutor} />
-          ))}
-        </div>
+        <GroupsBrowser groups={groups} readOnly={!isTutor} />
       )}
     </div>
   );
