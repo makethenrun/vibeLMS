@@ -103,8 +103,8 @@ export function CardsSolve({
               <RotateCw className="h-3 w-3" /> {backLabel}
             </span>
           </span>
-          <span className="absolute inset-0 flex items-center justify-center rounded-2xl border bg-muted/40 p-4 text-center text-sm [backface-visibility:hidden] [transform:rotateY(180deg)]">
-            {card.hint ? <FormattedText text={card.hint} /> : <span className="text-muted-foreground">{textFront ? "Перевода нет" : "Подсказки нет"}</span>}
+          <span className={cn("absolute inset-0 flex items-center justify-center rounded-2xl border bg-muted/40 p-4 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]", textFront ? `${CARD_FACE_NORMAL} font-semibold` : "text-sm")}>
+            {card.hint ? <FormattedText text={card.hint} /> : <span className="text-sm text-muted-foreground">{textFront ? "Перевода нет" : "Подсказки нет"}</span>}
           </span>
         </button>
       </div>
