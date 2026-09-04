@@ -17,7 +17,7 @@ import { useSubmit } from "../use-submit";
 // Card-face font sizes for the WORDS mode. Latin/Cyrillic use the normal size;
 // hanzi (CJK ideographs) use "Крупный" — 4rem vs the normal text-2xl (1.5rem)
 // so a single character fills the card.
-const CARD_FACE_NORMAL = "text-2xl";
+const CARD_FACE_NORMAL = "text-[4rem] leading-none";
 const CARD_FACE_HANZI = "text-[4rem] leading-none"; // «Крупный» — 4rem, только для иероглифов
 const HANZI_RE = /[㐀-鿿豈-﫿]/;
 
