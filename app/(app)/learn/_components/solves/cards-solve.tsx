@@ -15,10 +15,10 @@ import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
 
 // Card-face font sizes for the WORDS mode. Latin/Cyrillic use the normal size;
-// hanzi (CJK ideographs) use "Крупный" — twice as large (text-5xl = 3rem vs
-// text-2xl = 1.5rem) so a single character fills the card.
+// hanzi (CJK ideographs) use "Крупный" — 4rem vs the normal text-2xl (1.5rem)
+// so a single character fills the card.
 const CARD_FACE_NORMAL = "text-2xl";
-const CARD_FACE_HANZI = "text-5xl"; // «Крупный» — ×2 от обычного, только для иероглифов
+const CARD_FACE_HANZI = "text-[4rem] leading-none"; // «Крупный» — 4rem, только для иероглифов
 const HANZI_RE = /[㐀-鿿豈-﫿]/;
 
 function randomPick(n: number, count: number): number[] {
