@@ -22,11 +22,11 @@ export default async function AssistantsPage({
 }) {
   await requireTutor();
   const params = await searchParams;
-  const includeArchived = params.archived === "1";
+  const archivedOnly = params.archived === "1";
 
   const db = createServerSupabaseClient();
   const [assistants, groups, materials] = await Promise.all([
-    listAssistants(db, { includeArchived }),
+    listAssistants(db, { archivedOnly }),
     listGroups(db),
     listMaterials(db),
   ]);
@@ -50,20 +50,20 @@ export default async function AssistantsPage({
       />
 
       <div className="flex items-center gap-2">
-        <Button asChild variant={includeArchived ? "outline" : "secondary"} size="sm">
+        <Button asChild variant={archivedOnly ? "outline" : "secondary"} size="sm">
           <Link href="/assistants">Активные</Link>
         </Button>
-        <Button asChild variant={includeArchived ? "secondary" : "outline"} size="sm">
-          <Link href="/assistants?archived=1">Все (с архивом)</Link>
+        <Button asChild variant={archivedOnly ? "secondary" : "outline"} size="sm">
+          <Link href="/assistants?archived=1">Архив</Link>
         </Button>
       </div>
 
       {assistants.length === 0 ? (
         <EmptyState
           icon={UserCog}
-          title="Пока нет ассистентов"
-          description="Добавьте ассистента, чтобы делегировать проведение занятий и работу с материалами."
-          action={<AssistantDialog mode="create" trigger={addButton} />}
+          title={archivedOnly ? "В архиве пусто" : "Пока нет ассистентов"}
+          description={archivedOnly ? "Архивированные ассистенты появятся здесь." : "Добавьте ассистента, чтобы делегировать проведение занятий и работу с материалами."}
+          action={archivedOnly ? undefined : <AssistantDialog mode="create" trigger={addButton} />}
         />
       ) : (
         <AssistantsTable assistants={assistants} groups={groupOptions} materials={materialOptions} />

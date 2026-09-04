@@ -81,14 +81,14 @@ export async function deleteAssistant(db: Db, assistantId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
-export async function listAssistants(db: Db, params: { includeArchived?: boolean } = {}): Promise<AssistantRow[]> {
-  let query = db
+export async function listAssistants(db: Db, params: { archivedOnly?: boolean } = {}): Promise<AssistantRow[]> {
+  const query = db
     .from("users")
     .select("id, login, full_name, notes, is_archived, created_at")
     .eq("role", "ASSISTANT")
+    .eq("is_archived", Boolean(params.archivedOnly))
     .order("full_name", { ascending: true, nullsFirst: false })
     .order("login", { ascending: true });
-  if (!params.includeArchived) query = query.eq("is_archived", false);
 
   const { data: users } = await query;
   const rows = users ?? [];
