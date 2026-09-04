@@ -2,24 +2,78 @@ import "server-only";
 
 import type { Db } from "@/lib/db/supabase";
 import type { CurrentUser } from "@/lib/auth/current-user";
+import type { AssistantInput, AssistantProfileInput } from "@/lib/validators";
 import { hashPassword } from "@/lib/auth/password";
 
 export interface AssistantRow {
   id: string;
   login: string;
+  fullName: string | null;
+  notes: string | null;
+  isArchived: boolean;
+  createdAt: string;
   groupIds: string[];
   materials: { materialId: string; canEdit: boolean }[];
 }
 
-export async function createAssistant(db: Db, login: string, password: string): Promise<string> {
-  const password_hash = await hashPassword(password);
+function normalizeNotes(notes: string | undefined): string | null {
+  const trimmed = (notes ?? "").trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+export async function createAssistant(db: Db, input: AssistantInput): Promise<string> {
+  const password_hash = await hashPassword(input.password);
   const { data, error } = await db
     .from("users")
-    .insert({ login, password_hash, role: "ASSISTANT" })
+    .insert({
+      login: input.login,
+      password_hash,
+      role: "ASSISTANT",
+      full_name: input.fullName,
+      notes: normalizeNotes(input.notes),
+    })
     .select("id")
     .single();
   if (error) throw new Error(error.message.includes("duplicate") ? "Логин уже занят" : error.message);
   return data.id;
+}
+
+export async function updateAssistantProfile(db: Db, assistantId: string, input: AssistantProfileInput): Promise<void> {
+  const { error } = await db
+    .from("users")
+    .update({ full_name: input.fullName, notes: normalizeNotes(input.notes) })
+    .eq("id", assistantId)
+    .eq("role", "ASSISTANT");
+  if (error) throw new Error(error.message);
+}
+
+/** Updates the login and password of an assistant account. */
+export async function updateAssistantCredentials(
+  db: Db,
+  assistantId: string,
+  params: { login: string; passwordHash: string },
+): Promise<void> {
+  const { error } = await db
+    .from("users")
+    .update({ login: params.login, password_hash: params.passwordHash })
+    .eq("id", assistantId)
+    .eq("role", "ASSISTANT");
+  if (error) throw new Error(error.message.includes("duplicate") ? "Логин уже занят" : error.message);
+}
+
+export async function setAssistantArchived(db: Db, assistantId: string, archived: boolean): Promise<void> {
+  const { error } = await db
+    .from("users")
+    .update({ is_archived: archived })
+    .eq("id", assistantId)
+    .eq("role", "ASSISTANT");
+  if (error) throw new Error(error.message);
+}
+
+/** Whether a login is taken by a different user (used to guard credential edits). */
+export async function loginTakenByOther(db: Db, login: string, selfId: string): Promise<boolean> {
+  const { data } = await db.from("users").select("id").eq("login", login).maybeSingle();
+  return Boolean(data && data.id !== selfId);
 }
 
 export async function deleteAssistant(db: Db, assistantId: string): Promise<void> {
@@ -27,12 +81,16 @@ export async function deleteAssistant(db: Db, assistantId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
-export async function listAssistants(db: Db): Promise<AssistantRow[]> {
-  const { data: users } = await db
+export async function listAssistants(db: Db, params: { includeArchived?: boolean } = {}): Promise<AssistantRow[]> {
+  let query = db
     .from("users")
-    .select("id, login")
+    .select("id, login, full_name, notes, is_archived, created_at")
     .eq("role", "ASSISTANT")
+    .order("full_name", { ascending: true, nullsFirst: false })
     .order("login", { ascending: true });
+  if (!params.includeArchived) query = query.eq("is_archived", false);
+
+  const { data: users } = await query;
   const rows = users ?? [];
   if (rows.length === 0) return [];
   const ids = rows.map((u) => u.id);
@@ -48,6 +106,10 @@ export async function listAssistants(db: Db): Promise<AssistantRow[]> {
   return rows.map((u) => ({
     id: u.id,
     login: u.login,
+    fullName: u.full_name,
+    notes: u.notes,
+    isArchived: u.is_archived,
+    createdAt: u.created_at,
     groupIds: groupsByAssistant.get(u.id) ?? [],
     materials: matsByAssistant.get(u.id) ?? [],
   }));
