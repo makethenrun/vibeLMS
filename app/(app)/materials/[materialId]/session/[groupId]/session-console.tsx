@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { LoadingButton } from "@/components/shared/loading-button";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
 import { cn } from "@/lib/utils";
-import { itemsForScope, type ScopeKind, type TreeSection } from "@/lib/materials/scope";
+import { flatModules, itemsForScope, moduleIdForScope, type ScopeKind, type TreeSection } from "@/lib/materials/scope";
 import type { ItemRow, ItemSubmissionRow } from "@/types";
 import type { SessionResultRow, SessionState } from "@/services/materials/live-session.service";
 import {
@@ -22,6 +22,78 @@ import {
 } from "@/app/(app)/live/actions";
 import { ExerciseTree } from "./exercise-tree";
 import { FreeAnswerEditor } from "./free-answer-editor";
+
+/** Down-arrow quick jump: pick a lesson to make it the active scope. */
+function ScopeJump({ tree, onPick }: { tree: TreeSection[]; onPick: (lessonId: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-6 w-6 items-center justify-center rounded hover:bg-accent"
+        aria-label="Быстрый переход"
+        aria-expanded={open}
+      >
+        <ChevronDown className="h-4 w-4" />
+      </button>
+      {open ? (
+        <div className="absolute left-0 top-8 z-50 max-h-[70vh] w-72 overflow-y-auto rounded-lg border bg-popover p-1 text-sm shadow-md">
+          {tree.length === 0 ? (
+            <p className="px-2 py-1.5 text-xs text-muted-foreground">Нет разделов.</p>
+          ) : (
+            tree.map((section) => {
+              const isOpen = expanded[section.id] ?? false;
+              return (
+                <div key={section.id}>
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((p) => ({ ...p, [section.id]: !isOpen }))}
+                    className="flex w-full items-center gap-1 rounded px-2 py-1.5 text-left font-medium hover:bg-accent"
+                  >
+                    {isOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+                    <span className="truncate">{section.title}</span>
+                  </button>
+                  {isOpen ? (
+                    <ul className="pb-1 pl-6">
+                      {section.lessons.length === 0 ? (
+                        <li className="px-2 py-1 text-xs text-muted-foreground">Нет уроков</li>
+                      ) : (
+                        section.lessons.map((lesson) => (
+                          <li key={lesson.id}>
+                            <button
+                              type="button"
+                              onClick={() => { onPick(lesson.id); setOpen(false); }}
+                              className="block w-full truncate rounded px-2 py-1 text-left text-muted-foreground hover:bg-accent hover:text-foreground"
+                            >
+                              {lesson.title}
+                            </button>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function SessionConsole({
   sessionId,
@@ -61,6 +133,13 @@ export function SessionConsole({
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i.item])), [items]);
   const scopeItemIds = useMemo(() => itemsForScope(tree, scope.kind, scope.id), [tree, scope]);
+
+  // Module prev/next across the whole material (crosses lesson boundaries).
+  const flatMods = useMemo(() => flatModules(tree), [tree]);
+  const currentModuleId = moduleIdForScope(tree, scope.kind, scope.id);
+  const moduleIdx = flatMods.findIndex((mod) => mod.id === currentModuleId);
+  const prevMod = moduleIdx > 0 ? flatMods[moduleIdx - 1] : null;
+  const nextMod = moduleIdx >= 0 && moduleIdx < flatMods.length - 1 ? flatMods[moduleIdx + 1] : null;
 
   const poll = useCallback(async () => {
     if (polling.current) return;
@@ -123,14 +202,39 @@ export function SessionConsole({
 
   const doneCount = results.filter((r) => scopeItemIds.length > 0 && scopeItemIds.every((id) => r.submissions[id])).length;
 
+  const moduleNavBar =
+    moduleIdx !== -1 && flatMods.length > 1 ? (
+      <div className="flex items-center justify-between gap-2">
+        {prevMod ? (
+          <Button variant="outline" size="sm" className="max-w-[45%]" onClick={() => selectScope("module", prevMod.id)}>
+            <ChevronLeft className="h-4 w-4 shrink-0" />
+            <span className="truncate">{prevMod.title}</span>
+          </Button>
+        ) : (
+          <span />
+        )}
+        {nextMod ? (
+          <Button variant="outline" size="sm" className="max-w-[45%]" onClick={() => selectScope("module", nextMod.id)}>
+            <span className="truncate">{nextMod.title}</span>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          </Button>
+        ) : (
+          <span />
+        )}
+      </div>
+    ) : null;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="flex items-center gap-2 text-xl font-semibold">
-            <Radio className="h-5 w-5 text-red-500" />
-            Занятие · {groupName}
-          </h1>
+          <div className="flex items-center gap-1">
+            <h1 className="flex items-center gap-2 text-xl font-semibold">
+              <Radio className="h-5 w-5 text-red-500" />
+              Занятие · {groupName}
+            </h1>
+            <ScopeJump tree={tree} onPick={(lessonId) => selectScope("lesson", lessonId)} />
+          </div>
           <p className="text-sm text-muted-foreground">{materialTitle}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -154,6 +258,7 @@ export function SessionConsole({
 
         {/* Active scope: exercises with the "pin to students" control and live drawing */}
         <main className="min-w-0 space-y-4">
+          {moduleNavBar}
           {scopeItemIds.length === 0 ? (
             <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
               Выберите раздел, урок, модуль или упражнение слева — оно откроется у всех учеников.
@@ -184,6 +289,7 @@ export function SessionConsole({
               })}
             </PreviewProvider>
           )}
+          {scopeItemIds.length > 0 ? moduleNavBar : null}
         </main>
 
         {/* Live results — wide slide-over toggled from the header */}

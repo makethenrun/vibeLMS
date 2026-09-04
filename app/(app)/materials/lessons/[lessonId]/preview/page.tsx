@@ -12,8 +12,11 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonContext } from "@/services/materials/breadcrumbs.service";
 import { getLessonModules } from "@/services/materials/lesson-content.service";
 import { getLessonBackground } from "@/services/materials/lessons.service";
+import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
+import { getMaterialModulesFlat } from "@/services/materials/module-order.service";
 import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
+import { ModuleNav } from "../../../_components/module-nav";
 import { LessonSurface } from "../../../_components/lesson-surface";
 import { Workspace } from "../../../_components/workspace";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
@@ -41,11 +44,24 @@ export default async function LessonPreviewPage({
 
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
-  const background = await getLessonBackground(db, lessonId);
+  const [background, sections, flatModules] = await Promise.all([
+    getLessonBackground(db, lessonId),
+    getSectionsWithLessons(db, ctx.materialId),
+    getMaterialModulesFlat(db, ctx.materialId),
+  ]);
+
+  const materialNav = {
+    anchorHref: `/materials/${ctx.materialId}`,
+    sections: sections.map((s) => ({
+      title: s.title,
+      lessons: s.lessons.map((l) => ({ title: l.title, href: `/materials/lessons/${l.id}/preview` })),
+    })),
+  };
+  const moduleHref = (l: string, mod: string) => `/materials/lessons/${l}/preview?m=${mod}`;
 
   return (
     <>
-      <PageBreadcrumbs crumbs={[...ctx.crumbs, { label: "Просмотр", href: `/materials/lessons/${lessonId}/preview` }]} />
+      <PageBreadcrumbs crumbs={[...ctx.crumbs, { label: "Просмотр", href: `/materials/lessons/${lessonId}/preview` }]} materialNav={materialNav} />
       <LessonSurface
         background={background}
         header={
@@ -77,6 +93,7 @@ export default async function LessonPreviewPage({
                 return (
                   <section className="space-y-4">
                     <h2 className={active && background.url ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{moduleNumber}. {active.title}</h2>
+                    <ModuleNav modules={flatModules} activeModuleId={active.id} hrefFor={moduleHref} />
                     {active.items.length === 0 ? (
                       <p className="text-sm text-muted-foreground">В модуле нет элементов.</p>
                     ) : (
@@ -84,6 +101,7 @@ export default async function LessonPreviewPage({
                         <StudentItem key={item.id} item={item} number={itemLabel(moduleNumber, numbers.get(item.id))} />
                       ))
                     )}
+                    <ModuleNav modules={flatModules} activeModuleId={active.id} hrefFor={moduleHref} />
                   </section>
                 );
               })()}
