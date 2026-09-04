@@ -57,6 +57,9 @@ export interface Database {
           login: string;
           password_hash: string;
           role: UserRole;
+          full_name: string | null;
+          notes: string | null;
+          is_archived: boolean;
           created_at: string;
         };
         Insert: {
@@ -64,6 +67,9 @@ export interface Database {
           login: string;
           password_hash: string;
           role: UserRole;
+          full_name?: string | null;
+          notes?: string | null;
+          is_archived?: boolean;
           created_at?: string;
         };
         Update: {
@@ -71,6 +77,9 @@ export interface Database {
           login?: string;
           password_hash?: string;
           role?: UserRole;
+          full_name?: string | null;
+          notes?: string | null;
+          is_archived?: boolean;
           created_at?: string;
         };
         Relationships: [];
