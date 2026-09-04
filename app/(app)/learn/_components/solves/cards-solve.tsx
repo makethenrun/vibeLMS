@@ -14,6 +14,13 @@ import type { Json } from "@/types";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
 
+// Card-face font sizes for the WORDS mode. Latin/Cyrillic use the normal size;
+// hanzi (CJK ideographs) use "Крупный" — twice as large (text-5xl = 3rem vs
+// text-2xl = 1.5rem) so a single character fills the card.
+const CARD_FACE_NORMAL = "text-2xl";
+const CARD_FACE_HANZI = "text-5xl"; // «Крупный» — ×2 от обычного, только для иероглифов
+const HANZI_RE = /[㐀-鿿豈-﫿]/;
+
 function randomPick(n: number, count: number): number[] {
   const idx = Array.from({ length: n }, (_, i) => i);
   for (let i = idx.length - 1; i > 0; i--) {
@@ -83,7 +90,9 @@ export function CardsSolve({
         >
           <span className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border bg-card p-4 text-center [backface-visibility:hidden]">
             {textFront ? (
-              <span className="text-2xl font-semibold"><FormattedText text={card.answer} /></span>
+              <span className={cn("font-semibold", HANZI_RE.test(card.answer) ? CARD_FACE_HANZI : CARD_FACE_NORMAL)}>
+                <FormattedText text={card.answer} />
+              </span>
             ) : card.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={card.imageUrl} alt="" className="max-h-full max-w-full object-contain" />
