@@ -53,7 +53,7 @@ export function DictionaryFab({ extra }: { extra?: ReactNode }) {
           ) : filtered.length === 0 ? (
             <p className="text-xs text-muted-foreground">Ничего не найдено.</p>
           ) : (
-            <ul className="max-h-72 space-y-1 overflow-auto text-sm">
+            <ul className="max-h-[6.75rem] space-y-1 overflow-y-auto text-sm">
               {filtered.map((e) => (
                 <li key={e.id} className="rounded px-1 py-0.5">
                   <span className="font-medium">{e.term}</span>
