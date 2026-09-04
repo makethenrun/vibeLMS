@@ -47,8 +47,8 @@ export interface CardsAnswer {
 }
 
 export function scoreCards(content: CardsContent, answer: CardsAnswer): number | null {
-  // HINT_ONLY is a study/review mode — nothing is checked or scored.
-  if (content.mode === "HINT_ONLY") return null;
+  // Only ANSWER mode is scored; HINT_ONLY and WORDS are study modes.
+  if (content.mode !== "ANSWER") return null;
   const picked = answer.picked ?? [];
   if (picked.length === 0) return 0;
   let correct = 0;

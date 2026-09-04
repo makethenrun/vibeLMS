@@ -30,8 +30,8 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// 300×300 rounded square (per design).
-const IMG = "aspect-square w-full max-w-[200px] rounded-2xl border object-cover";
+// Fixed 200×200 rounded square (per design).
+const IMG = "h-[200px] w-[200px] rounded-2xl border object-cover";
 // eslint-disable-next-line @next/next/no-img-element
 const emojiImg = (url: string) => <img src={url} alt="" className="h-full w-full rounded-2xl object-cover" />;
 
@@ -116,7 +116,7 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
       </div>
 
       {content.variant === "SELECT_IMAGES" ? (
-        <div className="grid grid-cols-2 justify-items-center gap-4 sm:grid-cols-3">
+        <div className="flex flex-wrap justify-center gap-4">
           {content.images.map((img, i) => {
             const on = selected.includes(i);
             const border = !on
@@ -137,11 +137,11 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
       ) : content.variant === "DRAG_WORD_TO_IMAGE" ? (
         <FillDnd chips={wordChips} value={dragValue} onChange={setDragValue} disabled={locked}>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="flex flex-wrap justify-center gap-6">
               {content.pairs.map((p, i) => (
-                <DropSlot key={i} id={`p${i}`} className={cn("flex flex-col items-center gap-2 rounded-2xl border p-2", feedbackClass(locked, isCorrect(wordLabel.get(dragValue[`p${i}`] ?? ""), [p.word])))}>
+                <DropSlot key={i} id={`p${i}`} className={cn("flex w-[200px] flex-col items-center gap-2 rounded-2xl border p-2", feedbackClass(locked, isCorrect(wordLabel.get(dragValue[`p${i}`] ?? ""), [p.word])))}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.imageUrl} alt="" className="aspect-square w-full rounded-xl object-cover" />
+                  <img src={p.imageUrl} alt="" className="h-[200px] w-full rounded-xl object-cover" />
                 </DropSlot>
               ))}
             </div>
@@ -151,9 +151,9 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
       ) : content.variant === "DRAG_IMAGE_TO_WORD" ? (
         <FillDnd chips={imageChips} value={dragValue} onChange={setDragValue} disabled={locked}>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {content.pairs.map((p, k) => (
-                <DropSlot key={k} id={`l${k}`} className={cn("flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border p-2 text-center text-base font-semibold", feedbackClass(locked, isCorrect(imageLabel.get(dragValue[`l${k}`] ?? ""), [p.word])))}>
+                <DropSlot key={k} id={`l${k}`} className={cn("flex h-40 w-40 flex-col items-center justify-center gap-2 rounded-2xl border p-2 text-center text-base font-semibold", feedbackClass(locked, isCorrect(imageLabel.get(dragValue[`l${k}`] ?? ""), [p.word])))}>
                   <span><FormattedText text={p.word} /></span>
                 </DropSlot>
               ))}
@@ -162,9 +162,9 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
           </div>
         </FillDnd>
       ) : (
-        <div className="grid justify-items-center gap-6 sm:grid-cols-2">
+        <div className="flex flex-wrap justify-center gap-6">
           {content.pairs.map((p, i) => (
-            <div key={i} className="flex w-full max-w-[200px] flex-col items-stretch gap-2">
+            <div key={i} className="flex w-[200px] flex-col items-stretch gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.imageUrl} alt="" className={IMG} />
               {content.variant === "SELECT_WORD" ? (

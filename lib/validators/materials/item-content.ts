@@ -166,8 +166,10 @@ export const cardsContentSchema = z.object({
   type: z.literal("CARDS"),
   prompt: z.string().trim().max(1000).nullable().default(null),
   // ANSWER: student types an answer and is scored. HINT_ONLY: student only
-  // flips cards to read the hint — no input, no score (study/review mode).
-  mode: z.enum(["ANSWER", "HINT_ONLY"]).default("ANSWER"),
+  // flips image cards to read the hint. WORDS: word on the front, translation
+  // on the back (card.answer = word, card.hint = translation). HINT_ONLY and
+  // WORDS are flip-only study modes — no input, no score.
+  mode: z.enum(["ANSWER", "HINT_ONLY", "WORDS"]).default("ANSWER"),
   // How many random cards from the pool the student gets each attempt.
   count: z.coerce.number().int().min(1).max(50).default(3),
   cards: z

@@ -17,7 +17,7 @@ export function useSubmit(itemId: string, initialScore: number | null | undefine
     try {
       const result = await submitFn(itemId, answer, content);
       setScore(result);
-      toast.success("Ответ отправлен");
+      toast.success("Задание выполнено");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
