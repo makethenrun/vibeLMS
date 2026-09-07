@@ -12,6 +12,7 @@ interface ImageLabel {
   text: string;
   x: number;
   y: number;
+  opacity?: number;
 }
 
 export function ImageAnnotate({
@@ -90,8 +91,8 @@ export function ImageAnnotate({
         {labels.map((l, i) => (
           <span
             key={i}
-            style={{ left: `${l.x}%`, top: `${l.y}%` }}
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap px-1 text-sm font-semibold text-black [text-shadow:0_1px_2px_rgba(255,255,255,0.9)]"
+            style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${(l.opacity ?? 100) / 100})` }}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded px-1.5 py-0.5 text-sm font-semibold text-black shadow-sm"
           >
             <FormattedText text={l.text} />
           </span>
