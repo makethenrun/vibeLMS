@@ -13,6 +13,7 @@ interface ImageLabel {
   x: number;
   y: number;
   opacity?: number;
+  size?: number;
 }
 
 export function ImageAnnotate({
@@ -91,8 +92,8 @@ export function ImageAnnotate({
         {labels.map((l, i) => (
           <span
             key={i}
-            style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${(l.opacity ?? 100) / 100})` }}
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded px-1.5 py-0.5 text-sm font-semibold text-black shadow-sm"
+            style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${(l.opacity ?? 100) / 100})`, fontSize: `${l.size ?? 16}px` }}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded px-1.5 py-0.5 font-semibold leading-tight text-black shadow-sm"
           >
             <FormattedText text={l.text} />
           </span>
