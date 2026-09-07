@@ -20,13 +20,14 @@ interface Label {
   text: string;
   x: number;
   y: number;
+  opacity: number;
 }
 
 export function ImageEditor({ content, onSave }: EditorProps) {
   const [url, setUrl] = useState(content.url);
   const [caption, setCaption] = useState(content.caption ?? "");
   const [annotations, setAnnotations] = useState<string | null>(content.annotations ?? null);
-  const [labels, setLabels] = useState<Label[]>(content.labels ?? []);
+  const [labels, setLabels] = useState<Label[]>((content.labels ?? []).map((l) => ({ ...l, opacity: l.opacity ?? 100 })));
   const [saving, setSaving] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const dragIdx = useRef<number | null>(null);
@@ -90,12 +91,12 @@ export function ImageEditor({ content, onSave }: EditorProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Надписи на изображении</p>
-            <Button type="button" size="sm" variant="outline" onClick={() => setLabels((prev) => [...prev, { text: "Надпись", x: 40, y: 45 }])}>
+            <Button type="button" size="sm" variant="outline" onClick={() => setLabels((prev) => [...prev, { text: "Надпись", x: 40, y: 45, opacity: 100 }])}>
               <Plus className="h-4 w-4" />
               Надпись
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Перетаскивайте надписи по картинке. Фон прозрачный.</p>
+          <p className="text-xs text-muted-foreground">Перетаскивайте надписи по картинке. Белый фон, прозрачность настраивается.</p>
 
           <div ref={boxRef} className="relative inline-block max-w-full select-none" onPointerMove={onDrag} onPointerUp={endDrag} onPointerLeave={endDrag}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -104,8 +105,8 @@ export function ImageEditor({ content, onSave }: EditorProps) {
               <span
                 key={i}
                 onPointerDown={(e) => startDrag(i, e)}
-                style={{ left: `${l.x}%`, top: `${l.y}%` }}
-                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-move whitespace-nowrap rounded px-1 text-sm font-semibold text-black [text-shadow:0_1px_2px_rgba(255,255,255,0.9)]"
+                style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${l.opacity / 100})` }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-move whitespace-nowrap rounded px-1.5 py-0.5 text-sm font-semibold text-black shadow-sm"
               >
                 {l.text || "…"}
               </span>
@@ -117,11 +118,23 @@ export function ImageEditor({ content, onSave }: EditorProps) {
               {labels.map((l, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <Input
-                    className="h-8"
+                    className="h-8 flex-1"
                     placeholder="Текст надписи"
                     value={l.text}
                     onChange={(e) => setLabels((prev) => prev.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
                   />
+                  <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" title="Прозрачность белого фона">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={l.opacity}
+                      onChange={(e) => setLabels((prev) => prev.map((x, j) => (j === i ? { ...x, opacity: Number(e.target.value) } : x)))}
+                      className="w-24"
+                    />
+                    <span className="w-8 text-right tabular-nums">{l.opacity}%</span>
+                  </label>
                   <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" aria-label="Удалить надпись"
                     onClick={() => setLabels((prev) => prev.filter((_, j) => j !== i))}>
                     <Trash2 className="h-4 w-4" />

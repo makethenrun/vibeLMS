@@ -60,13 +60,15 @@ export const imageContentSchema = z.object({
   caption: z.string().trim().max(500).nullable(),
   // Teacher's saved drawing overlay, as a PNG data URL (null = none).
   annotations: z.string().max(3_000_000).nullable().default(null),
-  // Transparent text labels placed on the image. x/y are percentages (0..100)
-  // of the image box (top-left of the label).
+  // Text labels placed on the image, each on a white block. x/y are percentages
+  // (0..100) of the image box (label centre). opacity is the white block's
+  // opacity in percent (0 = fully transparent, 100 = solid white).
   labels: z
     .array(z.object({
       text: z.string().trim().max(200),
       x: z.number().min(0).max(100),
       y: z.number().min(0).max(100),
+      opacity: z.number().min(0).max(100).default(100),
     }))
     .max(30)
     .default([]),
