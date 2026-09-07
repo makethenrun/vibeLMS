@@ -122,7 +122,7 @@ export function StudentItem({
         return <VideoEmbed url={(item.content as unknown as VideoContent).url} />;
       case "IMAGE": {
         const c = item.content as unknown as ImageContent;
-        return <ImageAnnotate url={c.url} caption={c.caption} annotations={c.annotations} />;
+        return <ImageAnnotate url={c.url} caption={c.caption} annotations={c.annotations} labels={c.labels} />;
       }
       case "CAROUSEL":
         return <Carousel images={(item.content as unknown as CarouselContent).images} />;

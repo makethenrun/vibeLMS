@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ImageZoom } from "@/components/shared/image-zoom";
 
 interface CarouselImage {
   url: string;
@@ -22,6 +23,7 @@ export function Carousel({ images }: { images: CarouselImage[] }) {
       <div className="relative overflow-hidden rounded-lg border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={current.url} alt={current.caption ?? "Изображение"} className="mx-auto aspect-square w-full max-w-[200px] rounded-2xl object-cover" />
+        <ImageZoom src={current.url} />
         {images.length > 1 ? (
           <>
             <Button

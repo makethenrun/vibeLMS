@@ -60,6 +60,16 @@ export const imageContentSchema = z.object({
   caption: z.string().trim().max(500).nullable(),
   // Teacher's saved drawing overlay, as a PNG data URL (null = none).
   annotations: z.string().max(3_000_000).nullable().default(null),
+  // Transparent text labels placed on the image. x/y are percentages (0..100)
+  // of the image box (top-left of the label).
+  labels: z
+    .array(z.object({
+      text: z.string().trim().max(200),
+      x: z.number().min(0).max(100),
+      y: z.number().min(0).max(100),
+    }))
+    .max(30)
+    .default([]),
 });
 
 export const carouselContentSchema = z.object({
@@ -330,7 +340,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "VIDEO":
       return { type: "VIDEO", url: "" };
     case "IMAGE":
-      return { type: "IMAGE", url: "", caption: null, annotations: null };
+      return { type: "IMAGE", url: "", caption: null, annotations: null, labels: [] };
     case "CAROUSEL":
       return { type: "CAROUSEL", images: [] };
     case "LINK":
