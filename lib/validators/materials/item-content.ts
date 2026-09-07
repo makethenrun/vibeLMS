@@ -69,6 +69,7 @@ export const imageContentSchema = z.object({
       x: z.number().min(0).max(100),
       y: z.number().min(0).max(100),
       opacity: z.number().min(0).max(100).default(100),
+      size: z.number().min(10).max(96).default(16),
     }))
     .max(30)
     .default([]),

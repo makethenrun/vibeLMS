@@ -21,13 +21,14 @@ interface Label {
   x: number;
   y: number;
   opacity: number;
+  size: number;
 }
 
 export function ImageEditor({ content, onSave }: EditorProps) {
   const [url, setUrl] = useState(content.url);
   const [caption, setCaption] = useState(content.caption ?? "");
   const [annotations, setAnnotations] = useState<string | null>(content.annotations ?? null);
-  const [labels, setLabels] = useState<Label[]>((content.labels ?? []).map((l) => ({ ...l, opacity: l.opacity ?? 100 })));
+  const [labels, setLabels] = useState<Label[]>((content.labels ?? []).map((l) => ({ ...l, opacity: l.opacity ?? 100, size: l.size ?? 16 })));
   const [saving, setSaving] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const dragIdx = useRef<number | null>(null);
@@ -91,7 +92,7 @@ export function ImageEditor({ content, onSave }: EditorProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Надписи на изображении</p>
-            <Button type="button" size="sm" variant="outline" onClick={() => setLabels((prev) => [...prev, { text: "Надпись", x: 40, y: 45, opacity: 100 }])}>
+            <Button type="button" size="sm" variant="outline" onClick={() => setLabels((prev) => [...prev, { text: "Надпись", x: 40, y: 45, opacity: 100, size: 16 }])}>
               <Plus className="h-4 w-4" />
               Надпись
             </Button>
@@ -105,8 +106,8 @@ export function ImageEditor({ content, onSave }: EditorProps) {
               <span
                 key={i}
                 onPointerDown={(e) => startDrag(i, e)}
-                style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${l.opacity / 100})` }}
-                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-move whitespace-nowrap rounded px-1.5 py-0.5 text-sm font-semibold text-black shadow-sm"
+                style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${l.opacity / 100})`, fontSize: `${l.size}px` }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-move whitespace-nowrap rounded px-1.5 py-0.5 font-semibold leading-tight text-black shadow-sm"
               >
                 {l.text || "…"}
               </span>
@@ -123,6 +124,18 @@ export function ImageEditor({ content, onSave }: EditorProps) {
                     value={l.text}
                     onChange={(e) => setLabels((prev) => prev.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
                   />
+                  <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" title="Размер шрифта">
+                    <input
+                      type="range"
+                      min={10}
+                      max={96}
+                      step={1}
+                      value={l.size}
+                      onChange={(e) => setLabels((prev) => prev.map((x, j) => (j === i ? { ...x, size: Number(e.target.value) } : x)))}
+                      className="w-20"
+                    />
+                    <span className="w-8 text-right tabular-nums">{l.size}px</span>
+                  </label>
                   <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" title="Прозрачность белого фона">
                     <input
                       type="range"
@@ -131,7 +144,7 @@ export function ImageEditor({ content, onSave }: EditorProps) {
                       step={5}
                       value={l.opacity}
                       onChange={(e) => setLabels((prev) => prev.map((x, j) => (j === i ? { ...x, opacity: Number(e.target.value) } : x)))}
-                      className="w-24"
+                      className="w-20"
                     />
                     <span className="w-8 text-right tabular-nums">{l.opacity}%</span>
                   </label>
