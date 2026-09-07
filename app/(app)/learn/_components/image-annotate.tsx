@@ -5,16 +5,25 @@ import { Eraser, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FormattedText } from "@/components/shared/formatted-text";
+import { ImageZoom } from "@/components/shared/image-zoom";
 import { cn } from "@/lib/utils";
+
+interface ImageLabel {
+  text: string;
+  x: number;
+  y: number;
+}
 
 export function ImageAnnotate({
   url,
   caption,
   annotations,
+  labels = [],
 }: {
   url: string;
   caption: string | null;
   annotations?: string | null;
+  labels?: ImageLabel[];
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -78,6 +87,16 @@ export function ImageAnnotate({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={annotations} alt="" className="pointer-events-none absolute inset-0 h-full w-full" />
         ) : null}
+        {labels.map((l, i) => (
+          <span
+            key={i}
+            style={{ left: `${l.x}%`, top: `${l.y}%` }}
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap px-1 text-sm font-semibold text-black [text-shadow:0_1px_2px_rgba(255,255,255,0.9)]"
+          >
+            <FormattedText text={l.text} />
+          </span>
+        ))}
+        <ImageZoom src={url} />
         <canvas
           ref={canvasRef}
           className={cn("absolute inset-0 h-full w-full touch-none", draw ? "cursor-crosshair" : "pointer-events-none")}
