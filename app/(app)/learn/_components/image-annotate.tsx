@@ -8,6 +8,9 @@ import { FormattedText } from "@/components/shared/formatted-text";
 import { ImageZoom } from "@/components/shared/image-zoom";
 import { cn } from "@/lib/utils";
 
+const PEN_COLORS = ["#ef4444", "#111827", "#2563eb", "#16a34a", "#eab308"];
+const PEN_WIDTHS = [2, 4, 8];
+
 interface ImageLabel {
   text: string;
   x: number;
@@ -31,6 +34,8 @@ export function ImageAnnotate({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [draw, setDraw] = useState(false);
+  const [color, setColor] = useState(PEN_COLORS[0]);
+  const [width, setWidth] = useState(3);
 
   function resize() {
     const c = canvasRef.current;
@@ -61,8 +66,8 @@ export function ImageAnnotate({
     const { x, y } = point(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
     ctx.lineCap = "round";
   }
   function move(e: ReactPointerEvent) {
@@ -109,7 +114,7 @@ export function ImageAnnotate({
         />
       </div>
       {caption ? <p className="text-sm text-muted-foreground"><FormattedText text={caption} /></p> : null}
-      <div className="flex justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         <Button size="sm" variant={draw ? "default" : "outline"} onClick={() => setDraw((d) => !d)}>
           <Pencil className="h-4 w-4" />
           {draw ? "Рисование включено" : "Рисовать пометки"}
@@ -118,6 +123,35 @@ export function ImageAnnotate({
           <Eraser className="h-4 w-4" />
           Очистить
         </Button>
+        {draw ? (
+          <>
+            {PEN_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={cn("h-7 w-7 rounded-full border bg-white p-1", color === c && "ring-2 ring-offset-1")}
+                style={{ borderColor: c }}
+                title="Цвет"
+                aria-label={`Цвет ${c}`}
+              >
+                <span className="block h-full w-full rounded-full" style={{ backgroundColor: c }} />
+              </button>
+            ))}
+            {PEN_WIDTHS.map((w) => (
+              <button
+                key={w}
+                type="button"
+                onClick={() => setWidth(w)}
+                className={cn("flex h-7 w-7 items-center justify-center rounded-md border bg-white", width === w && "ring-2 ring-offset-1")}
+                title={`Толщина ${w}`}
+                aria-label={`Толщина ${w}`}
+              >
+                <span className="rounded-full bg-black" style={{ width: w + 2, height: w + 2 }} />
+              </button>
+            ))}
+          </>
+        ) : null}
       </div>
     </div>
   );

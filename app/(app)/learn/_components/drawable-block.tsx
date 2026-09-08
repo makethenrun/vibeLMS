@@ -6,6 +6,9 @@ import { Check, Eraser, Loader2, Pen, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const PEN_COLORS = ["#ef4444", "#111827", "#2563eb", "#16a34a", "#eab308"];
+const PEN_WIDTHS = [2, 4, 8];
+
 /**
  * Wraps any exercise block with a freehand drawing layer.
  *
@@ -35,6 +38,8 @@ export function DrawableBlock({
   const loadedInitial = useRef(false);
   const [active, setActive] = useState(startActive ?? Boolean(onSave));
   const [tool, setTool] = useState<"pen" | "eraser">("pen");
+  const [color, setColor] = useState(PEN_COLORS[0]);
+  const [width, setWidth] = useState(3);
   const [saving, setSaving] = useState(false);
 
   function preload() {
@@ -92,8 +97,8 @@ export function DrawableBlock({
       ctx.lineWidth = 24;
     } else {
       ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
     }
   }
   function move(e: ReactPointerEvent) {
@@ -140,7 +145,7 @@ export function DrawableBlock({
         onPointerUp={stop}
         onPointerCancel={stop}
       />
-      <div className="absolute right-1 top-1 z-10 flex gap-1">
+      <div className="absolute right-1 top-1 z-10 flex flex-wrap justify-end gap-1">
         <Button
           size="icon"
           variant={active ? "default" : "outline"}
@@ -153,6 +158,35 @@ export function DrawableBlock({
         </Button>
         {active ? (
           <>
+            {tool === "pen" ? (
+              <>
+                {PEN_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={cn("h-7 w-7 rounded-full border bg-white p-1", color === c && "ring-2 ring-offset-1")}
+                    style={{ borderColor: c }}
+                    title="Цвет"
+                    aria-label={`Цвет ${c}`}
+                  >
+                    <span className="block h-full w-full rounded-full" style={{ backgroundColor: c }} />
+                  </button>
+                ))}
+                {PEN_WIDTHS.map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => setWidth(w)}
+                    className={cn("flex h-7 w-7 items-center justify-center rounded-md border bg-white", width === w && "ring-2 ring-offset-1")}
+                    title={`Толщина ${w}`}
+                    aria-label={`Толщина ${w}`}
+                  >
+                    <span className="rounded-full bg-black" style={{ width: w + 2, height: w + 2 }} />
+                  </button>
+                ))}
+              </>
+            ) : null}
             <Button
               size="icon"
               variant={tool === "pen" ? "default" : "outline"}

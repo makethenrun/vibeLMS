@@ -450,6 +450,12 @@ export interface Database {
         Update: { session_id?: string; student_id?: string; first_seen?: string };
         Relationships: [];
       };
+      live_session_hands: {
+        Row: { session_id: string; student_id: string; raised_at: string };
+        Insert: { session_id: string; student_id: string; raised_at?: string };
+        Update: { session_id?: string; student_id?: string; raised_at?: string };
+        Relationships: [];
+      };
       live_drawings: {
         Row: {
           session_id: string;

@@ -112,6 +112,33 @@ export async function saveStudentDrawingAction(sessionId: string, itemId: string
   }
 }
 
+export async function raiseHandAction(sessionId: string, raised: boolean): Promise<ActionResult> {
+  const student = await getStudentOrNull();
+  if (!student) return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    if (!(await live.studentInSession(db, student.studentId, sessionId))) return fail("Нет доступа");
+    if (raised) await live.raiseHand(db, sessionId, student.studentId);
+    else await live.lowerHand(db, sessionId, student.studentId);
+    return ok();
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
+/** Staff acknowledges hands: one student, or all when studentId is omitted. */
+export async function clearHandsAction(sessionId: string, studentId?: string): Promise<ActionResult> {
+  const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
+  try {
+    if (studentId) await live.lowerHand(db, sessionId, studentId);
+    else await live.clearHands(db, sessionId);
+    return ok();
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
 export async function endSessionAction(sessionId: string): Promise<ActionResult> {
   const db = createServerSupabaseClient();
   if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
@@ -134,6 +161,7 @@ export async function pollSessionResultsAction(
   results: live.SessionResultRow[];
   tutorDrawings: Record<string, string>;
   watchDrawings: Record<string, string>;
+  hands: live.RaisedHand[];
 }>> {
   const db = createServerSupabaseClient();
   if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
@@ -143,12 +171,13 @@ export async function pollSessionResultsAction(
     const state = live.toState(session);
     const tree = await getMaterialTree(db, session.material_id);
     const itemIds = itemsForScope(tree, state.kind, state.scopeId);
-    const [results, tutorDrawings, watchDrawings] = await Promise.all([
+    const [results, tutorDrawings, watchDrawings, hands] = await Promise.all([
       live.getSessionResults(db, session.group_id, itemIds),
       live.getDrawings(db, sessionId, itemIds, live.TUTOR_AUTHOR),
       watchStudentId ? live.getDrawings(db, sessionId, itemIds, watchStudentId) : Promise.resolve({}),
+      live.getRaisedHands(db, sessionId),
     ]);
-    return ok({ state, itemIds, results, tutorDrawings, watchDrawings });
+    return ok({ state, itemIds, results, tutorDrawings, watchDrawings, hands });
   } catch (e) {
     return fail(getErrorMessage(e));
   }
@@ -163,6 +192,7 @@ export async function pollStudentSessionAction(
   submissions: Record<string, ItemSubmissionRow>;
   tutorDrawings: Record<string, string>;
   myDrawings: Record<string, string>;
+  handRaised: boolean;
 }>> {
   const student = await getStudentOrNull();
   if (!student) return fail("Недостаточно прав");
@@ -185,11 +215,12 @@ export async function pollStudentSessionAction(
         .in("item_id", itemIds);
       for (const row of data ?? []) submissions[row.item_id] = row;
     }
-    const [tutorDrawings, myDrawings] = await Promise.all([
+    const [tutorDrawings, myDrawings, handRaised] = await Promise.all([
       live.getDrawings(db, sessionId, itemIds, live.TUTOR_AUTHOR),
       live.getDrawings(db, sessionId, itemIds, student.studentId),
+      live.isHandRaised(db, sessionId, student.studentId),
     ]);
-    return ok({ state, itemIds, submissions, tutorDrawings, myDrawings });
+    return ok({ state, itemIds, submissions, tutorDrawings, myDrawings, handRaised });
   } catch (e) {
     return fail(getErrorMessage(e));
   }
