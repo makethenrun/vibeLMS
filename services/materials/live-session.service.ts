@@ -82,6 +82,53 @@ export async function recordAttendance(db: Db, sessionId: string, studentId: str
     .upsert({ session_id: sessionId, student_id: studentId }, { onConflict: "session_id,student_id", ignoreDuplicates: true });
 }
 
+export interface RaisedHand {
+  studentId: string;
+  fullName: string;
+  raisedAt: string;
+}
+
+/** Raise (or refresh) a student's hand in a session. */
+export async function raiseHand(db: Db, sessionId: string, studentId: string): Promise<void> {
+  await db
+    .from("live_session_hands")
+    .upsert({ session_id: sessionId, student_id: studentId, raised_at: new Date().toISOString() }, { onConflict: "session_id,student_id" });
+}
+
+/** Lower one student's hand (student lowers it, or staff acknowledges it). */
+export async function lowerHand(db: Db, sessionId: string, studentId: string): Promise<void> {
+  await db.from("live_session_hands").delete().eq("session_id", sessionId).eq("student_id", studentId);
+}
+
+/** Clear every raised hand in a session. */
+export async function clearHands(db: Db, sessionId: string): Promise<void> {
+  await db.from("live_session_hands").delete().eq("session_id", sessionId);
+}
+
+export async function isHandRaised(db: Db, sessionId: string, studentId: string): Promise<boolean> {
+  const { data } = await db
+    .from("live_session_hands")
+    .select("student_id")
+    .eq("session_id", sessionId)
+    .eq("student_id", studentId)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/** Raised hands with student names, oldest first. */
+export async function getRaisedHands(db: Db, sessionId: string): Promise<RaisedHand[]> {
+  const { data: rows } = await db
+    .from("live_session_hands")
+    .select("student_id, raised_at")
+    .eq("session_id", sessionId)
+    .order("raised_at", { ascending: true });
+  const list = rows ?? [];
+  if (list.length === 0) return [];
+  const { data: students } = await db.from("students").select("id, full_name").in("id", list.map((r) => r.student_id));
+  const nameById = new Map((students ?? []).map((s) => [s.id, s.full_name] as const));
+  return list.map((r) => ({ studentId: r.student_id, fullName: nameById.get(r.student_id) ?? "Ученик", raisedAt: r.raised_at }));
+}
+
 export type SessionStatus = "conducted" | "not_conducted" | "cancelled" | "unplanned";
 
 export interface SessionHistoryRow {

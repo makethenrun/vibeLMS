@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Radio } from "lucide-react";
+import { Hand, Radio } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import type { ItemRow, ItemSubmissionRow } from "@/types";
 import type { SessionState } from "@/services/materials/live-session.service";
-import { pollStudentSessionAction, saveStudentDrawingAction } from "@/app/(app)/live/actions";
+import { pollStudentSessionAction, raiseHandAction, saveStudentDrawingAction } from "@/app/(app)/live/actions";
 import { StudentItem } from "../_components/student-item";
 
 export function StudentLive({
@@ -33,6 +34,8 @@ export function StudentLive({
   const [itemIds, setItemIds] = useState<string[]>(initialItemIds);
   const [submissions, setSubmissions] = useState<Record<string, ItemSubmissionRow>>(initialSubmissions);
   const [tutorDrawings, setTutorDrawings] = useState<Record<string, string>>(initialTutorDrawings);
+  const [handRaised, setHandRaised] = useState(false);
+  const [handBusy, setHandBusy] = useState(false);
   const myDrawingsRef = useRef<Record<string, string>>(initialMyDrawings);
   const polling = useRef(false);
   const lastFocus = useRef<string | null>(null);
@@ -48,11 +51,29 @@ export function StudentLive({
         setSubmissions(res.data.submissions);
         setTutorDrawings(res.data.tutorDrawings);
         myDrawingsRef.current = res.data.myDrawings;
+        if (!handBusy) setHandRaised(res.data.handRaised);
       }
     } finally {
       polling.current = false;
     }
-  }, [sessionId]);
+  }, [sessionId, handBusy]);
+
+  async function toggleHand() {
+    const next = !handRaised;
+    setHandBusy(true);
+    setHandRaised(next);
+    try {
+      const res = await raiseHandAction(sessionId, next);
+      if (!res.success) {
+        setHandRaised(!next);
+        toast.error(res.error);
+      } else {
+        toast.success(next ? "Рука поднята — учитель увидит" : "Рука опущена");
+      }
+    } finally {
+      setHandBusy(false);
+    }
+  }
 
   useEffect(() => {
     poll();
@@ -89,10 +110,16 @@ export function StudentLive({
 
   return (
     <div className="space-y-4">
-      <h1 className="flex items-center gap-2 text-lg font-semibold">
-        <Radio className="h-5 w-5 animate-pulse text-red-500" />
-        Идёт занятие
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="flex items-center gap-2 text-lg font-semibold">
+          <Radio className="h-5 w-5 animate-pulse text-red-500" />
+          Идёт занятие
+        </h1>
+        <Button variant={handRaised ? "default" : "outline"} onClick={toggleHand} disabled={handBusy}>
+          <Hand className="h-4 w-4" />
+          {handRaised ? "Опустить руку" : "Поднять руку"}
+        </Button>
+      </div>
 
       {activeItems.length === 0 ? (
         <p className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">

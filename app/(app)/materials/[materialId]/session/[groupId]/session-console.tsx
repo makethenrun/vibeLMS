@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Hand, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,9 @@ import { StudentItem } from "@/app/(app)/learn/_components/student-item";
 import { cn } from "@/lib/utils";
 import { flatModules, itemsForScope, moduleIdForScope, type ScopeKind, type TreeSection } from "@/lib/materials/scope";
 import type { ItemRow, ItemSubmissionRow } from "@/types";
-import type { SessionResultRow, SessionState } from "@/services/materials/live-session.service";
+import type { RaisedHand, SessionResultRow, SessionState } from "@/services/materials/live-session.service";
 import {
+  clearHandsAction,
   endSessionAction,
   pollSessionResultsAction,
   saveTutorDrawingAction,
@@ -127,9 +128,12 @@ export function SessionConsole({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [hands, setHands] = useState<RaisedHand[]>([]);
+  const [handsOpen, setHandsOpen] = useState(false);
   const polling = useRef(false);
   const expandedRef = useRef<string | null>(null);
   expandedRef.current = expanded;
+  const handIdsRef = useRef<Set<string>>(new Set());
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i.item])), [items]);
   const scopeItemIds = useMemo(() => itemsForScope(tree, scope.kind, scope.id), [tree, scope]);
@@ -151,6 +155,13 @@ export function SessionConsole({
         setTutorDrawings(res.data.tutorDrawings);
         setWatchDrawings(res.data.watchDrawings);
         setFocusedItemId(res.data.state.focusedItemId);
+        // Toast newly raised hands (ids not seen on the previous poll).
+        const seen = handIdsRef.current;
+        for (const h of res.data.hands) {
+          if (!seen.has(h.studentId)) toast(`✋ ${h.fullName} поднял(а) руку`);
+        }
+        handIdsRef.current = new Set(res.data.hands.map((h) => h.studentId));
+        setHands(res.data.hands);
         if (res.data.state.endedAt) router.push(`/groups/${groupId}`);
       }
     } finally {
@@ -181,6 +192,19 @@ export function SessionConsole({
   async function saveTutorDrawing(itemId: string, dataUrl: string | null) {
     const res = await saveTutorDrawingAction(sessionId, itemId, dataUrl);
     if (!res.success) toast.error(res.error);
+  }
+
+  async function clearHand(studentId: string) {
+    setHands((prev) => prev.filter((h) => h.studentId !== studentId));
+    handIdsRef.current.delete(studentId);
+    await clearHandsAction(sessionId, studentId);
+  }
+
+  async function clearAllHands() {
+    setHands([]);
+    handIdsRef.current = new Set();
+    setHandsOpen(false);
+    await clearHandsAction(sessionId);
   }
 
   async function end() {
@@ -238,6 +262,46 @@ export function SessionConsole({
           <p className="text-sm text-muted-foreground">{materialTitle}</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <Button variant={handsOpen ? "default" : "outline"} onClick={() => setHandsOpen((o) => !o)}>
+              <Hand className="h-4 w-4" />
+              Уведомления
+              {hands.length > 0 ? (
+                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-semibold text-white">
+                  {hands.length}
+                </span>
+              ) : null}
+            </Button>
+            {handsOpen ? (
+              <div className="absolute right-0 top-11 z-50 w-72 rounded-lg border bg-popover p-2 shadow-md">
+                <div className="mb-1 flex items-center justify-between">
+                  <p className="text-sm font-semibold">Поднятые руки</p>
+                  {hands.length > 0 ? (
+                    <button type="button" onClick={clearAllHands} className="text-xs text-muted-foreground hover:text-foreground">
+                      Очистить все
+                    </button>
+                  ) : null}
+                </div>
+                {hands.length === 0 ? (
+                  <p className="px-1 py-2 text-xs text-muted-foreground">Никто не поднял руку.</p>
+                ) : (
+                  <ul className="space-y-0.5">
+                    {hands.map((h) => (
+                      <li key={h.studentId} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent">
+                        <span className="flex items-center gap-1 truncate">
+                          <Hand className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                          <span className="truncate">{h.fullName}</span>
+                        </span>
+                        <button type="button" onClick={() => clearHand(h.studentId)} className="shrink-0 rounded p-0.5 hover:bg-background" aria-label="Убрать">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
+          </div>
           <Button variant={resultsOpen ? "default" : "outline"} onClick={() => setResultsOpen((o) => !o)}>
             <Users className="h-4 w-4" />
             Результаты · {doneCount}/{results.length}
