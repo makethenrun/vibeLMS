@@ -1,6 +1,14 @@
-// Word-level diff of a free-text answer: words in `edited` that aren't part of
-// the original (by longest-common-subsequence) are shown in red. A single
-// changed word lights up that word; a rewritten sentence lights up all of it.
+// Diff of a free-text answer: tokens in `edited` that aren't part of the
+// original (by longest-common-subsequence) are shown in red. Latin/Cyrillic is
+// compared word by word; each CJK character (hanzi) is its own token, so only
+// the changed characters light up — not the whole sentence.
+
+// Whitespace run | single hanzi | run of anything else (a "word").
+const TOKEN_RE = /\s+|[㐀-鿿豈-﫿]|[^\s㐀-鿿豈-﫿]+/gu;
+
+function tokenize(s: string): string[] {
+  return s.match(TOKEN_RE) ?? [];
+}
 
 function norm(w: string): string {
   return w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -28,16 +36,15 @@ function matchedWords(a: string[], b: string[]): boolean[] {
 }
 
 export function AnswerDiff({ original, edited }: { original: string; edited: string }) {
-  const origWords = original.split(/\s+/).filter(Boolean).map(norm);
-  const tokens = edited.split(/(\s+)/);
-  const editWords = tokens.filter((t) => t && !/^\s+$/.test(t)).map(norm);
+  const origWords = tokenize(original).filter((t) => !/^\s+$/.test(t)).map(norm);
+  const tokens = tokenize(edited);
+  const editWords = tokens.filter((t) => !/^\s+$/.test(t)).map(norm);
   const matched = matchedWords(origWords, editWords);
 
   let wi = -1;
   return (
     <p className="whitespace-pre-wrap break-words text-sm">
       {tokens.map((t, i) => {
-        if (!t) return null;
         if (/^\s+$/.test(t)) return <span key={i}>{t}</span>;
         wi += 1;
         const key = norm(t);
