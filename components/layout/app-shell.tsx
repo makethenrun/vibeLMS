@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Menu } from "lucide-react";
+import { GraduationCap, Menu, Radio } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ interface AppShellProps {
   login: string;
   orgName: string;
   logoUrl: string | null;
+  liveIndicator?: { href: string; label: string } | null;
   children: React.ReactNode;
 }
 
@@ -44,7 +45,7 @@ function Brand({ orgName, logoUrl }: { orgName: string; logoUrl: string | null }
   );
 }
 
-export function AppShell({ role, login, orgName, logoUrl, children }: AppShellProps) {
+export function AppShell({ role, login, orgName, logoUrl, liveIndicator, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -90,6 +91,15 @@ export function AppShell({ role, login, orgName, logoUrl, children }: AppShellPr
           </Sheet>
 
           <Breadcrumbs className="min-w-0 flex-1" />
+          {liveIndicator ? (
+            <Link
+              href={liveIndicator.href}
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-red-600"
+            >
+              <Radio className="h-4 w-4 animate-pulse" />
+              <span className="hidden sm:inline">{liveIndicator.label}</span>
+            </Link>
+          ) : null}
           <Messenger role={role} />
           <UserMenu login={login} role={role} />
         </header>
