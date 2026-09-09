@@ -8,6 +8,46 @@ export interface Peer {
   id: string;
   name: string;
   unread: number;
+  lastAt?: string | null;
+}
+
+/** Display names for a set of user ids (student full name, else login). */
+export async function namesForUsers(db: Db, ids: string[]): Promise<Map<string, string>> {
+  const nameById = new Map<string, string>();
+  if (ids.length === 0) return nameById;
+  const { data: users } = await db.from("users").select("id, login, role").in("id", ids);
+  for (const u of users ?? []) nameById.set(u.id, u.login);
+  const studentIds = (users ?? []).filter((u) => u.role === "STUDENT").map((u) => u.id);
+  if (studentIds.length > 0) {
+    const { data: st } = await db.from("students").select("user_id, full_name").in("user_id", studentIds);
+    for (const s of st ?? []) if (s.user_id) nameById.set(s.user_id, s.full_name);
+  }
+  return nameById;
+}
+
+/** Peers the user has an existing conversation with, most recent first. */
+export async function listConversations(db: Db, user: CurrentUser): Promise<Peer[]> {
+  const { data: msgs } = await db
+    .from("messages")
+    .select("sender_id, recipient_id, created_at, read_at")
+    .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  const rows = msgs ?? [];
+
+  const lastAt = new Map<string, string>();
+  const unread = new Map<string, number>();
+  const order: string[] = [];
+  for (const m of rows) {
+    const peerId = m.sender_id === user.id ? m.recipient_id : m.sender_id;
+    if (!peerId) continue;
+    if (!lastAt.has(peerId)) { lastAt.set(peerId, m.created_at); order.push(peerId); }
+    if (m.recipient_id === user.id && !m.read_at) unread.set(peerId, (unread.get(peerId) ?? 0) + 1);
+  }
+  if (order.length === 0) return [];
+
+  const nameById = await namesForUsers(db, order);
+  return order.map((id) => ({ id, name: nameById.get(id) ?? "—", unread: unread.get(id) ?? 0, lastAt: lastAt.get(id) ?? null }));
 }
 
 async function studentUserIdsForGroups(db: Db, groupIds: string[]): Promise<string[]> {
@@ -81,6 +121,36 @@ export async function listPeers(db: Db, user: CurrentUser): Promise<Peer[]> {
   return rows
     .map((u) => ({ id: u.id, name: nameByUser.get(u.id) ?? u.login, unread: unreadBySender.get(u.id) ?? 0 }))
     .sort((a, b) => b.unread - a.unread || a.name.localeCompare(b.name));
+}
+
+export interface ConversationSummary {
+  aId: string;
+  aName: string;
+  bId: string;
+  bName: string;
+  lastAt: string;
+}
+
+/** Every conversation in the system (tutor oversight), most recent first. */
+export async function listAllConversations(db: Db): Promise<ConversationSummary[]> {
+  const { data } = await db
+    .from("messages")
+    .select("sender_id, recipient_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(3000);
+  const pairs = new Map<string, { a: string; b: string; lastAt: string }>();
+  for (const m of data ?? []) {
+    if (!m.sender_id || !m.recipient_id) continue;
+    const [a, b] = [m.sender_id, m.recipient_id].sort();
+    const key = `${a}|${b}`;
+    if (!pairs.has(key)) pairs.set(key, { a, b, lastAt: m.created_at });
+  }
+  const list = [...pairs.values()];
+  const ids = [...new Set(list.flatMap((p) => [p.a, p.b]))];
+  const names = await namesForUsers(db, ids);
+  return list
+    .map((p) => ({ aId: p.a, aName: names.get(p.a) ?? "—", bId: p.b, bName: names.get(p.b) ?? "—", lastAt: p.lastAt }))
+    .sort((x, y) => new Date(y.lastAt).getTime() - new Date(x.lastAt).getTime());
 }
 
 export async function totalUnread(db: Db, userId: string): Promise<number> {

@@ -104,10 +104,17 @@ export function LessonDialog({
   }, [dialogOpen, lesson, form]);
 
   async function onSubmit(values: LessonInput) {
+    // Convert the wall-clock datetime-local values to absolute ISO here, in the
+    // browser's timezone — otherwise the server (UTC) would misread them.
+    const payload = {
+      ...values,
+      startTime: new Date(values.startTime).toISOString(),
+      endTime: new Date(values.endTime).toISOString(),
+    };
     const result =
       mode === "create"
-        ? await createLessonAction(values)
-        : await updateLessonAction(lesson!.id, values);
+        ? await createLessonAction(payload)
+        : await updateLessonAction(lesson!.id, payload);
 
     if (result.success) {
       toast.success(mode === "create" ? "Занятие создано" : "Занятие обновлено");

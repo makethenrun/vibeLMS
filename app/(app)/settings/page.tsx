@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import type { SettingsInput } from "@/lib/validators";
 import { getSettings } from "@/services/settings/settings.service";
 import { SettingsForm } from "./settings-form";
+import { AllChats } from "./all-chats";
 
 export const metadata: Metadata = { title: "Настройки" };
 
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
         description="Название и логотип отображаются в навигации системы."
       />
       <SettingsForm defaults={defaults} />
+      <AllChats />
     </div>
   );
 }

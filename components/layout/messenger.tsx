@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Loader2, MessageCircle, Paperclip, Send, Trash2, X } from "lucide-react";
+import { ChevronLeft, Loader2, MessageCircle, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import type { MessageRow } from "@/types";
 import type { Peer } from "@/services/messages/messages.service";
 import {
   deleteMessageAction,
+  listConversationsAction,
   listPeersAction,
   openConversationAction,
   sendMessageAction,
@@ -21,7 +22,9 @@ import {
 export function Messenger({ role }: { role: UserRole }) {
   const isTutor = role === "TUTOR";
   const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [conversations, setConversations] = useState<Peer[]>([]);
   const [peers, setPeers] = useState<Peer[]>([]);
   const [peer, setPeer] = useState<Peer | null>(null);
   const [thread, setThread] = useState<MessageRow[]>([]);
@@ -46,12 +49,17 @@ export function Messenger({ role }: { role: UserRole }) {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  const loadPeers = useCallback(async () => {
-    const r = await listPeersAction();
+  const loadConversations = useCallback(async () => {
+    const r = await listConversationsAction();
     if (r.success) {
-      setPeers(r.data.peers);
+      setConversations(r.data.peers);
       setUnread(r.data.peers.reduce((s, p) => s + p.unread, 0));
     }
+  }, []);
+
+  const loadPeers = useCallback(async () => {
+    const r = await listPeersAction();
+    if (r.success) setPeers(r.data.peers);
   }, []);
 
   const loadThread = useCallback(async (peerId: string) => {
@@ -68,12 +76,18 @@ export function Messenger({ role }: { role: UserRole }) {
     }
   }, []);
 
+  // Conversation list (default view) refreshes while open.
   useEffect(() => {
-    if (!open || peer) return;
-    loadPeers();
-    const id = setInterval(loadPeers, 5000);
+    if (!open || peer || searching) return;
+    loadConversations();
+    const id = setInterval(loadConversations, 5000);
     return () => clearInterval(id);
-  }, [open, peer, loadPeers]);
+  }, [open, peer, searching, loadConversations]);
+
+  // Full peer list is loaded once when the user opens search.
+  useEffect(() => {
+    if (searching) loadPeers();
+  }, [searching, loadPeers]);
 
   useEffect(() => {
     if (!open || !peer) return;
@@ -146,9 +160,18 @@ export function Messenger({ role }: { role: UserRole }) {
                 <button type="button" onClick={() => setPeer(null)} aria-label="Назад" className="rounded p-1 hover:bg-accent">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
+              ) : searching ? (
+                <button type="button" onClick={() => { setSearching(false); setQuery(""); }} aria-label="Назад" className="rounded p-1 hover:bg-accent">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
               ) : null}
-              <p className="flex-1 truncate text-sm font-semibold">{peer ? peer.name : "Сообщения"}</p>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть" className="rounded p-1 hover:bg-accent">
+              <p className="flex-1 truncate text-sm font-semibold">{peer ? peer.name : searching ? "Новый чат" : "Сообщения"}</p>
+              {!peer && !searching ? (
+                <button type="button" onClick={() => setSearching(true)} aria-label="Новый чат" title="Новый чат" className="rounded p-1 hover:bg-accent">
+                  <Plus className="h-4 w-4" />
+                </button>
+              ) : null}
+              <button type="button" onClick={() => { setOpen(false); setSearching(false); setQuery(""); }} aria-label="Закрыть" className="rounded p-1 hover:bg-accent">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -222,10 +245,13 @@ export function Messenger({ role }: { role: UserRole }) {
                   </form>
                 </div>
               </>
-            ) : (
+            ) : searching ? (
               <>
                 <div className="border-b p-2">
-                  <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск…" className="h-8" />
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск пользователя…" className="h-8 pl-8" autoFocus />
+                  </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2">
                   {filteredPeers.length === 0 ? (
@@ -236,15 +262,10 @@ export function Messenger({ role }: { role: UserRole }) {
                         <li key={p.id}>
                           <button
                             type="button"
-                            onClick={() => { setThread([]); setPeer(p); }}
+                            onClick={() => { setThread([]); setPeer(p); setSearching(false); setQuery(""); }}
                             className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-accent"
                           >
                             <span className="truncate">{p.name}</span>
-                            {p.unread > 0 ? (
-                              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-                                {p.unread}
-                              </span>
-                            ) : null}
                           </button>
                         </li>
                       ))}
@@ -252,6 +273,31 @@ export function Messenger({ role }: { role: UserRole }) {
                   )}
                 </div>
               </>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-2">
+                {conversations.length === 0 ? (
+                  <p className="px-2 pt-6 text-center text-xs text-muted-foreground">Пока нет диалогов. Нажмите «+», чтобы начать переписку.</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {conversations.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => { setThread([]); setPeer(p); }}
+                          className="flex w-full items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-accent"
+                        >
+                          <span className="truncate">{p.name}</span>
+                          {p.unread > 0 ? (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                              {p.unread}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
           </div>
         </>

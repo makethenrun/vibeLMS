@@ -129,7 +129,7 @@ export async function getRaisedHands(db: Db, sessionId: string): Promise<RaisedH
   return list.map((r) => ({ studentId: r.student_id, fullName: nameById.get(r.student_id) ?? "Ученик", raisedAt: r.raised_at }));
 }
 
-export type SessionStatus = "conducted" | "not_conducted" | "cancelled" | "unplanned";
+export type SessionStatus = "conducted" | "not_conducted" | "cancelled" | "unplanned" | "in_progress";
 
 export interface SessionHistoryRow {
   id: string;
@@ -176,21 +176,22 @@ export async function listSessionHistory(
       .from("live_sessions")
       .select("id, group_id, host_id, lesson_id, created_at, ended_at")
       .eq("host_id", viewer.userId)
-      .not("ended_at", "is", null)
-      .order("ended_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(500);
     const rows = (data ?? []) as SessRow[];
     const names = await groupNameMap(db, rows.map((r) => r.group_id));
-    return rows.map((r) => ({
-      id: `s:${r.id}`,
-      title: null,
-      groupName: names.get(r.group_id) ?? "—",
-      hostLogin: null,
-      startedAt: r.created_at,
-      endedAt: r.ended_at,
-      status: (r.lesson_id ? "conducted" : "unplanned") as SessionStatus,
-      deleteSessionId: r.id,
-    }));
+    return rows
+      .map((r) => ({
+        id: `s:${r.id}`,
+        title: null,
+        groupName: names.get(r.group_id) ?? "—",
+        hostLogin: null,
+        startedAt: r.created_at,
+        endedAt: r.ended_at,
+        status: (!r.ended_at ? "in_progress" : r.lesson_id ? "conducted" : "unplanned") as SessionStatus,
+        deleteSessionId: r.id,
+      }))
+      .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
   }
 
   const now = new Date().toISOString();
@@ -218,6 +219,17 @@ export async function listSessionHistory(
   const { data: sessData } = await sq;
   const sessions = (sessData ?? []) as SessRow[];
 
+  // Currently-running (not yet ended) sessions.
+  let rq = db
+    .from("live_sessions")
+    .select("id, group_id, host_id, lesson_id, created_at, ended_at")
+    .is("ended_at", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (groupFilter) rq = rq.in("group_id", groupFilter);
+  const { data: runData } = await rq;
+  const running = (runData ?? []) as SessRow[];
+
   const sessionByLesson = new Map<string, SessRow>();
   const unplanned: SessRow[] = [];
   for (const s of sessions) {
@@ -225,8 +237,8 @@ export async function listSessionHistory(
     else unplanned.push(s);
   }
 
-  const names = await groupNameMap(db, [...(lessons ?? []).map((l) => l.group_id), ...sessions.map((s) => s.group_id)]);
-  const hosts = await hostLoginMap(db, sessions.map((s) => s.host_id));
+  const names = await groupNameMap(db, [...(lessons ?? []).map((l) => l.group_id), ...sessions.map((s) => s.group_id), ...running.map((s) => s.group_id)]);
+  const hosts = await hostLoginMap(db, [...sessions.map((s) => s.host_id), ...running.map((s) => s.host_id)]);
 
   let attended = new Set<string>();
   if (viewer.role === "STUDENT" && viewer.studentId && sessions.length > 0) {
@@ -269,7 +281,22 @@ export async function listSessionHistory(
     });
   }
 
+  for (const s of running) {
+    rows.push({
+      id: `r:${s.id}`,
+      title: null,
+      groupName: names.get(s.group_id) ?? "—",
+      hostLogin: s.host_id ? hosts.get(s.host_id) ?? "—" : null,
+      startedAt: s.created_at,
+      endedAt: null,
+      status: "in_progress",
+      attended: viewer.role === "STUDENT" ? attended.has(s.id) : undefined,
+    });
+  }
+
   rows.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  // Running sessions always float to the top.
+  rows.sort((a, b) => (a.status === "in_progress" ? -1 : 0) - (b.status === "in_progress" ? -1 : 0));
   return rows;
 }
 
@@ -391,6 +418,49 @@ export async function getSessionResults(db: Db, groupId: string, itemIds: string
     byStudent.set(row.student_id, map);
   }
   return students.map((s) => ({ studentId: s.id, fullName: s.full_name, submissions: byStudent.get(s.id) ?? {} }));
+}
+
+export interface LiveIndicator {
+  href: string;
+  label: string;
+}
+
+/**
+ * Header "live session" button target for a user, or null when nothing is live.
+ * - student: a session in one of their groups → the live view.
+ * - assistant: a session THEY host → its console.
+ * - tutor: their own session → its console; someone else's → the Занятия tab;
+ *   several at once → the Занятия tab labelled "Идут занятия".
+ */
+export async function getLiveIndicator(
+  db: Db,
+  user: { role: "TUTOR" | "ASSISTANT" | "STUDENT"; id: string },
+): Promise<LiveIndicator | null> {
+  if (user.role === "STUDENT") {
+    const { data: st } = await db.from("students").select("id").eq("user_id", user.id).maybeSingle();
+    if (!st) return null;
+    const s = await getActiveSessionForStudent(db, st.id);
+    return s ? { href: "/learn/live", label: "Идёт занятие" } : null;
+  }
+
+  const { data } = await db
+    .from("live_sessions")
+    .select("id, group_id, material_id, host_id")
+    .is("ended_at", null)
+    .order("created_at", { ascending: false });
+  const active = data ?? [];
+  if (active.length === 0) return null;
+
+  if (user.role === "ASSISTANT") {
+    const mine = active.find((s) => s.host_id === user.id);
+    return mine ? { href: `/materials/${mine.material_id}/session/${mine.group_id}`, label: "Идёт занятие" } : null;
+  }
+
+  // TUTOR: sees every running session.
+  if (active.length > 1) return { href: "/lessons", label: "Идут занятия" };
+  const s = active[0];
+  if (s.host_id === user.id) return { href: `/materials/${s.material_id}/session/${s.group_id}`, label: "Идёт занятие" };
+  return { href: "/lessons", label: "Идёт занятие" };
 }
 
 /** The active session (if any) among the groups the student belongs to. */

@@ -1,3 +1,5 @@
+"use client";
+
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Radio } from "lucide-react";
@@ -11,6 +13,7 @@ const STATUS: Record<SessionStatus, { label: string; cls: string }> = {
   not_conducted: { label: "Не проведено", cls: "bg-amber-100 text-amber-700" },
   cancelled: { label: "Отменено", cls: "bg-red-100 text-red-700" },
   unplanned: { label: "Незапланированное", cls: "bg-sky-100 text-sky-700" },
+  in_progress: { label: "Идёт", cls: "bg-red-100 text-red-700" },
 };
 
 export function SessionHistory({ rows, role }: { rows: SessionHistoryRow[]; role: UserRole }) {

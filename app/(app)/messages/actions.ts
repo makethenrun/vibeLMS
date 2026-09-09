@@ -17,6 +17,17 @@ export async function listPeersAction(): Promise<ActionResult<{ peers: messages.
   }
 }
 
+export async function listConversationsAction(): Promise<ActionResult<{ peers: messages.Peer[] }>> {
+  const user = await getCurrentUser();
+  if (!user) return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    return ok({ peers: await messages.listConversations(db, user) });
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
 export async function unreadCountAction(): Promise<ActionResult<{ count: number }>> {
   const user = await getCurrentUser();
   if (!user) return fail("Недостаточно прав");
@@ -60,6 +71,30 @@ export async function sendMessageAction(
     if (!(await messages.isPeer(db, user, peerId))) return fail("Нет доступа");
     const message = await messages.sendMessage(db, user.id, peerId, text, attach, attach ? attachmentName ?? "файл" : null);
     return ok({ message });
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
+/** Tutor oversight: list every conversation in the system. */
+export async function listAllConversationsAction(): Promise<ActionResult<{ conversations: messages.ConversationSummary[] }>> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "TUTOR") return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    return ok({ conversations: await messages.listAllConversations(db) });
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
+/** Tutor oversight: read any conversation between two users. */
+export async function readConversationAction(aId: string, bId: string): Promise<ActionResult<{ messages: MessageRow[] }>> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "TUTOR") return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    return ok({ messages: await messages.getConversation(db, aId, bId) });
   } catch (e) {
     return fail(getErrorMessage(e));
   }
