@@ -13,13 +13,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireStaff } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { HOMEWORK_TYPE_LABELS } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { listGroupsForStudent } from "@/services/groups/groups.service";
+import { assistantGroupIds } from "@/services/assistants/assistants.service";
+import { getStudentGroupIds, listGroupsForStudent } from "@/services/groups/groups.service";
 import { listHomeworkForStudent } from "@/services/homework/homework.service";
 import { getStudentPaidTotal, listPaymentsForStudent } from "@/services/payments/payments.service";
+import { getStudentAttendanceHistory } from "@/services/materials/live-session.service";
 import { getStudent } from "@/services/students/students.service";
 import { StudentActions } from "./student-actions";
 
@@ -30,18 +32,29 @@ export default async function StudentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireTutor();
+  const user = await requireStaff();
+  const isTutor = user.role === "TUTOR";
   const { id } = await params;
 
   const db = createServerSupabaseClient();
   const student = await getStudent(db, id);
   if (!student) notFound();
 
-  const [groups, payments, paidTotal, homework] = await Promise.all([
+  // Assistants may only open students who share one of their groups.
+  if (!isTutor) {
+    const [assistGroups, studentGroups] = await Promise.all([
+      assistantGroupIds(db, user.id),
+      getStudentGroupIds(db, id),
+    ]);
+    if (!studentGroups.some((g) => assistGroups.includes(g))) notFound();
+  }
+
+  const [groups, payments, paidTotal, homework, attendance] = await Promise.all([
     listGroupsForStudent(db, id),
-    listPaymentsForStudent(db, id),
-    getStudentPaidTotal(db, id),
+    isTutor ? listPaymentsForStudent(db, id) : Promise.resolve([]),
+    isTutor ? getStudentPaidTotal(db, id) : Promise.resolve(0),
     listHomeworkForStudent(db, id),
+    getStudentAttendanceHistory(db, id),
   ]);
 
   return (
@@ -49,7 +62,7 @@ export default async function StudentDetailPage({
       <PageHeader
         title={student.full_name}
         description="Профиль ученика"
-        actions={<StudentActions student={student} />}
+        actions={isTutor ? <StudentActions student={student} /> : undefined}
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -103,6 +116,43 @@ export default async function StudentDetailPage({
         </Card>
 
         <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>История присутствия</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {attendance.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Занятий пока не было.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Дата</TableHead>
+                    <TableHead>Группа</TableHead>
+                    <TableHead>Присутствие</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {attendance.map((row) => (
+                    <TableRow key={row.sessionId}>
+                      <TableCell>{formatDate(row.date)}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.groupName}</TableCell>
+                      <TableCell>
+                        {row.attended ? (
+                          <Badge variant="success">Был</Badge>
+                        ) : (
+                          <Badge variant="outline">Не был</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {isTutor ? (
+        <Card className="lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>История оплат</CardTitle>
             <span className="text-sm text-muted-foreground">
@@ -134,6 +184,7 @@ export default async function StudentDetailPage({
             )}
           </CardContent>
         </Card>
+        ) : null}
 
         <Card className="lg:col-span-3">
           <CardHeader>

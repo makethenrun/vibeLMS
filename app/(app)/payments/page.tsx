@@ -5,21 +5,13 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { listPayments } from "@/services/payments/payments.service";
 import { listStudents } from "@/services/students/students.service";
 import { PaymentDialog } from "./payment-dialog";
-import { PaymentRowActions } from "./payment-row-actions";
+import { PaymentsTable } from "./payments-table";
 
 export const metadata: Metadata = { title: "Оплаты" };
 
@@ -31,6 +23,8 @@ export default async function PaymentsPage() {
 
   const total = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const studentOptions = students.map((student) => ({ id: student.id, name: student.full_name }));
+  const loginById = new Map(students.map((s) => [s.id, s.login] as const));
+  const paymentRows = payments.map((p) => ({ ...p, studentLogin: loginById.get(p.student_id) ?? null }));
 
   const addButton = (
     <Button disabled={studentOptions.length === 0}>
@@ -69,34 +63,7 @@ export default async function PaymentsPage() {
           description="Добавьте первую оплату, чтобы вести историю платежей."
         />
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Дата</TableHead>
-                <TableHead>Ученик</TableHead>
-                <TableHead>Сумма</TableHead>
-                <TableHead className="hidden md:table-cell">Комментарий</TableHead>
-                <TableHead className="w-[60px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>{formatDate(payment.payment_date)}</TableCell>
-                  <TableCell className="font-medium">{payment.studentName}</TableCell>
-                  <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
-                  <TableCell className="hidden text-muted-foreground md:table-cell">
-                    {payment.comment ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <PaymentRowActions id={payment.id} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <PaymentsTable payments={paymentRows} />
       )}
     </div>
   );

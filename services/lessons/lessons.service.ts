@@ -170,11 +170,22 @@ export async function getLessonRoster(db: Db, lessonId: string): Promise<Attenda
     .in("id", studentIds)
     .order("full_name", { ascending: true });
 
-  const { data: attendance } = await db
-    .from("lesson_attendance")
-    .select("student_id")
-    .eq("lesson_id", lessonId);
-  const presentSet = new Set((attendance ?? []).map((row) => row.student_id));
+  // Who actually entered the live session linked to this lesson.
+  const { data: sess } = await db
+    .from("live_sessions")
+    .select("id")
+    .eq("lesson_id", lessonId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let presentSet = new Set<string>();
+  if (sess) {
+    const { data: attendance } = await db
+      .from("live_session_attendance")
+      .select("student_id")
+      .eq("session_id", sess.id);
+    presentSet = new Set((attendance ?? []).map((row) => row.student_id));
+  }
 
   return (students ?? []).map((student) => ({
     studentId: student.id,

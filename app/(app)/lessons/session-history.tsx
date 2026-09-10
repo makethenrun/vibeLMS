@@ -6,6 +6,7 @@ import { Radio } from "lucide-react";
 
 import type { SessionHistoryRow, SessionStatus } from "@/services/materials/live-session.service";
 import type { UserRole } from "@/lib/db/database.types";
+import { DeleteLessonButton } from "./delete-lesson-button";
 import { DeleteSessionButton } from "./delete-session-button";
 
 const STATUS: Record<SessionStatus, { label: string; cls: string }> = {
@@ -74,7 +75,11 @@ export function SessionHistory({ rows, role }: { rows: SessionHistoryRow[]; role
                     ) : null}
                     {showActions ? (
                       <td className="px-2 py-1 text-right">
-                        {r.deleteSessionId ? <DeleteSessionButton sessionId={r.deleteSessionId} /> : null}
+                        {r.deleteSessionId ? (
+                          <DeleteSessionButton sessionId={r.deleteSessionId} />
+                        ) : r.deleteLessonId ? (
+                          <DeleteLessonButton lessonId={r.deleteLessonId} />
+                        ) : null}
                       </td>
                     ) : null}
                   </tr>
