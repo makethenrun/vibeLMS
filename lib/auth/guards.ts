@@ -19,17 +19,31 @@ export async function requireTutor(): Promise<CurrentUser> {
   return user;
 }
 
-/** Page-loader guard: requires staff (TUTOR or ASSISTANT) or redirects. */
+/** Page-loader guard: requires staff (TUTOR, ASSISTANT or ADMINISTRATOR). */
 export async function requireStaff(): Promise<CurrentUser> {
   const user = await requireUser();
-  if (user.role !== "TUTOR" && user.role !== "ASSISTANT") redirect("/dashboard");
+  if (user.role === "STUDENT") redirect("/dashboard");
   return user;
 }
 
-/** Server-Action guard: returns staff (TUTOR or ASSISTANT) or null. */
+/** Server-Action guard: returns staff (TUTOR or ASSISTANT) or null — the roles
+ *  allowed to drive live sessions and edit content. Administrators are excluded. */
 export async function getStaffOrNull(): Promise<CurrentUser | null> {
   const user = await getCurrentUser();
   return user && (user.role === "TUTOR" || user.role === "ASSISTANT") ? user : null;
+}
+
+/** Page-loader guard: requires a manager (TUTOR or ADMINISTRATOR) or redirects. */
+export async function requireManager(): Promise<CurrentUser> {
+  const user = await requireUser();
+  if (user.role !== "TUTOR" && user.role !== "ADMINISTRATOR") redirect("/dashboard");
+  return user;
+}
+
+/** Server-Action guard: returns a manager (TUTOR or ADMINISTRATOR) or null. */
+export async function getManagerOrNull(): Promise<CurrentUser | null> {
+  const user = await getCurrentUser();
+  return user && (user.role === "TUTOR" || user.role === "ADMINISTRATOR") ? user : null;
 }
 
 /** Page-loader guard: requires a STUDENT with a linked profile. */

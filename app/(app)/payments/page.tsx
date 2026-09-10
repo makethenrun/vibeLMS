@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireManager } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { listPayments } from "@/services/payments/payments.service";
@@ -16,7 +16,8 @@ import { PaymentsTable } from "./payments-table";
 export const metadata: Metadata = { title: "Оплаты" };
 
 export default async function PaymentsPage() {
-  await requireTutor();
+  const user = await requireManager();
+  const canManage = user.role === "TUTOR";
 
   const db = createServerSupabaseClient();
   const [payments, students] = await Promise.all([listPayments(db), listStudents(db)]);
@@ -39,11 +40,7 @@ export default async function PaymentsPage() {
         title="Оплаты"
         description="Учёт платежей учеников."
         actions={
-          studentOptions.length > 0 ? (
-            <PaymentDialog students={studentOptions} trigger={addButton} />
-          ) : (
-            addButton
-          )
+          canManage ? (studentOptions.length > 0 ? <PaymentDialog students={studentOptions} trigger={addButton} /> : addButton) : undefined
         }
       />
 
@@ -63,7 +60,7 @@ export default async function PaymentsPage() {
           description="Добавьте первую оплату, чтобы вести историю платежей."
         />
       ) : (
-        <PaymentsTable payments={paymentRows} />
+        <PaymentsTable payments={paymentRows} canManage={canManage} />
       )}
     </div>
   );

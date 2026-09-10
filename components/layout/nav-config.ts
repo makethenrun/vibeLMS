@@ -40,16 +40,17 @@ export const EXTERNAL_LINKS: ExternalLink[] = [
   { label: "Pinyin TypeIt", href: "https://pinyin.typeit.org", icon: Keyboard },
 ];
 
-const ALL: UserRole[] = ["TUTOR", "STUDENT", "ASSISTANT"];
+const ALL: UserRole[] = ["TUTOR", "STUDENT", "ASSISTANT", "ADMINISTRATOR"];
 const BOTH: UserRole[] = ["TUTOR", "STUDENT"];
-const STAFF: UserRole[] = ["TUTOR", "ASSISTANT"];
+const STAFF: UserRole[] = ["TUTOR", "ASSISTANT", "ADMINISTRATOR"];
+const MANAGER: UserRole[] = ["TUTOR", "ADMINISTRATOR"];
 const TUTOR_ONLY: UserRole[] = ["TUTOR"];
 const STUDENT_ONLY: UserRole[] = ["STUDENT"];
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard, roles: ALL },
-  { label: "Ученики", href: "/students", icon: Users, roles: TUTOR_ONLY },
-  { label: "Ассистенты", href: "/assistants", icon: UsersRound, roles: TUTOR_ONLY },
+  { label: "Дашборд", href: "/dashboard", icon: LayoutDashboard, roles: ["TUTOR", "STUDENT", "ASSISTANT"] },
+  { label: "Ученики", href: "/students", icon: Users, roles: MANAGER },
+  { label: "Ассистенты", href: "/assistants", icon: UsersRound, roles: MANAGER },
   { label: "Группы", href: "/groups", icon: UsersRound, roles: STAFF },
   { label: "Занятия", href: "/lessons", icon: CalendarDays, roles: ALL },
   { label: "Материалы", href: "/materials", icon: Library, roles: STAFF },
@@ -57,7 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Файлы", href: "/files", icon: FileText, roles: ALL },
   { label: "Словарь", href: "/dictionary", icon: BookA, roles: ALL },
   { label: "Дополнительные задания", href: "/homework", icon: ClipboardList, roles: BOTH },
-  { label: "Оплаты", href: "/payments", icon: Wallet, roles: TUTOR_ONLY },
+  { label: "Оплаты", href: "/payments", icon: Wallet, roles: MANAGER },
   { label: "Статистика", href: "/statistics", icon: BarChart3, roles: TUTOR_ONLY },
-  { label: "Настройки", href: "/settings", icon: Settings, roles: TUTOR_ONLY },
+  { label: "Настройки", href: "/settings", icon: Settings, roles: MANAGER },
 ];

@@ -18,7 +18,7 @@ import { PaymentRowActions } from "./payment-row-actions";
 
 type Row = PaymentWithStudent & { studentLogin: string | null };
 
-export function PaymentsTable({ payments }: { payments: Row[] }) {
+export function PaymentsTable({ payments, canManage }: { payments: Row[]; canManage: boolean }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -58,7 +58,7 @@ export function PaymentsTable({ payments }: { payments: Row[] }) {
                   <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">{payment.comment ?? "—"}</TableCell>
                   <TableCell className="text-right">
-                    <PaymentRowActions id={payment.id} />
+                    {canManage ? <PaymentRowActions id={payment.id} /> : null}
                   </TableCell>
                 </TableRow>
               ))

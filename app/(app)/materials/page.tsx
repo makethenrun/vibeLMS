@@ -19,7 +19,8 @@ export default async function MaterialsPage() {
 
   const db = createServerSupabaseClient();
   let materials = await listMaterials(db);
-  if (!isTutor) {
+  // Assistants see only assigned materials; tutor and administrator see all.
+  if (user.role === "ASSISTANT") {
     const access = await assistantMaterialAccess(db, user.id);
     materials = materials.filter((m) => access.has(m.id));
   }

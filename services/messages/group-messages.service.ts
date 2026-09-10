@@ -23,7 +23,7 @@ export interface GroupMessage {
 /** Group ids the user participates in: student's groups, assistant's assigned
  *  groups, or all groups for the tutor. */
 export async function userGroupIds(db: Db, user: CurrentUser): Promise<string[]> {
-  if (user.role === "TUTOR") {
+  if (user.role === "TUTOR" || user.role === "ADMINISTRATOR") {
     const { data } = await db.from("groups").select("id");
     return (data ?? []).map((g) => g.id);
   }

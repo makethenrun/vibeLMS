@@ -29,6 +29,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   TUTOR: "Преподаватель",
   STUDENT: "Ученик",
   ASSISTANT: "Ассистент",
+  ADMINISTRATOR: "Администратор",
 };
 
 /** Material types that are backed by an uploaded file (everything but links). */

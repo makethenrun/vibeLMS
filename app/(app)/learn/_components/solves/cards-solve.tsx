@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { FormattedText } from "@/components/shared/formatted-text";
-import { ImageZoom } from "@/components/shared/image-zoom";
 import { cn } from "@/lib/utils";
 import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { CardsContent } from "@/lib/validators";
@@ -95,11 +94,8 @@ export function CardsSolve({
                 <FormattedText text={card.answer} />
               </span>
             ) : card.imageUrl ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={card.imageUrl} alt="" className="max-h-full max-w-full object-contain" />
-                <ImageZoom src={card.imageUrl} />
-              </>
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={card.imageUrl} alt="" className="max-h-full max-w-full object-contain" />
             ) : (
               <ImageIcon className="h-10 w-10 text-muted-foreground" />
             )}

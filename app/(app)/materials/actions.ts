@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getStaffOrNull, getTutorOrNull } from "@/lib/auth/guards";
+import { getManagerOrNull, getStaffOrNull, getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { canEditMaterial, resolveMaterialId } from "@/services/assistants/assistants.service";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
@@ -459,8 +459,9 @@ export async function setReactionAction(
 }
 
 export async function setMaterialGroupsAction(materialId: string, groupIds: string[]): Promise<ActionResult> {
-  const denied = await requireTutorResult();
-  if (denied) return denied;
+  // Granting groups access to a material is allowed for tutor and administrator.
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
   try {
     await setMaterialGroups(db, materialId, groupIds);

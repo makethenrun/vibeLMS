@@ -67,6 +67,7 @@ function UpcomingLessonsCard({ lessons }: { lessons: LessonWithGroup[] }) {
 export default async function DashboardPage() {
   const user = await requireUser();
   if (user.role === "ASSISTANT") redirect("/materials");
+  if (user.role === "ADMINISTRATOR") redirect("/students");
   const db = createServerSupabaseClient();
 
   if (user.role === "TUTOR") {

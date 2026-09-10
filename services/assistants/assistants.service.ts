@@ -5,9 +5,14 @@ import type { CurrentUser } from "@/lib/auth/current-user";
 import type { AssistantInput, AssistantProfileInput } from "@/lib/validators";
 import { hashPassword } from "@/lib/auth/password";
 
+/** Staff accounts managed on the assistants tab. */
+const MANAGED_ROLES = ["ASSISTANT", "ADMINISTRATOR"] as const;
+export type ManagedRole = (typeof MANAGED_ROLES)[number];
+
 export interface AssistantRow {
   id: string;
   login: string;
+  role: ManagedRole;
   fullName: string | null;
   notes: string | null;
   isArchived: boolean;
@@ -21,14 +26,14 @@ function normalizeNotes(notes: string | undefined): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-export async function createAssistant(db: Db, input: AssistantInput): Promise<string> {
+export async function createAssistant(db: Db, input: AssistantInput, role: ManagedRole = "ASSISTANT"): Promise<string> {
   const password_hash = await hashPassword(input.password);
   const { data, error } = await db
     .from("users")
     .insert({
       login: input.login,
       password_hash,
-      role: "ASSISTANT",
+      role,
       full_name: input.fullName,
       notes: normalizeNotes(input.notes),
     })
@@ -43,7 +48,7 @@ export async function updateAssistantProfile(db: Db, assistantId: string, input:
     .from("users")
     .update({ full_name: input.fullName, notes: normalizeNotes(input.notes) })
     .eq("id", assistantId)
-    .eq("role", "ASSISTANT");
+    .in("role", ["ASSISTANT", "ADMINISTRATOR"]);
   if (error) throw new Error(error.message);
 }
 
@@ -57,7 +62,7 @@ export async function updateAssistantCredentials(
     .from("users")
     .update({ login: params.login, password_hash: params.passwordHash })
     .eq("id", assistantId)
-    .eq("role", "ASSISTANT");
+    .in("role", ["ASSISTANT", "ADMINISTRATOR"]);
   if (error) throw new Error(error.message.includes("duplicate") ? "Логин уже занят" : error.message);
 }
 
@@ -66,7 +71,7 @@ export async function setAssistantArchived(db: Db, assistantId: string, archived
     .from("users")
     .update({ is_archived: archived })
     .eq("id", assistantId)
-    .eq("role", "ASSISTANT");
+    .in("role", ["ASSISTANT", "ADMINISTRATOR"]);
   if (error) throw new Error(error.message);
 }
 
@@ -77,15 +82,15 @@ export async function loginTakenByOther(db: Db, login: string, selfId: string): 
 }
 
 export async function deleteAssistant(db: Db, assistantId: string): Promise<void> {
-  const { error } = await db.from("users").delete().eq("id", assistantId).eq("role", "ASSISTANT");
+  const { error } = await db.from("users").delete().eq("id", assistantId).in("role", ["ASSISTANT", "ADMINISTRATOR"]);
   if (error) throw new Error(error.message);
 }
 
 export async function listAssistants(db: Db, params: { archivedOnly?: boolean } = {}): Promise<AssistantRow[]> {
   const query = db
     .from("users")
-    .select("id, login, full_name, notes, is_archived, created_at")
-    .eq("role", "ASSISTANT")
+    .select("id, login, role, full_name, notes, is_archived, created_at")
+    .in("role", ["ASSISTANT", "ADMINISTRATOR"])
     .eq("is_archived", Boolean(params.archivedOnly))
     .order("full_name", { ascending: true, nullsFirst: false })
     .order("login", { ascending: true });
@@ -106,6 +111,7 @@ export async function listAssistants(db: Db, params: { archivedOnly?: boolean } 
   return rows.map((u) => ({
     id: u.id,
     login: u.login,
+    role: (u.role === "ADMINISTRATOR" ? "ADMINISTRATOR" : "ASSISTANT") as ManagedRole,
     fullName: u.full_name,
     notes: u.notes,
     isArchived: u.is_archived,
@@ -148,7 +154,7 @@ export async function assistantMaterialAccess(db: Db, assistantId: string): Prom
 
 /** Whether the user may VIEW a material (tutor: all; assistant: assigned). */
 export async function canViewMaterial(db: Db, user: CurrentUser, materialId: string): Promise<boolean> {
-  if (user.role === "TUTOR") return true;
+  if (user.role === "TUTOR" || user.role === "ADMINISTRATOR") return true; // admin: view all
   if (user.role !== "ASSISTANT") return false;
   const { data } = await db
     .from("assistant_materials")
@@ -174,7 +180,7 @@ export async function canEditMaterial(db: Db, user: CurrentUser, materialId: str
 
 /** Whether the user may run sessions for / view a group. */
 export async function canAccessGroup(db: Db, user: CurrentUser, groupId: string): Promise<boolean> {
-  if (user.role === "TUTOR") return true;
+  if (user.role === "TUTOR" || user.role === "ADMINISTRATOR") return true; // admin: view all
   if (user.role !== "ASSISTANT") return false;
   const { data } = await db
     .from("assistant_groups")

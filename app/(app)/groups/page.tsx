@@ -19,7 +19,8 @@ export default async function GroupsPage() {
 
   const db = createServerSupabaseClient();
   let groups = await listGroups(db);
-  if (!isTutor) {
+  // Assistants see only their groups; tutor and administrator see all.
+  if (user.role === "ASSISTANT") {
     const ids = new Set(await assistantGroupIds(db, user.id));
     groups = groups.filter((g) => ids.has(g.id));
   }

@@ -5,7 +5,7 @@ import { Plus, Users } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireManager } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { listStudents } from "@/services/students/students.service";
 import { StudentDialog } from "./student-dialog";
@@ -18,7 +18,8 @@ export default async function StudentsPage({
 }: {
   searchParams: Promise<{ archived?: string }>;
 }) {
-  await requireTutor();
+  const user = await requireManager();
+  const canManage = user.role === "TUTOR";
   const params = await searchParams;
   const archivedOnly = params.archived === "1";
 
@@ -37,7 +38,7 @@ export default async function StudentsPage({
       <PageHeader
         title="Ученики"
         description="Управление учениками и доступом в систему."
-        actions={<StudentDialog mode="create" trigger={addButton} />}
+        actions={canManage ? <StudentDialog mode="create" trigger={addButton} /> : undefined}
       />
 
       <div className="flex items-center gap-2">
@@ -54,10 +55,10 @@ export default async function StudentsPage({
           icon={Users}
           title={archivedOnly ? "В архиве пусто" : "Пока нет учеников"}
           description={archivedOnly ? "Архивированные ученики появятся здесь." : "Добавьте первого ученика, чтобы начать вести расписание и задания."}
-          action={archivedOnly ? undefined : <StudentDialog mode="create" trigger={addButton} />}
+          action={archivedOnly || !canManage ? undefined : <StudentDialog mode="create" trigger={addButton} />}
         />
       ) : (
-        <StudentsTable students={students} />
+        <StudentsTable students={students} canManage={canManage} />
       )}
     </div>
   );

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { FormattedText } from "@/components/shared/formatted-text";
-import { ImageZoom } from "@/components/shared/image-zoom";
 import { LoadingButton } from "@/components/shared/loading-button";
 import {
   Select,
@@ -128,10 +127,9 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
             return (
               <button key={i} type="button" disabled={locked}
                 onClick={() => setSelected((prev) => (on ? prev.filter((x) => x !== i) : [...prev, i]))}
-                className={cn("relative rounded-2xl border-4", border)}>
+                className={cn("rounded-2xl border-4", border)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.imageUrl} alt="" className={IMG} />
-                <ImageZoom src={img.imageUrl} />
               </button>
             );
           })}
@@ -144,7 +142,6 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
                 <DropSlot key={i} id={`p${i}`} className={cn("flex w-[200px] flex-col items-center gap-2 rounded-2xl border p-2", feedbackClass(locked, isCorrect(wordLabel.get(dragValue[`p${i}`] ?? ""), [p.word])))}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.imageUrl} alt="" className="h-[200px] w-full rounded-xl object-cover" />
-                  <ImageZoom src={p.imageUrl} />
                 </DropSlot>
               ))}
             </div>
@@ -168,11 +165,8 @@ export function ImageTaskSolve({ itemId, content, initialScore, initialAnswer }:
         <div className="flex flex-wrap justify-center gap-6">
           {content.pairs.map((p, i) => (
             <div key={i} className="flex w-[200px] flex-col items-stretch gap-2">
-              <span className="relative block">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.imageUrl} alt="" className={IMG} />
-                <ImageZoom src={p.imageUrl} />
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.imageUrl} alt="" className={IMG} />
               {content.variant === "SELECT_WORD" ? (
                 <Select value={pairAns[String(i)] ?? ""} onValueChange={(v) => setPairAns((prev) => ({ ...prev, [String(i)]: v }))} disabled={locked}>
                   <SelectTrigger className={cn("w-full", feedbackClass(locked, isCorrect(pairAns[String(i)], [p.word])))}><SelectValue placeholder="Выберите слово" /></SelectTrigger>
