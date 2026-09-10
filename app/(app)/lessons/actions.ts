@@ -9,11 +9,13 @@ import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action
 import type { LessonStatus } from "@/lib/db/database.types";
 import {
   createLesson,
+  createLessonsBulk,
   deleteLesson,
   getLessonRoster,
   setLessonAttendance,
   setLessonStatus,
   updateLesson,
+  type BulkLessonRow,
 } from "@/services/lessons/lessons.service";
 import type { AttendanceRosterItem } from "@/types";
 
@@ -36,6 +38,34 @@ export async function createLessonAction(input: LessonInput): Promise<ActionResu
   revalidatePath("/lessons");
   revalidatePath("/dashboard");
   return ok();
+}
+
+export async function createRecurringLessonsAction(
+  groupId: string,
+  meetingUrl: string | undefined,
+  rows: BulkLessonRow[],
+): Promise<ActionResult<{ count: number }>> {
+  const tutor = await getTutorOrNull();
+  if (!tutor) return fail("Недостаточно прав");
+
+  if (!/^[0-9a-f-]{36}$/i.test(groupId)) return fail("Выберите группу");
+  if (!Array.isArray(rows) || rows.length === 0) return fail("Нет занятий для создания — проверьте период и дни");
+  if (rows.length > 400) return fail("Слишком много занятий (максимум 400)");
+  for (const r of rows) {
+    if (!r.title || r.title.trim().length < 2) return fail("Название: минимум 2 символа");
+    if (Number.isNaN(Date.parse(r.startTime)) || Number.isNaN(Date.parse(r.endTime))) return fail("Некорректные даты");
+    if (Date.parse(r.endTime) <= Date.parse(r.startTime)) return fail("Окончание должно быть позже начала");
+  }
+
+  const db = createServerSupabaseClient();
+  try {
+    const count = await createLessonsBulk(db, groupId, meetingUrl, rows);
+    revalidatePath("/lessons");
+    revalidatePath("/dashboard");
+    return ok({ count });
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
 }
 
 export async function updateLessonAction(id: string, input: LessonInput): Promise<ActionResult> {

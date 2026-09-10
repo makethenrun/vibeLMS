@@ -96,6 +96,29 @@ export async function createLesson(db: Db, input: LessonInput): Promise<Lesson> 
   return data;
 }
 
+export interface BulkLessonRow { title: string; startTime: string; endTime: string }
+
+/** Inserts many lessons for one group (used by the recurring-lessons form). */
+export async function createLessonsBulk(
+  db: Db,
+  groupId: string,
+  meetingUrl: string | undefined,
+  rows: BulkLessonRow[],
+): Promise<number> {
+  if (rows.length === 0) return 0;
+  const insert = rows.map((r) => ({
+    title: r.title,
+    group_id: groupId,
+    start_time: toIso(r.startTime),
+    end_time: toIso(r.endTime),
+    meeting_url: normalizeMeetingUrl(meetingUrl),
+    status: "SCHEDULED" as const,
+  }));
+  const { error } = await db.from("lessons").insert(insert);
+  if (error) throw new Error(error.message);
+  return insert.length;
+}
+
 export async function updateLesson(db: Db, id: string, input: LessonInput): Promise<Lesson> {
   const { data, error } = await db
     .from("lessons")
