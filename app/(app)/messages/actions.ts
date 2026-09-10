@@ -79,7 +79,7 @@ export async function sendMessageAction(
 /** Tutor oversight: list every conversation in the system. */
 export async function listAllConversationsAction(): Promise<ActionResult<{ conversations: messages.ConversationSummary[] }>> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "TUTOR") return fail("Недостаточно прав");
+  if (!user || (user.role !== "TUTOR" && user.role !== "ADMINISTRATOR")) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
   try {
     return ok({ conversations: await messages.listAllConversations(db) });
@@ -91,7 +91,7 @@ export async function listAllConversationsAction(): Promise<ActionResult<{ conve
 /** Tutor oversight: read any conversation between two users. */
 export async function readConversationAction(aId: string, bId: string): Promise<ActionResult<{ messages: MessageRow[] }>> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "TUTOR") return fail("Недостаточно прав");
+  if (!user || (user.role !== "TUTOR" && user.role !== "ADMINISTRATOR")) return fail("Недостаточно прав");
   const db = createServerSupabaseClient();
   try {
     return ok({ messages: await messages.getConversation(db, aId, bId) });

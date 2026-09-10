@@ -66,9 +66,9 @@ async function studentUserIdsForGroups(db: Db, groupIds: string[]): Promise<stri
  *  - STUDENT ↔ tutors + assistants assigned to their groups
  */
 export async function allowedPeerIds(db: Db, user: CurrentUser): Promise<string[]> {
-  if (user.role === "TUTOR") {
-    const { data } = await db.from("users").select("id").in("role", ["ASSISTANT", "STUDENT"]);
-    return (data ?? []).map((u) => u.id);
+  if (user.role === "TUTOR" || user.role === "ADMINISTRATOR") {
+    const { data } = await db.from("users").select("id").in("role", ["ASSISTANT", "STUDENT", "TUTOR", "ADMINISTRATOR"]);
+    return (data ?? []).map((u) => u.id).filter((id) => id !== user.id);
   }
 
   const { data: tutors } = await db.from("users").select("id").eq("role", "TUTOR");

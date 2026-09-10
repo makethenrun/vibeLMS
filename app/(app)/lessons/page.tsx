@@ -45,7 +45,7 @@ export default async function LessonsPage({
 
   let history: SessionHistoryRow[] = [];
 
-  if (isTutor) {
+  if (isTutor || user.role === "ADMINISTRATOR") {
     const groupList = await listGroups(db);
     groups = groupList.map((group) => ({ id: group.id, name: group.name }));
     lessons = await listLessonsBetween(db, range);

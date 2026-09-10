@@ -37,7 +37,7 @@ import { archiveStudentAction } from "./actions";
 import { CredentialsDialog } from "./credentials-dialog";
 import { StudentDialog } from "./student-dialog";
 
-function StudentRow({ student }: { student: StudentWithAccount }) {
+function StudentRow({ student, canManage }: { student: StudentWithAccount; canManage: boolean }) {
   const [editOpen, setEditOpen] = useState(false);
   const [credentialsOpen, setCredentialsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -78,6 +78,7 @@ function StudentRow({ student }: { student: StudentWithAccount }) {
         )}
       </TableCell>
       <TableCell className="text-right">
+        {canManage ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" disabled={isPending}>
@@ -121,20 +122,25 @@ function StudentRow({ student }: { student: StudentWithAccount }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        ) : null}
 
-        <StudentDialog mode="edit" student={student} open={editOpen} onOpenChange={setEditOpen} />
-        <CredentialsDialog
-          studentId={student.id}
-          hasAccount={Boolean(student.login)}
-          open={credentialsOpen}
-          onOpenChange={setCredentialsOpen}
-        />
+        {canManage ? (
+          <>
+            <StudentDialog mode="edit" student={student} open={editOpen} onOpenChange={setEditOpen} />
+            <CredentialsDialog
+              studentId={student.id}
+              hasAccount={Boolean(student.login)}
+              open={credentialsOpen}
+              onOpenChange={setCredentialsOpen}
+            />
+          </>
+        ) : null}
       </TableCell>
     </TableRow>
   );
 }
 
-export function StudentsTable({ students }: { students: StudentWithAccount[] }) {
+export function StudentsTable({ students, canManage }: { students: StudentWithAccount[]; canManage: boolean }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -166,7 +172,7 @@ export function StudentsTable({ students }: { students: StudentWithAccount[] }) 
               </TableCell>
             </TableRow>
           ) : (
-            filtered.map((student) => <StudentRow key={student.id} student={student} />)
+            filtered.map((student) => <StudentRow key={student.id} student={student} canManage={canManage} />)
           )}
         </TableBody>
         </Table>

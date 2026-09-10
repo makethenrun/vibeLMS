@@ -5,7 +5,7 @@ import { Plus, UserCog } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { requireTutor } from "@/lib/auth/guards";
+import { requireManager } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { listAssistants } from "@/services/assistants/assistants.service";
 import { listGroups } from "@/services/groups/groups.service";
@@ -20,7 +20,8 @@ export default async function AssistantsPage({
 }: {
   searchParams: Promise<{ archived?: string }>;
 }) {
-  await requireTutor();
+  const user = await requireManager();
+  const canManage = user.role === "TUTOR";
   const params = await searchParams;
   const archivedOnly = params.archived === "1";
 
@@ -45,8 +46,8 @@ export default async function AssistantsPage({
     <div className="space-y-6">
       <PageHeader
         title="Ассистенты"
-        description="Преподаватели-ассистенты с ограниченными правами: видят только выданные им группы и материалы, проводят занятия, редактируют материал только с разрешения."
-        actions={<AssistantDialog mode="create" trigger={addButton} />}
+        description="Ассистенты и администраторы. Ассистенты видят выданные им группы и материалы; администраторы видят всё и управляют доступом."
+        actions={canManage ? <AssistantDialog mode="create" trigger={addButton} /> : undefined}
       />
 
       <div className="flex items-center gap-2">
@@ -63,10 +64,10 @@ export default async function AssistantsPage({
           icon={UserCog}
           title={archivedOnly ? "В архиве пусто" : "Пока нет ассистентов"}
           description={archivedOnly ? "Архивированные ассистенты появятся здесь." : "Добавьте ассистента, чтобы делегировать проведение занятий и работу с материалами."}
-          action={archivedOnly ? undefined : <AssistantDialog mode="create" trigger={addButton} />}
+          action={archivedOnly || !canManage ? undefined : <AssistantDialog mode="create" trigger={addButton} />}
         />
       ) : (
-        <AssistantsTable assistants={assistants} groups={groupOptions} materials={materialOptions} />
+        <AssistantsTable assistants={assistants} groups={groupOptions} materials={materialOptions} canManage={canManage} />
       )}
     </div>
   );

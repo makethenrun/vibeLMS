@@ -34,6 +34,7 @@ export default async function StudentDetailPage({
 }) {
   const user = await requireStaff();
   const isTutor = user.role === "TUTOR";
+  const canSeeMoney = isTutor || user.role === "ADMINISTRATOR";
   const { id } = await params;
 
   const db = createServerSupabaseClient();
@@ -41,7 +42,7 @@ export default async function StudentDetailPage({
   if (!student) notFound();
 
   // Assistants may only open students who share one of their groups.
-  if (!isTutor) {
+  if (user.role === "ASSISTANT") {
     const [assistGroups, studentGroups] = await Promise.all([
       assistantGroupIds(db, user.id),
       getStudentGroupIds(db, id),
@@ -51,8 +52,8 @@ export default async function StudentDetailPage({
 
   const [groups, payments, paidTotal, homework, attendance] = await Promise.all([
     listGroupsForStudent(db, id),
-    isTutor ? listPaymentsForStudent(db, id) : Promise.resolve([]),
-    isTutor ? getStudentPaidTotal(db, id) : Promise.resolve(0),
+    canSeeMoney ? listPaymentsForStudent(db, id) : Promise.resolve([]),
+    canSeeMoney ? getStudentPaidTotal(db, id) : Promise.resolve(0),
     listHomeworkForStudent(db, id),
     getStudentAttendanceHistory(db, id),
   ]);
@@ -151,7 +152,7 @@ export default async function StudentDetailPage({
           </CardContent>
         </Card>
 
-        {isTutor ? (
+        {canSeeMoney ? (
         <Card className="lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>История оплат</CardTitle>

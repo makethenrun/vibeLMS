@@ -58,6 +58,8 @@ export function AssistantDialog({ mode, assistant, trigger, open, onOpenChange }
     else setInternalOpen(value);
   };
 
+  const [role, setRole] = useState<"ASSISTANT" | "ADMINISTRATOR">("ASSISTANT");
+
   const form = useForm<FormValues>({
     resolver: zodResolver(mode === "create" ? assistantSchema : assistantProfileSchema),
     defaultValues: { fullName: assistant?.fullName ?? "", login: "", password: "", notes: assistant?.notes ?? "" },
@@ -72,7 +74,7 @@ export function AssistantDialog({ mode, assistant, trigger, open, onOpenChange }
   async function onSubmit(values: FormValues) {
     const result =
       mode === "create"
-        ? await createAssistantAction({ fullName: values.fullName, login: values.login, password: values.password, notes: values.notes })
+        ? await createAssistantAction({ fullName: values.fullName, login: values.login, password: values.password, notes: values.notes }, role)
         : await updateAssistantAction(assistant!.id, { fullName: values.fullName, notes: values.notes });
 
     if (result.success) {
@@ -114,6 +116,22 @@ export function AssistantDialog({ mode, assistant, trigger, open, onOpenChange }
             />
             {mode === "create" ? (
               <>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Роль</label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as "ASSISTANT" | "ADMINISTRATOR")}
+                    className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  >
+                    <option value="ASSISTANT">Ассистент</option>
+                    <option value="ADMINISTRATOR">Администратор</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    {role === "ADMINISTRATOR"
+                      ? "Видит всё, управляет доступом, но не редактирует материалы."
+                      : "Видит только выданные группы и материалы."}
+                  </p>
+                </div>
                 <FormField
                   control={form.control}
                   name="login"

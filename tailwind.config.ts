@@ -18,6 +18,23 @@ const config: Config = {
       },
     },
     extend: {
+      // All named text sizes scaled ~15% larger. Arbitrary sizes (text-[…]),
+      // used by flip-card faces, are unaffected — cards keep their size.
+      fontSize: {
+        xs: ["0.8625rem", { lineHeight: "1.15rem" }],
+        sm: ["1.00625rem", { lineHeight: "1.4375rem" }],
+        base: ["1.15rem", { lineHeight: "1.725rem" }],
+        lg: ["1.29375rem", { lineHeight: "2.0125rem" }],
+        xl: ["1.4375rem", { lineHeight: "2.0125rem" }],
+        "2xl": ["1.725rem", { lineHeight: "2.3rem" }],
+        "3xl": ["2.15625rem", { lineHeight: "2.5875rem" }],
+        "4xl": ["2.5875rem", { lineHeight: "2.875rem" }],
+        "5xl": ["3.45rem", { lineHeight: "1" }],
+        "6xl": ["4.3125rem", { lineHeight: "1" }],
+        "7xl": ["5.175rem", { lineHeight: "1" }],
+        "8xl": ["6.9rem", { lineHeight: "1" }],
+        "9xl": ["9.2rem", { lineHeight: "1" }],
+      },
       fontFamily: {
         // Latin/Cyrillic use the system sans; CJK glyphs fall through to SimSun.
         sans: [

@@ -23,6 +23,7 @@ export default async function GroupDetailPage({
 }) {
   const user = await requireStaff();
   const isTutor = user.role === "TUTOR";
+  const canManage = isTutor || user.role === "ADMINISTRATOR";
   const { id } = await params;
 
   const db = createServerSupabaseClient();
@@ -30,7 +31,7 @@ export default async function GroupDetailPage({
   const group = await getGroupWithMembers(db, id);
   if (!group) notFound();
 
-  const addable = isTutor ? await listAddableStudents(db, id) : [];
+  const addable = canManage ? await listAddableStudents(db, id) : [];
   let materials = await listGroupMaterials(db, id);
   if (!isTutor) {
     const access = await assistantMaterialAccess(db, user.id);
@@ -58,7 +59,7 @@ export default async function GroupDetailPage({
         }
       />
 
-      {isTutor ? (
+      {canManage ? (
         <GroupMembers groupId={group.id} members={group.members} addable={addable} />
       ) : (
         <Card>

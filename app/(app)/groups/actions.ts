@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getTutorOrNull } from "@/lib/auth/guards";
+import { getManagerOrNull, getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { groupMemberSchema, groupSchema, type GroupInput } from "@/lib/validators";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
@@ -67,8 +67,8 @@ export async function deleteGroupAction(id: string): Promise<ActionResult> {
 }
 
 export async function addMemberAction(groupId: string, studentId: string): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
 
   const parsed = groupMemberSchema.safeParse({ studentId });
   if (!parsed.success) return fail("Выберите ученика");
@@ -88,8 +88,8 @@ export async function removeMemberAction(
   groupId: string,
   studentId: string,
 ): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
-  if (!tutor) return fail("Недостаточно прав");
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
 
   const db = createServerSupabaseClient();
   try {

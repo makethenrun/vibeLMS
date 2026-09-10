@@ -436,7 +436,7 @@ export interface LiveIndicator {
  */
 export async function getLiveIndicator(
   db: Db,
-  user: { role: "TUTOR" | "ASSISTANT" | "STUDENT"; id: string },
+  user: { role: "TUTOR" | "ASSISTANT" | "STUDENT" | "ADMINISTRATOR"; id: string },
 ): Promise<LiveIndicator | null> {
   if (user.role === "STUDENT") {
     const { data: st } = await db.from("students").select("id").eq("user_id", user.id).maybeSingle();

@@ -52,9 +52,10 @@ interface Meta {
 
 function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow } & Meta) {
   const router = useRouter();
-  const matById = new Map(assistant.materials.map((m) => [m.materialId, m.canEdit]));
   const [groupQuery, setGroupQuery] = useState("");
   const [materialQuery, setMaterialQuery] = useState("");
+  const isAdministrator = assistant.role === "ADMINISTRATOR";
+  const matById = new Map(assistant.materials.map((m) => [m.materialId, m.canEdit]));
   const gq = groupQuery.trim().toLowerCase();
   const mq = materialQuery.trim().toLowerCase();
   const visibleGroups = gq ? groups.filter((g) => g.name.toLowerCase().includes(gq)) : groups;
@@ -73,6 +74,14 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
     const result = await setAssistantMaterialsAction(assistant.id, next);
     if (result.success) router.refresh();
     else toast.error(result.error);
+  }
+
+  if (isAdministrator) {
+    return (
+      <div className="bg-muted/30 p-4 text-sm text-muted-foreground">
+        Администратор видит все группы, материалы и переписки. Настройка доступа не требуется.
+      </div>
+    );
   }
 
   return (
@@ -143,7 +152,7 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
   );
 }
 
-function AssistantTableRow({ assistant, groups, materials }: { assistant: AssistantRow } & Meta) {
+function AssistantTableRow({ assistant, groups, materials, canManage }: { assistant: AssistantRow; canManage: boolean } & Meta) {
   const [expanded, setExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [credentialsOpen, setCredentialsOpen] = useState(false);
@@ -168,13 +177,17 @@ function AssistantTableRow({ assistant, groups, materials }: { assistant: Assist
           </button>
         </TableCell>
         <TableCell>
-          <Badge variant="secondary">{assistant.login}</Badge>
+          <span className="flex items-center gap-1">
+            <Badge variant="secondary">{assistant.login}</Badge>
+            {assistant.role === "ADMINISTRATOR" ? <Badge>Администратор</Badge> : null}
+          </span>
         </TableCell>
         <TableCell className="hidden text-muted-foreground md:table-cell">{formatDate(assistant.createdAt)}</TableCell>
         <TableCell>
           {assistant.isArchived ? <Badge variant="outline">В архиве</Badge> : <Badge variant="success">Активен</Badge>}
         </TableCell>
         <TableCell className="text-right">
+          {canManage ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" disabled={isPending}>
@@ -216,6 +229,7 @@ function AssistantTableRow({ assistant, groups, materials }: { assistant: Assist
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          ) : null}
 
           <AssistantDialog mode="edit" assistant={assistant} open={editOpen} onOpenChange={setEditOpen} />
           <AssistantCredentialsDialog assistantId={assistant.id} currentLogin={assistant.login} open={credentialsOpen} onOpenChange={setCredentialsOpen} />
@@ -246,8 +260,10 @@ export function AssistantsTable({
   assistants,
   groups,
   materials,
+  canManage,
 }: {
   assistants: AssistantRow[];
+  canManage: boolean;
 } & Meta) {
   return (
     <div className="rounded-lg border">
@@ -263,7 +279,7 @@ export function AssistantsTable({
         </TableHeader>
         <TableBody>
           {assistants.map((a) => (
-            <AssistantTableRow key={a.id} assistant={a} groups={groups} materials={materials} />
+            <AssistantTableRow key={a.id} assistant={a} groups={groups} materials={materials} canManage={canManage} />
           ))}
         </TableBody>
       </Table>

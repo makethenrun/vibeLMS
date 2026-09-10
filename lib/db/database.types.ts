@@ -11,7 +11,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = "TUTOR" | "STUDENT" | "ASSISTANT";
+export type UserRole = "TUTOR" | "STUDENT" | "ASSISTANT" | "ADMINISTRATOR";
 export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";

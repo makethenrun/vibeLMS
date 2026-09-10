@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getTutorOrNull } from "@/lib/auth/guards";
+import { getManagerOrNull, getTutorOrNull } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
@@ -21,14 +21,20 @@ async function requireTutor(): Promise<ActionResult | null> {
   return tutor ? null : fail("Недостаточно прав");
 }
 
-export async function createAssistantAction(input: AssistantInput): Promise<ActionResult> {
+/** Grants (group/material access) are also allowed for administrators. */
+async function requireManager(): Promise<ActionResult | null> {
+  const manager = await getManagerOrNull();
+  return manager ? null : fail("Недостаточно прав");
+}
+
+export async function createAssistantAction(input: AssistantInput, role?: "ASSISTANT" | "ADMINISTRATOR"): Promise<ActionResult> {
   const denied = await requireTutor();
   if (denied) return denied;
   const parsed = assistantSchema.safeParse(input);
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    await assistants.createAssistant(db, { ...parsed.data, login: parsed.data.login.toLowerCase() });
+    await assistants.createAssistant(db, { ...parsed.data, login: parsed.data.login.toLowerCase() }, role === "ADMINISTRATOR" ? "ADMINISTRATOR" : "ASSISTANT");
   } catch (e) {
     return fail(getErrorMessage(e));
   }
@@ -98,7 +104,7 @@ export async function deleteAssistantAction(id: string): Promise<ActionResult> {
 }
 
 export async function setAssistantGroupsAction(id: string, groupIds: string[]): Promise<ActionResult> {
-  const denied = await requireTutor();
+  const denied = await requireManager();
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
@@ -114,7 +120,7 @@ export async function setAssistantMaterialsAction(
   id: string,
   entries: { materialId: string; canEdit: boolean }[],
 ): Promise<ActionResult> {
-  const denied = await requireTutor();
+  const denied = await requireManager();
   if (denied) return denied;
   const db = createServerSupabaseClient();
   try {
