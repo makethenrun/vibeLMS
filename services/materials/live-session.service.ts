@@ -141,6 +141,7 @@ export interface SessionHistoryRow {
   status: SessionStatus;
   attended?: boolean;
   deleteSessionId?: string;
+  deleteLessonId?: string;
 }
 
 /** Deletes one session (cascades attendance/drawings). */
@@ -264,6 +265,7 @@ export async function listSessionHistory(
       endedAt: l.end_time,
       status,
       attended: viewer.role === "STUDENT" ? (sess ? attended.has(sess.id) : false) : undefined,
+      deleteLessonId: viewer.role === "TUTOR" ? l.id : undefined,
     });
   }
 
@@ -461,6 +463,45 @@ export async function getLiveIndicator(
   const s = active[0];
   if (s.host_id === user.id) return { href: `/materials/${s.material_id}/session/${s.group_id}`, label: "Идёт занятие" };
   return { href: "/lessons", label: "Идёт занятие" };
+}
+
+export interface StudentAttendanceRow {
+  sessionId: string;
+  groupName: string;
+  date: string;
+  attended: boolean;
+}
+
+/** A student's attendance across the ended sessions of their groups, newest first. */
+export async function getStudentAttendanceHistory(db: Db, studentId: string): Promise<StudentAttendanceRow[]> {
+  const { data: gm } = await db.from("group_members").select("group_id").eq("student_id", studentId);
+  const groupIds = [...new Set((gm ?? []).map((r) => r.group_id))];
+  if (groupIds.length === 0) return [];
+
+  const { data: sess } = await db
+    .from("live_sessions")
+    .select("id, group_id, created_at")
+    .in("group_id", groupIds)
+    .not("ended_at", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const sessions = sess ?? [];
+  if (sessions.length === 0) return [];
+
+  const names = await groupNameMap(db, sessions.map((s) => s.group_id));
+  const { data: att } = await db
+    .from("live_session_attendance")
+    .select("session_id")
+    .eq("student_id", studentId)
+    .in("session_id", sessions.map((s) => s.id));
+  const attended = new Set((att ?? []).map((a) => a.session_id));
+
+  return sessions.map((s) => ({
+    sessionId: s.id,
+    groupName: names.get(s.group_id) ?? "—",
+    date: s.created_at,
+    attended: attended.has(s.id),
+  }));
 }
 
 /** The active session (if any) among the groups the student belongs to. */

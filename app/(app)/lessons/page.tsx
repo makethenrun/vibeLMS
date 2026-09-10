@@ -17,6 +17,7 @@ import { listMaterials } from "@/services/materials/materials.service";
 import { listSessionHistory, type SessionHistoryRow } from "@/services/materials/live-session.service";
 import type { LessonWithGroup } from "@/types";
 import { LessonDialog } from "./lesson-dialog";
+import { RecurringLessonDialog } from "./recurring-lesson-dialog";
 import { SessionHistory } from "./session-history";
 import { StartSessionDialog } from "./start-session-dialog";
 import { WeekCalendar } from "./week-calendar";
@@ -91,16 +92,27 @@ export default async function LessonsPage({
             <>
               <StartSessionDialog groups={sessionGroups} materials={sessionMaterials} />
               {isTutor ? (
-                <LessonDialog
-                  mode="create"
-                  groups={groups}
-                  trigger={
-                    <Button>
-                      <Plus className="h-4 w-4" />
-                      Создать занятие
-                    </Button>
-                  }
-                />
+                <div className="flex flex-col gap-2">
+                  <LessonDialog
+                    mode="create"
+                    groups={groups}
+                    trigger={
+                      <Button className="w-full">
+                        <Plus className="h-4 w-4" />
+                        Создать занятие
+                      </Button>
+                    }
+                  />
+                  <RecurringLessonDialog
+                    groups={groups}
+                    trigger={
+                      <Button variant="outline" className="w-full">
+                        <Plus className="h-4 w-4" />
+                        Регулярные занятия
+                      </Button>
+                    }
+                  />
+                </div>
               ) : null}
             </>
           ) : undefined

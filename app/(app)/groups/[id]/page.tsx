@@ -71,7 +71,9 @@ export default async function GroupDetailPage({
             ) : (
               <ul className="divide-y text-sm">
                 {group.members.map((m) => (
-                  <li key={m.id} className="py-2">{m.full_name}</li>
+                  <li key={m.id} className="py-2">
+                    <Link href={`/students/${m.id}`} className="hover:underline">{m.full_name}</Link>
+                  </li>
                 ))}
               </ul>
             )}

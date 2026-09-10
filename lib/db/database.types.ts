@@ -522,6 +522,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      group_messages: {
+        Row: {
+          id: string;
+          group_id: string;
+          sender_id: string;
+          body: string | null;
+          attachment_url: string | null;
+          attachment_name: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          sender_id: string;
+          body?: string | null;
+          attachment_url?: string | null;
+          attachment_name?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          sender_id?: string;
+          body?: string | null;
+          attachment_url?: string | null;
+          attachment_name?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       assistant_groups: {
         Row: { assistant_id: string; group_id: string };
         Insert: { assistant_id: string; group_id: string };

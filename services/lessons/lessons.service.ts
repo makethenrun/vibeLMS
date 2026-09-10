@@ -96,6 +96,29 @@ export async function createLesson(db: Db, input: LessonInput): Promise<Lesson> 
   return data;
 }
 
+export interface BulkLessonRow { title: string; startTime: string; endTime: string }
+
+/** Inserts many lessons for one group (used by the recurring-lessons form). */
+export async function createLessonsBulk(
+  db: Db,
+  groupId: string,
+  meetingUrl: string | undefined,
+  rows: BulkLessonRow[],
+): Promise<number> {
+  if (rows.length === 0) return 0;
+  const insert = rows.map((r) => ({
+    title: r.title,
+    group_id: groupId,
+    start_time: toIso(r.startTime),
+    end_time: toIso(r.endTime),
+    meeting_url: normalizeMeetingUrl(meetingUrl),
+    status: "SCHEDULED" as const,
+  }));
+  const { error } = await db.from("lessons").insert(insert);
+  if (error) throw new Error(error.message);
+  return insert.length;
+}
+
 export async function updateLesson(db: Db, id: string, input: LessonInput): Promise<Lesson> {
   const { data, error } = await db
     .from("lessons")
@@ -170,11 +193,22 @@ export async function getLessonRoster(db: Db, lessonId: string): Promise<Attenda
     .in("id", studentIds)
     .order("full_name", { ascending: true });
 
-  const { data: attendance } = await db
-    .from("lesson_attendance")
-    .select("student_id")
-    .eq("lesson_id", lessonId);
-  const presentSet = new Set((attendance ?? []).map((row) => row.student_id));
+  // Who actually entered the live session linked to this lesson.
+  const { data: sess } = await db
+    .from("live_sessions")
+    .select("id")
+    .eq("lesson_id", lessonId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  let presentSet = new Set<string>();
+  if (sess) {
+    const { data: attendance } = await db
+      .from("live_session_attendance")
+      .select("student_id")
+      .eq("session_id", sess.id);
+    presentSet = new Set((attendance ?? []).map((row) => row.student_id));
+  }
 
   return (students ?? []).map((student) => ({
     studentId: student.id,

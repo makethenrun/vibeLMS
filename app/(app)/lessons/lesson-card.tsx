@@ -80,10 +80,12 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
                 <Pencil className="h-4 w-4" />
                 Редактировать
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setAttendanceOpen(true)}>
-                <UserCheck className="h-4 w-4" />
-                Присутствующие
-              </DropdownMenuItem>
+              {lesson.status === "COMPLETED" ? (
+                <DropdownMenuItem onSelect={() => setAttendanceOpen(true)}>
+                  <UserCheck className="h-4 w-4" />
+                  Кто был
+                </DropdownMenuItem>
+              ) : null}
               {lesson.status !== "COMPLETED" ? (
                 <DropdownMenuItem
                   onSelect={(event) => {
