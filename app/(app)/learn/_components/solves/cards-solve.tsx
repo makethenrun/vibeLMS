@@ -14,12 +14,23 @@ import type { Json } from "@/types";
 import { ScoreBadge } from "../score-badge";
 import { useSubmit } from "../use-submit";
 
-// Card-face font sizes for the WORDS mode. Latin/Cyrillic use the normal size;
-// hanzi (CJK ideographs) use "Крупный" — 4rem vs the normal text-2xl (1.5rem)
-// so a single character fills the card.
-const CARD_FACE_NORMAL = "text-[4rem] leading-none";
-const CARD_FACE_HANZI = "text-[4rem] leading-none"; // «Крупный» — 4rem, только для иероглифов
-const HANZI_RE = /[㐀-鿿豈-﫿]/;
+// Adaptive card-face font size: the more text, the smaller the size, so a
+// word or a whole sentence both fit the card. CJK glyphs are wider, so they
+// count extra toward the effective length. Returns a px size.
+const HANZI_G = /[㐀-鿿豈-﫿]/g;
+function cardFaceSize(text: string): number {
+  const t = (text ?? "").trim();
+  if (!t) return 24;
+  const cjk = (t.match(HANZI_G) ?? []).length;
+  const len = t.length + cjk; // each hanzi counts twice (wider glyph)
+  if (len <= 2) return 64;
+  if (len <= 4) return 48;
+  if (len <= 8) return 36;
+  if (len <= 14) return 28;
+  if (len <= 22) return 22;
+  if (len <= 34) return 18;
+  return 15;
+}
 
 function randomPick(n: number, count: number): number[] {
   const idx = Array.from({ length: n }, (_, i) => i);
@@ -90,7 +101,7 @@ export function CardsSolve({
         >
           <span className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-2xl border bg-card p-4 text-center [backface-visibility:hidden]">
             {textFront ? (
-              <span className={cn("font-semibold", HANZI_RE.test(card.answer) ? CARD_FACE_HANZI : CARD_FACE_NORMAL)}>
+              <span className="font-semibold leading-tight" style={{ fontSize: cardFaceSize(card.answer) }}>
                 <FormattedText text={card.answer} />
               </span>
             ) : card.imageUrl ? (
@@ -103,7 +114,7 @@ export function CardsSolve({
               <RotateCw className="h-3 w-3" /> {backLabel}
             </span>
           </span>
-          <span className={cn("absolute inset-0 flex items-center justify-center rounded-2xl border bg-muted/40 p-4 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]", textFront ? "text-[2.5rem] font-semibold leading-none" : "text-sm")}>
+          <span className={cn("absolute inset-0 flex items-center justify-center rounded-2xl border bg-muted/40 p-4 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]", textFront ? "font-semibold leading-tight" : "text-sm")} style={textFront ? { fontSize: cardFaceSize(card.hint) } : undefined}>
             {card.hint ? <FormattedText text={card.hint} /> : <span className="text-sm text-muted-foreground">{textFront ? "Перевода нет" : "Подсказки нет"}</span>}
           </span>
         </button>
