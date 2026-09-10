@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/shared/loading-button";
+import { LiveDrawingOverlay } from "@/components/shared/live-drawing-overlay";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
 import { cn } from "@/lib/utils";
@@ -406,8 +407,7 @@ export function SessionConsole({
                                   <div className="relative">
                                     <StudentItem item={item} submission={sub} drawingOverride={null} />
                                     {watchDrawings[id] ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={watchDrawings[id]} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
+                                      <LiveDrawingOverlay src={watchDrawings[id]} className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
                                     ) : null}
                                   </div>
                                   {item.type === "FREE" && sub ? (

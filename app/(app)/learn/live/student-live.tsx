@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import type { ItemRow, ItemSubmissionRow } from "@/types";
 import type { SessionState } from "@/services/materials/live-session.service";
+import { LiveDrawingOverlay } from "@/components/shared/live-drawing-overlay";
 import { pollStudentSessionAction, raiseHandAction, saveStudentDrawingAction } from "@/app/(app)/live/actions";
 import { StudentItem } from "../_components/student-item";
 
@@ -138,9 +139,8 @@ export function StudentLive({
                 drawStartActive={false}
               />
               {tutorDrawings[item.id] ? (
-                // Live tutor drawing overlay (read-only).
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={tutorDrawings[item.id]} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
+                // Live tutor drawing overlay (read-only, flicker-free swap).
+                <LiveDrawingOverlay src={tutorDrawings[item.id]} className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
               ) : null}
             </div>
           ))}
