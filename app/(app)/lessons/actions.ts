@@ -12,11 +12,17 @@ import {
   createLessonsBulk,
   deleteLesson,
   deleteLessonSeries,
+  deleteLessonSeriesById,
   getLessonRoster,
+  getSeriesEditData,
+  listLessonSeries,
   setLessonAttendance,
   setLessonStatus,
   updateLesson,
+  updateLessonSeries,
   type BulkLessonRow,
+  type LessonSeriesSummary,
+  type SeriesEditData,
 } from "@/services/lessons/lessons.service";
 import type { AttendanceRosterItem } from "@/types";
 
@@ -131,6 +137,67 @@ export async function deleteLessonSeriesAction(id: string): Promise<ActionResult
   const db = createServerSupabaseClient();
   try {
     const count = await deleteLessonSeries(db, id);
+    revalidatePath("/lessons");
+    revalidatePath("/dashboard");
+    return ok({ count });
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
+export async function listLessonSeriesAction(): Promise<ActionResult<{ series: LessonSeriesSummary[] }>> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    return ok({ series: await listLessonSeries(db) });
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
+export async function getSeriesEditDataAction(seriesId: string): Promise<ActionResult<SeriesEditData>> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    return ok(await getSeriesEditData(db, seriesId));
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
+export async function updateLessonSeriesAction(
+  title: string,
+  meetingUrl: string | undefined,
+  rows: { id: string; startTime: string; endTime: string }[],
+): Promise<ActionResult<{ count: number }>> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  if (title.trim().length < 2) return fail("Название: минимум 2 символа");
+  if (!Array.isArray(rows) || rows.length === 0) return fail("Нет занятий для обновления");
+  if (rows.length > 500) return fail("Слишком много занятий");
+  for (const r of rows) {
+    if (Number.isNaN(Date.parse(r.startTime)) || Number.isNaN(Date.parse(r.endTime))) return fail("Некорректные даты");
+    if (Date.parse(r.endTime) <= Date.parse(r.startTime)) return fail("Окончание должно быть позже начала");
+  }
+  const db = createServerSupabaseClient();
+  try {
+    const count = await updateLessonSeries(db, title.trim(), meetingUrl, rows);
+    revalidatePath("/lessons");
+    revalidatePath("/dashboard");
+    return ok({ count });
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
+export async function deleteLessonSeriesByIdAction(seriesId: string): Promise<ActionResult<{ count: number }>> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  const db = createServerSupabaseClient();
+  try {
+    const count = await deleteLessonSeriesById(db, seriesId);
     revalidatePath("/lessons");
     revalidatePath("/dashboard");
     return ok({ count });
