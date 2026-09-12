@@ -4,12 +4,13 @@
  */
 export const AUTH_ROUTES = ["/login", "/register"] as const;
 
+// Paths students may not open. (/payments is intentionally excluded — students
+// have their own payments view; role access is enforced by the page itself.)
 export const TUTOR_ONLY_PREFIXES = [
   "/students",
   "/assistants",
   "/groups",
   "/materials",
-  "/payments",
   "/statistics",
   "/settings",
 ] as const;
