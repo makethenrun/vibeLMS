@@ -15,7 +15,7 @@ const KEYS: { label: string; char: string }[] = [
   { label: "◌̀", char: "̀" },
 ];
 
-function insertAtCaret(text: string) {
+export function insertAtCaret(text: string) {
   const el = document.activeElement as HTMLElement | null;
   if (!el) return;
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
