@@ -91,22 +91,18 @@
   }
 }
 
-/* Pinyin ruby: the annotation (data-pinyin) is stacked above its base text.
-   Used by the INFO rich-text mark (components/editor/pinyin-mark.ts). */
+/* Pinyin ruby: native <ruby>/<rt> renders the annotation above its base text
+   and grows the line box to fit it. Used by the INFO rich-text mark
+   (components/editor/pinyin-mark.ts). */
 ruby.pinyin-ruby {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  vertical-align: baseline;
-  line-height: 1.15;
-  margin: 0 1px;
+  ruby-position: over;
+  ruby-align: center;
 }
-ruby.pinyin-ruby::before {
-  content: attr(data-pinyin);
+ruby.pinyin-ruby > rt.pinyin-rt {
   font-size: 0.6em;
   line-height: 1.1;
   color: inherit;
   opacity: 0.85;
-  white-space: nowrap;
-  margin-bottom: 1px;
+  text-align: center;
+  user-select: none;
 }
