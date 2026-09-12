@@ -10,6 +10,8 @@ import FontFamily from "@tiptap/extension-font-family";
 
 import { cn } from "@/lib/utils";
 import { RichTextToolbar } from "./rich-text-toolbar";
+import { Pinyin } from "./pinyin-mark";
+import { PinyinSelection } from "./pinyin-selection";
 
 interface RichTextEditorProps {
   value: Record<string, unknown>;
@@ -26,6 +28,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
       Image,
       TextStyle,
       FontFamily,
+      Pinyin,
     ],
     content: value as JSONContent,
     editorProps: {
@@ -55,6 +58,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
     <div className={cn("rounded-md border", className)}>
       <RichTextToolbar editor={editor} />
       <EditorContent editor={editor} />
+      <PinyinSelection editor={editor} />
     </div>
   );
 }
