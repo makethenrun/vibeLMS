@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { FormattedText } from "@/components/shared/formatted-text";
+import { ImageZoom } from "@/components/shared/image-zoom";
 import { cn } from "@/lib/utils";
 import { feedbackClass, isCorrect } from "@/lib/materials/answer-check";
 import type { CardsContent } from "@/lib/validators";
@@ -92,7 +93,10 @@ export function CardsSolve({
       </div>
 
       {/* Flip card: image on the front, hint on the back */}
-      <div className="mx-auto w-full max-w-sm [perspective:1000px]">
+      <div className="relative mx-auto w-full max-w-sm [perspective:1000px]">
+        {!textFront && card.imageUrl && !flipped ? (
+          <ImageZoom src={card.imageUrl} inline className="absolute right-1 top-1 z-20" />
+        ) : null}
         <button
           type="button"
           onClick={() => setFlipped((f) => !f)}
