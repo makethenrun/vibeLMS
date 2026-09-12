@@ -793,6 +793,30 @@ export interface Database {
         };
         Relationships: [];
       };
+      lesson_adjustments: {
+        Row: {
+          id: string;
+          student_id: string;
+          delta: number;
+          comment: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          delta: number;
+          comment?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          delta?: number;
+          comment?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       settings: {
         Row: {
           id: string;

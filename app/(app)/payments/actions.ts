@@ -6,7 +6,7 @@ import { getManagerOrNull, getStudentOrNull, getTutorOrNull } from "@/lib/auth/g
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { paymentSchema, studentPaymentSchema, type PaymentInput, type StudentPaymentInput } from "@/lib/validators";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
-import { createPayment, createStudentPayment, deletePayment, setPaymentStatus } from "@/services/payments/payments.service";
+import { addLessonAdjustment, createPayment, createStudentPayment, deletePayment, setPaymentStatus } from "@/services/payments/payments.service";
 
 export async function createPaymentAction(input: PaymentInput): Promise<ActionResult> {
   const tutor = await getTutorOrNull();
@@ -58,6 +58,26 @@ export async function setPaymentStatusAction(id: string, status: "CONFIRMED" | "
     return fail(getErrorMessage(error));
   }
   revalidatePath("/payments");
+  return ok();
+}
+
+/** Tutor/administrator manually adjusts a student's lesson balance (credit/debit). */
+export async function addLessonAdjustmentAction(studentId: string, delta: number): Promise<ActionResult> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  if (!studentId) return fail("Не выбран ученик");
+  if (!Number.isInteger(delta) || delta === 0) return fail("Введите целое число занятий");
+  if (Math.abs(delta) > 1000) return fail("Слишком большое значение");
+
+  const db = createServerSupabaseClient();
+  try {
+    await addLessonAdjustment(db, studentId, delta);
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+
+  revalidatePath("/payments");
+  revalidatePath(`/students/${studentId}`);
   return ok();
 }
 
