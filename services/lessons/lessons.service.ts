@@ -121,6 +121,110 @@ export async function createLessonsBulk(
   return insert.length;
 }
 
+export interface LessonSeriesSummary {
+  seriesId: string;
+  groupName: string;
+  title: string;
+  count: number;
+  firstStart: string;
+  lastStart: string;
+}
+
+/** Recurring series that still have upcoming lessons, for the manage dialog. */
+export async function listLessonSeries(db: Db): Promise<LessonSeriesSummary[]> {
+  const now = new Date().toISOString();
+  const { data } = await db
+    .from("lessons")
+    .select("series_id, group_id, title, start_time")
+    .not("series_id", "is", null)
+    .gte("start_time", now)
+    .order("start_time", { ascending: true });
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const groupIds = [...new Set(rows.map((r) => r.group_id))];
+  const { data: groups } = await db.from("groups").select("id, name").in("id", groupIds);
+  const nameById = new Map((groups ?? []).map((g) => [g.id, g.name] as const));
+
+  const bySeries = new Map<string, LessonSeriesSummary>();
+  for (const r of rows) {
+    const sid = r.series_id as string;
+    const existing = bySeries.get(sid);
+    if (!existing) {
+      bySeries.set(sid, {
+        seriesId: sid,
+        groupName: nameById.get(r.group_id) ?? "—",
+        title: r.title,
+        count: 1,
+        firstStart: r.start_time,
+        lastStart: r.start_time,
+      });
+    } else {
+      existing.count += 1;
+      existing.lastStart = r.start_time;
+    }
+  }
+  return [...bySeries.values()];
+}
+
+export interface SeriesEditData {
+  title: string;
+  meetingUrl: string | null;
+  lessons: { id: string; start_time: string; end_time: string }[];
+}
+
+/** Upcoming lessons of a series plus the shared title/link, for editing. */
+export async function getSeriesEditData(db: Db, seriesId: string): Promise<SeriesEditData> {
+  const now = new Date().toISOString();
+  const { data } = await db
+    .from("lessons")
+    .select("id, title, meeting_url, start_time, end_time")
+    .eq("series_id", seriesId)
+    .gte("start_time", now)
+    .order("start_time", { ascending: true });
+  const lessons = data ?? [];
+  return {
+    title: lessons[0]?.title ?? "",
+    meetingUrl: lessons[0]?.meeting_url ?? null,
+    lessons: lessons.map((l) => ({ id: l.id, start_time: l.start_time, end_time: l.end_time })),
+  };
+}
+
+/** Applies title/link/time to each given lesson of a series. */
+export async function updateLessonSeries(
+  db: Db,
+  title: string,
+  meetingUrl: string | undefined,
+  rows: { id: string; startTime: string; endTime: string }[],
+): Promise<number> {
+  for (const r of rows) {
+    const { error } = await db
+      .from("lessons")
+      .update({
+        title,
+        meeting_url: normalizeMeetingUrl(meetingUrl),
+        start_time: toIso(r.startTime),
+        end_time: toIso(r.endTime),
+      })
+      .eq("id", r.id);
+    if (error) throw new Error(error.message);
+  }
+  return rows.length;
+}
+
+/** Deletes all upcoming lessons of a whole series (by series id). */
+export async function deleteLessonSeriesById(db: Db, seriesId: string): Promise<number> {
+  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from("lessons")
+    .delete()
+    .eq("series_id", seriesId)
+    .gte("start_time", now)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length;
+}
+
 /**
  * Deletes a recurring series from the given lesson onward (this lesson and every
  * later lesson sharing its series). A one-off lesson deletes just itself.

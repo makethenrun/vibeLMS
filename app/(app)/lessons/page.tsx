@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -18,6 +18,7 @@ import { listSessionHistory, type SessionHistoryRow } from "@/services/materials
 import type { LessonWithGroup } from "@/types";
 import { LessonDialog } from "./lesson-dialog";
 import { RecurringLessonDialog } from "./recurring-lesson-dialog";
+import { ManageRecurringDialog } from "./manage-recurring-dialog";
 import { SessionHistory } from "./session-history";
 import { StartSessionDialog } from "./start-session-dialog";
 import { WeekCalendar } from "./week-calendar";
@@ -109,6 +110,14 @@ export default async function LessonsPage({
                     trigger={
                       <Button variant="outline" className="w-full">
                         <Plus className="h-4 w-4" />
+                        Регулярные занятия
+                      </Button>
+                    }
+                  />
+                  <ManageRecurringDialog
+                    trigger={
+                      <Button variant="outline" className="w-full">
+                        <Pencil className="h-4 w-4" />
                         Регулярные занятия
                       </Button>
                     }
