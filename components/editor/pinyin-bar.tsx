@@ -82,8 +82,8 @@ export function PinyinBar() {
         variant={open ? "default" : "outline"}
         className="h-11 w-11 rounded-full shadow-lg"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Пиньинь"
-        title="Пиньинь: ü и тоновые знаки"
+        aria-label="Транскрипция"
+        title="Транскрипция: ü и тоновые знаки"
       >
         {open ? <X className="h-5 w-5" /> : <Languages className="h-5 w-5" />}
       </Button>

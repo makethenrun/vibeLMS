@@ -15,7 +15,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   groups: "Группы",
   lessons: "Занятия",
   materials: "Материалы",
-  homework: "Дополнительные задания",
+  homework: "Доп задания",
   payments: "Оплаты",
   statistics: "Статистика",
   settings: "Настройки",

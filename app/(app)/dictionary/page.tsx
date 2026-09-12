@@ -46,7 +46,7 @@ export default async function DictionaryPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Слово</TableHead>
-              <TableHead>Пиньинь</TableHead>
+              <TableHead>Транскрипция</TableHead>
               <TableHead>Перевод</TableHead>
               <TableHead>Заметка</TableHead>
               <TableHead className="text-right">Действия</TableHead>
