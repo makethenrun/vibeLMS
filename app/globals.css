@@ -90,3 +90,23 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* Pinyin ruby: the annotation (data-pinyin) is stacked above its base text.
+   Used by the INFO rich-text mark (components/editor/pinyin-mark.ts). */
+ruby.pinyin-ruby {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: baseline;
+  line-height: 1.15;
+  margin: 0 1px;
+}
+ruby.pinyin-ruby::before {
+  content: attr(data-pinyin);
+  font-size: 0.6em;
+  line-height: 1.1;
+  color: inherit;
+  opacity: 0.85;
+  white-space: nowrap;
+  margin-bottom: 1px;
+}
