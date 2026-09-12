@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { Languages } from "lucide-react";
+import { Languages, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 interface Pos {
   top: number;
   left: number;
+  annotated: boolean;
 }
 
 /**
@@ -30,7 +31,11 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
       }
       const start = view.coordsAtPos(from);
       const end = view.coordsAtPos(to);
-      setPos({ top: start.top - 44, left: (start.left + end.right) / 2 });
+      setPos({
+        top: start.top - 44,
+        left: (start.left + end.right) / 2,
+        annotated: editor.isActive("pinyin"),
+      });
     }
 
     editor.on("selectionUpdate", update);
@@ -45,7 +50,7 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
 
   function apply() {
     const current = (editor.getAttributes("pinyin").pinyin as string) ?? "";
-    const input = window.prompt("Пиньинь над текстом (пусто — убрать):", current);
+    const input = window.prompt("Текст над выделением (пусто — убрать):", current);
     if (input === null) return;
     const pinyin = input.trim();
     if (pinyin) editor.chain().focus().setPinyin(pinyin).run();
@@ -53,16 +58,27 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
     setPos(null);
   }
 
+  function remove() {
+    editor.chain().focus().unsetPinyin().run();
+    setPos(null);
+  }
+
   return (
     <div
-      className="fixed z-50 -translate-x-1/2"
+      className="fixed z-50 flex -translate-x-1/2 gap-1"
       style={{ top: pos.top, left: pos.left }}
       onMouseDown={(e) => e.preventDefault()}
     >
       <Button size="sm" className="shadow-md" onClick={apply}>
         <Languages className="h-4 w-4" />
-        Добавить над
+        {pos.annotated ? "Изменить над" : "Добавить над"}
       </Button>
+      {pos.annotated ? (
+        <Button size="sm" variant="secondary" className="shadow-md" onClick={remove}>
+          <X className="h-4 w-4" />
+          Убрать над
+        </Button>
+      ) : null}
     </div>
   );
 }
