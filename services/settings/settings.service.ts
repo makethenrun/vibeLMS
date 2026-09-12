@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS: Settings = {
   id: "",
   organization_name: "pLMS",
   logo_url: null,
+  enabled_keyboards: ["ipa"],
   created_at: new Date(0).toISOString(),
 };
 
@@ -27,6 +28,7 @@ export async function updateSettings(db: Db, input: SettingsInput): Promise<Sett
   const payload = {
     organization_name: input.organizationName,
     logo_url: input.logoUrl && input.logoUrl.trim() !== "" ? input.logoUrl.trim() : null,
+    enabled_keyboards: input.enabledKeyboards as unknown as Settings["enabled_keyboards"],
   };
 
   if (existing.id) {

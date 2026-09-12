@@ -20,6 +20,7 @@ export default async function SettingsPage() {
   const defaults: SettingsInput = {
     organizationName: settings.organization_name,
     logoUrl: settings.logo_url ?? "",
+    enabledKeyboards: Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : [],
   };
 
   return (

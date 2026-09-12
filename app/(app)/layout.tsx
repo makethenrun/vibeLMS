@@ -5,7 +5,7 @@ import { getSettings } from "@/services/settings/settings.service";
 import { getLiveIndicator } from "@/services/materials/live-session.service";
 import { AddToDictionary } from "./dictionary/add-to-dictionary";
 import { PinyinBar } from "@/components/editor/pinyin-bar";
-import { IpaBar } from "@/components/editor/ipa-bar";
+import { ExtraKeyboards } from "@/components/editor/extra-keyboards";
 import { FormatBar } from "@/components/editor/format-bar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AddToDictionary />
       <PinyinBar />
       <FormatBar />
-      <IpaBar />
+      <ExtraKeyboards enabled={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />
     </AppShell>
   );
 }
