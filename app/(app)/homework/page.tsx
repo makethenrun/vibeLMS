@@ -30,7 +30,7 @@ import type { StudentHomeworkItem } from "@/types";
 import { HomeworkActions } from "./homework-actions";
 import { HomeworkDialog } from "./homework-dialog";
 
-export const metadata: Metadata = { title: "Дополнительные задания" };
+export const metadata: Metadata = { title: "Доп задания" };
 
 function StudentSubmissionBadge({ item }: { item: StudentHomeworkItem }) {
   if (!item.submission) return <Badge variant="outline">Не сдано</Badge>;
@@ -79,7 +79,7 @@ export default async function HomeworkPage({
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Дополнительные задания"
+          title="Доп задания"
           description="Задания и тесты, привязанные к занятиям."
           actions={
             lessons.length > 0 ? (
@@ -199,7 +199,7 @@ export default async function HomeworkPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Дополнительные задания" description="Ваши задания и тесты." />
+      <PageHeader title="Доп задания" description="Ваши задания и тесты." />
 
       <div className="flex flex-wrap items-center gap-2">
         {tabs.map((tab) => (

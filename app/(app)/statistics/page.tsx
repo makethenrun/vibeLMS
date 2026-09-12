@@ -87,7 +87,7 @@ export default async function StatisticsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Дополнительные задания</h2>
+        <h2 className="text-sm font-medium text-muted-foreground">Доп задания</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Всего заданий" value={stats.totalHomework} icon={ClipboardList} />
           <StatCard label="Выполнено" value={stats.submittedHomework} icon={CheckCircle2} />

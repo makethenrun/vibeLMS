@@ -57,7 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Обучение", href: "/learn", icon: GraduationCap, roles: STUDENT_ONLY },
   { label: "Файлы", href: "/files", icon: FileText, roles: ALL },
   { label: "Словарь", href: "/dictionary", icon: BookA, roles: ALL },
-  { label: "Дополнительные задания", href: "/homework", icon: ClipboardList, roles: BOTH },
+  { label: "Доп задания", href: "/homework", icon: ClipboardList, roles: BOTH },
   { label: "Оплаты", href: "/payments", icon: Wallet, roles: ["TUTOR", "ADMINISTRATOR", "STUDENT"] },
   { label: "Статистика", href: "/statistics", icon: BarChart3, roles: TUTOR_ONLY },
   { label: "Настройки", href: "/settings", icon: Settings, roles: MANAGER },

@@ -98,7 +98,7 @@ export function EntryDialog({
             )} />
             <FormField control={form.control} name="pinyin" render={({ field }) => (
               <FormItem>
-                <FormLabel>Пиньинь (необязательно)</FormLabel>
+                <FormLabel>Транскрипция (необязательно)</FormLabel>
                 <FormControl><Input placeholder="xièxie" {...field} /></FormControl>
                 <PinyinKeys className="pt-1" />
                 <FormMessage />

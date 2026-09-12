@@ -6,11 +6,12 @@ import { Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Small expand button placed in the corner of an image's (relative) container.
- * Clicking it opens the image full-screen. Stops pointer/click propagation so it
- * never triggers the surrounding exercise (drag, select, card flip, …).
+ * Expand button that opens the image full-screen. By default it's an overlay in
+ * the corner of the image's (relative) container; pass `inline` to render it as a
+ * standalone button (e.g. in the gutter beside the image). Stops pointer/click
+ * propagation so it never triggers the surrounding exercise (drag, card flip, …).
  */
-export function ImageZoom({ src, className }: { src: string; className?: string }) {
+export function ImageZoom({ src, className, inline = false }: { src: string; className?: string; inline?: boolean }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,12 @@ export function ImageZoom({ src, className }: { src: string; className?: string 
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen(true); }}
-        className={cn("absolute right-1 top-1 z-20 rounded-md bg-black/50 p-1 text-white hover:bg-black/70", className)}
+        className={cn(
+          inline
+            ? "rounded-md border bg-background p-1.5 text-muted-foreground hover:bg-accent"
+            : "absolute right-1 top-1 z-20 rounded-md bg-black/50 p-1 text-white hover:bg-black/70",
+          className,
+        )}
         aria-label="Увеличить"
         title="Увеличить"
       >

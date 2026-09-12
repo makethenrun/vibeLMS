@@ -87,31 +87,33 @@ export function ImageAnnotate({
 
   return (
     <div className="space-y-2 text-center">
-      <div ref={wrapRef} className="relative inline-block max-w-full text-left">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt={caption ?? ""} onLoad={resize} className="block max-h-80 rounded-lg border" />
-        {annotations ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={annotations} alt="" className="pointer-events-none absolute inset-0 h-full w-full" />
-        ) : null}
-        {labels.map((l, i) => (
-          <span
-            key={i}
-            style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${(l.opacity ?? 100) / 100})`, fontSize: `${l.size ?? 16}px` }}
-            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded px-1.5 py-0.5 font-semibold leading-tight text-black shadow-sm"
-          >
-            <FormattedText text={l.text} />
-          </span>
-        ))}
-        <ImageZoom src={url} />
-        <canvas
-          ref={canvasRef}
-          className={cn("absolute inset-0 h-full w-full touch-none", draw ? "cursor-crosshair" : "pointer-events-none")}
-          onPointerDown={down}
-          onPointerMove={move}
-          onPointerUp={stop}
-          onPointerLeave={stop}
-        />
+      <div className="flex items-start justify-center gap-1">
+        <div ref={wrapRef} className="relative inline-block max-w-full text-left">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={caption ?? ""} onLoad={resize} className="block max-h-80 rounded-lg border" />
+          {annotations ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={annotations} alt="" className="pointer-events-none absolute inset-0 h-full w-full" />
+          ) : null}
+          {labels.map((l, i) => (
+            <span
+              key={i}
+              style={{ left: `${l.x}%`, top: `${l.y}%`, backgroundColor: `rgba(255,255,255,${(l.opacity ?? 100) / 100})`, fontSize: `${l.size ?? 16}px` }}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded px-1.5 py-0.5 font-semibold leading-tight text-black shadow-sm"
+            >
+              <FormattedText text={l.text} />
+            </span>
+          ))}
+          <canvas
+            ref={canvasRef}
+            className={cn("absolute inset-0 h-full w-full touch-none", draw ? "cursor-crosshair" : "pointer-events-none")}
+            onPointerDown={down}
+            onPointerMove={move}
+            onPointerUp={stop}
+            onPointerLeave={stop}
+          />
+        </div>
+        <ImageZoom src={url} inline />
       </div>
       {caption ? <p className="text-sm text-muted-foreground"><FormattedText text={caption} /></p> : null}
       <div className="flex flex-wrap items-center justify-center gap-2">

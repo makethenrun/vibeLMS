@@ -407,7 +407,7 @@ export function ItemCard({
                 />
                 <Input
                   className="h-8"
-                  placeholder="пиньинь"
+                  placeholder="транскрипция"
                   value={v.pinyin}
                   onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, pinyin: e.target.value } : x)))}
                   onBlur={() => saveMeta({ vocab })}
