@@ -791,18 +791,21 @@ export interface Database {
           id: string;
           organization_name: string;
           logo_url: string | null;
+          enabled_keyboards: Json;
           created_at: string;
         };
         Insert: {
           id?: string;
           organization_name?: string;
           logo_url?: string | null;
+          enabled_keyboards?: Json;
           created_at?: string;
         };
         Update: {
           id?: string;
           organization_name?: string;
           logo_url?: string | null;
+          enabled_keyboards?: Json;
           created_at?: string;
         };
         Relationships: [];

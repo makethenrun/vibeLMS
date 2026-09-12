@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { applyFieldErrors } from "@/lib/utils/form";
 import { settingsSchema, type SettingsInput } from "@/lib/validators";
+import { EXTRA_KEYBOARDS } from "@/lib/keyboards";
 import { updateSettingsAction } from "./actions";
 
 export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
@@ -76,6 +77,35 @@ export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
                   <FormDescription>
                     Ссылка на изображение, которое будет показано в боковой панели.
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="enabledKeyboards"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Дополнительные клавиатуры</FormLabel>
+                  <div className="space-y-1">
+                    {EXTRA_KEYBOARDS.map((kb) => {
+                      const enabled = (field.value ?? []).includes(kb.id);
+                      return (
+                        <label key={kb.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={enabled}
+                            onChange={(e) => {
+                              const current = field.value ?? [];
+                              field.onChange(e.target.checked ? [...current, kb.id] : current.filter((id) => id !== kb.id));
+                            }}
+                          />
+                          {kb.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <FormDescription>Кнопка доп. клавиатуры и выбор конкретной появятся, если включена хотя бы одна.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
