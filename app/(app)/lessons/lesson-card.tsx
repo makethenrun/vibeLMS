@@ -27,7 +27,7 @@ import {
 import type { LessonStatus } from "@/lib/db/database.types";
 import { formatTime } from "@/lib/utils";
 import type { LessonWithGroup } from "@/types";
-import { deleteLessonAction, setLessonStatusAction } from "./actions";
+import { deleteLessonAction, deleteLessonSeriesAction, setLessonStatusAction } from "./actions";
 import { AttendanceDialog } from "./attendance-dialog";
 import { LessonDialog } from "./lesson-dialog";
 
@@ -46,6 +46,7 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [seriesDeleteOpen, setSeriesDeleteOpen] = useState(false);
   const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -129,6 +130,18 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
                 <Trash2 className="h-4 w-4" />
                 Удалить
               </DropdownMenuItem>
+              {lesson.series_id ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    setSeriesDeleteOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Удалить серию
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
@@ -167,6 +180,16 @@ export function LessonCard({ lesson, isTutor, groups }: LessonCardProps) {
             variant="destructive"
             successMessage="Занятие удалено"
             action={deleteLessonAction.bind(null, lesson.id)}
+          />
+          <ConfirmDialog
+            open={seriesDeleteOpen}
+            onOpenChange={setSeriesDeleteOpen}
+            title="Удалить всю серию?"
+            description="Это занятие и все последующие занятия этой регулярной серии будут удалены."
+            confirmLabel="Удалить серию"
+            variant="destructive"
+            successMessage="Серия удалена"
+            action={() => deleteLessonSeriesAction(lesson.id)}
           />
           <AttendanceDialog
             lessonId={lesson.id}

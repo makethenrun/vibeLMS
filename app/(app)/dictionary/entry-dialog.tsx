@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { applyFieldErrors } from "@/lib/utils/form";
+import { PinyinKeys } from "@/components/editor/pinyin-bar";
 import { dictionaryEntrySchema, type DictionaryEntryInput } from "@/lib/validators";
 import type { DictionaryEntry } from "@/types";
 import { createEntryAction, updateEntryAction } from "./actions";
@@ -99,6 +100,7 @@ export function EntryDialog({
               <FormItem>
                 <FormLabel>Пиньинь (необязательно)</FormLabel>
                 <FormControl><Input placeholder="xièxie" {...field} /></FormControl>
+                <PinyinKeys className="pt-1" />
                 <FormMessage />
               </FormItem>
             )} />

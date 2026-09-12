@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Languages, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // ü and the four combining tone marks (attach to the preceding vowel).
 const KEYS: { label: string; char: string }[] = [
@@ -29,6 +30,29 @@ function insertAtCaret(text: string) {
   } else if (el.isContentEditable) {
     document.execCommand("insertText", false, text);
   }
+}
+
+/**
+ * Inline ü + tone-mark buttons for placing next to a specific field (e.g. inside
+ * a modal, where the floating bar is covered by the dialog overlay). Inserts the
+ * mark at the caret of the currently focused input without stealing focus.
+ */
+export function PinyinKeys({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1", className)} onMouseDown={(e) => e.preventDefault()}>
+      {KEYS.map((k) => (
+        <button
+          key={k.label}
+          type="button"
+          title={k.label === "ü" ? "ü" : "Тоновый знак"}
+          onClick={() => insertAtCaret(k.char)}
+          className="h-8 min-w-8 rounded-md border bg-background px-2 text-sm hover:bg-accent"
+        >
+          {k.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** Floating pinyin helper available in any text field (both roles). */
