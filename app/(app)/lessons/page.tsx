@@ -37,6 +37,7 @@ export default async function LessonsPage({
 
   const db = createServerSupabaseClient();
   const isTutor = user.role === "TUTOR";
+  const isManager = isTutor || user.role === "ADMINISTRATOR";
 
   let groups: { id: string; name: string }[] = [];
   let lessons: LessonWithGroup[] = [];
@@ -88,10 +89,10 @@ export default async function LessonsPage({
         title="Занятия"
         description={rangeLabel}
         actions={
-          isStaff ? (
+          isStaff || isManager ? (
             <>
-              <StartSessionDialog groups={sessionGroups} materials={sessionMaterials} />
-              {isTutor ? (
+              {isStaff ? <StartSessionDialog groups={sessionGroups} materials={sessionMaterials} /> : null}
+              {isManager ? (
                 <div className="flex flex-col gap-2">
                   <LessonDialog
                     mode="create"
@@ -138,7 +139,7 @@ export default async function LessonsPage({
       <WeekCalendar
         weekStartISO={weekStart.toISOString()}
         lessons={lessons}
-        isTutor={isTutor}
+        isTutor={isManager}
         groups={groups}
       />
 

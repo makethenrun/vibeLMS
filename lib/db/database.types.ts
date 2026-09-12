@@ -174,6 +174,7 @@ export interface Database {
           end_time: string;
           meeting_url: string | null;
           status: LessonStatus;
+          series_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -184,6 +185,7 @@ export interface Database {
           end_time: string;
           meeting_url?: string | null;
           status?: LessonStatus;
+          series_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -194,6 +196,7 @@ export interface Database {
           end_time?: string;
           meeting_url?: string | null;
           status?: LessonStatus;
+          series_id?: string | null;
           created_at?: string;
         };
         Relationships: [];

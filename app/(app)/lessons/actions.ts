@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getTutorOrNull } from "@/lib/auth/guards";
+import { getManagerOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { lessonSchema, type LessonInput } from "@/lib/validators";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
@@ -11,6 +11,7 @@ import {
   createLesson,
   createLessonsBulk,
   deleteLesson,
+  deleteLessonSeries,
   getLessonRoster,
   setLessonAttendance,
   setLessonStatus,
@@ -22,7 +23,7 @@ import type { AttendanceRosterItem } from "@/types";
 const STATUSES: LessonStatus[] = ["SCHEDULED", "COMPLETED", "CANCELLED"];
 
 export async function createLessonAction(input: LessonInput): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
 
   const parsed = lessonSchema.safeParse(input);
@@ -45,7 +46,7 @@ export async function createRecurringLessonsAction(
   meetingUrl: string | undefined,
   rows: BulkLessonRow[],
 ): Promise<ActionResult<{ count: number }>> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
 
   if (!/^[0-9a-f-]{36}$/i.test(groupId)) return fail("Выберите группу");
@@ -69,7 +70,7 @@ export async function createRecurringLessonsAction(
 }
 
 export async function updateLessonAction(id: string, input: LessonInput): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
 
   const parsed = lessonSchema.safeParse(input);
@@ -91,7 +92,7 @@ export async function setLessonStatusAction(
   id: string,
   status: LessonStatus,
 ): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
   if (!STATUSES.includes(status)) return fail("Некорректный статус");
 
@@ -108,7 +109,7 @@ export async function setLessonStatusAction(
 }
 
 export async function deleteLessonAction(id: string): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
 
   const db = createServerSupabaseClient();
@@ -123,10 +124,25 @@ export async function deleteLessonAction(id: string): Promise<ActionResult> {
   return ok();
 }
 
+export async function deleteLessonSeriesAction(id: string): Promise<ActionResult<{ count: number }>> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+
+  const db = createServerSupabaseClient();
+  try {
+    const count = await deleteLessonSeries(db, id);
+    revalidatePath("/lessons");
+    revalidatePath("/dashboard");
+    return ok({ count });
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
 export async function loadAttendanceAction(
   lessonId: string,
 ): Promise<ActionResult<AttendanceRosterItem[]>> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
 
   const db = createServerSupabaseClient();
@@ -142,7 +158,7 @@ export async function saveAttendanceAction(
   lessonId: string,
   presentStudentIds: string[],
 ): Promise<ActionResult> {
-  const tutor = await getTutorOrNull();
+  const tutor = await getManagerOrNull();
   if (!tutor) return fail("Недостаточно прав");
 
   const db = createServerSupabaseClient();

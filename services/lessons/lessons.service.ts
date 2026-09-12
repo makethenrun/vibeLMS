@@ -106,6 +106,7 @@ export async function createLessonsBulk(
   rows: BulkLessonRow[],
 ): Promise<number> {
   if (rows.length === 0) return 0;
+  const seriesId = crypto.randomUUID();
   const insert = rows.map((r) => ({
     title: r.title,
     group_id: groupId,
@@ -113,10 +114,36 @@ export async function createLessonsBulk(
     end_time: toIso(r.endTime),
     meeting_url: normalizeMeetingUrl(meetingUrl),
     status: "SCHEDULED" as const,
+    series_id: seriesId,
   }));
   const { error } = await db.from("lessons").insert(insert);
   if (error) throw new Error(error.message);
   return insert.length;
+}
+
+/**
+ * Deletes a recurring series from the given lesson onward (this lesson and every
+ * later lesson sharing its series). A one-off lesson deletes just itself.
+ */
+export async function deleteLessonSeries(db: Db, lessonId: string): Promise<number> {
+  const { data: lesson } = await db
+    .from("lessons")
+    .select("series_id, start_time")
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (!lesson) return 0;
+  if (!lesson.series_id) {
+    await db.from("lessons").delete().eq("id", lessonId);
+    return 1;
+  }
+  const { data: removed, error } = await db
+    .from("lessons")
+    .delete()
+    .eq("series_id", lesson.series_id)
+    .gte("start_time", lesson.start_time)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (removed ?? []).length;
 }
 
 export async function updateLesson(db: Db, id: string, input: LessonInput): Promise<Lesson> {
