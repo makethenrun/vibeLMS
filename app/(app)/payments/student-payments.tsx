@@ -15,12 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type { Payment } from "@/types";
+import type { LessonBalance } from "@/services/payments/payments.service";
 import { PaymentStatusBadge } from "./payment-status-badge";
 import { createStudentPaymentAction } from "./actions";
 
-export function StudentPayments({ payments }: { payments: Payment[] }) {
+export function StudentPayments({ payments, balance }: { payments: Payment[]; balance: LessonBalance | null }) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [lessons, setLessons] = useState("");
@@ -42,6 +43,27 @@ export function StudentPayments({ payments }: { payments: Payment[] }) {
 
   return (
     <div className="space-y-6">
+      {balance ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-2 pt-6">
+            <div>
+              <p className="text-xs text-muted-foreground">Осталось занятий</p>
+              <p className={cn("text-2xl font-semibold", balance.remaining <= 0 && "text-destructive")}>
+                {balance.remaining}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Оплачено</p>
+              <p className="text-lg font-medium">{balance.paid}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Проведено</p>
+              <p className="text-lg font-medium">{balance.consumed}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Отметить оплату</CardTitle>
