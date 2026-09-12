@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getTutorOrNull } from "@/lib/auth/guards";
+import { getManagerOrNull, getStudentOrNull, getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
-import { paymentSchema, type PaymentInput } from "@/lib/validators";
+import { paymentSchema, studentPaymentSchema, type PaymentInput, type StudentPaymentInput } from "@/lib/validators";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
-import { createPayment, deletePayment } from "@/services/payments/payments.service";
+import { createPayment, createStudentPayment, deletePayment, setPaymentStatus } from "@/services/payments/payments.service";
 
 export async function createPaymentAction(input: PaymentInput): Promise<ActionResult> {
   const tutor = await getTutorOrNull();
@@ -24,6 +24,40 @@ export async function createPaymentAction(input: PaymentInput): Promise<ActionRe
 
   revalidatePath("/payments");
   revalidatePath(`/students/${parsed.data.studentId}`);
+  return ok();
+}
+
+/** Student submits a payment mark (amount + lessons) for confirmation. */
+export async function createStudentPaymentAction(input: StudentPaymentInput): Promise<ActionResult> {
+  const student = await getStudentOrNull();
+  if (!student) return fail("Недостаточно прав");
+
+  const parsed = studentPaymentSchema.safeParse(input);
+  if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
+
+  const db = createServerSupabaseClient();
+  try {
+    await createStudentPayment(db, student.studentId, parsed.data);
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+  revalidatePath("/payments");
+  return ok();
+}
+
+/** Tutor/administrator confirms or rejects a pending payment. */
+export async function setPaymentStatusAction(id: string, status: "CONFIRMED" | "REJECTED"): Promise<ActionResult> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  if (status !== "CONFIRMED" && status !== "REJECTED") return fail("Некорректный статус");
+
+  const db = createServerSupabaseClient();
+  try {
+    await setPaymentStatus(db, id, status);
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+  revalidatePath("/payments");
   return ok();
 }
 

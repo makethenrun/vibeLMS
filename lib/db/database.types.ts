@@ -12,6 +12,7 @@ export type Json =
   | Json[];
 
 export type UserRole = "TUTOR" | "STUDENT" | "ASSISTANT" | "ADMINISTRATOR";
+export type PaymentStatus = "PENDING" | "CONFIRMED" | "REJECTED";
 export type GradingMode = "STRICT" | "PARTIAL";
 export type LessonStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 export type MaterialType = "PDF" | "DOCX" | "JPG" | "PNG" | "WEBP" | "VIDEO_LINK";
@@ -764,6 +765,8 @@ export interface Database {
           id: string;
           student_id: string;
           amount: number;
+          lessons: number | null;
+          status: PaymentStatus;
           payment_date: string;
           comment: string | null;
           created_at: string;
@@ -772,6 +775,8 @@ export interface Database {
           id?: string;
           student_id: string;
           amount: number;
+          lessons?: number | null;
+          status?: PaymentStatus;
           payment_date?: string;
           comment?: string | null;
           created_at?: string;
@@ -780,6 +785,8 @@ export interface Database {
           id?: string;
           student_id?: string;
           amount?: number;
+          lessons?: number | null;
+          status?: PaymentStatus;
           payment_date?: string;
           comment?: string | null;
           created_at?: string;

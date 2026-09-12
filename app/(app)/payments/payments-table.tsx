@@ -15,6 +15,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { PaymentWithStudent } from "@/types";
 import { PaymentRowActions } from "./payment-row-actions";
+import { PaymentStatusBadge } from "./payment-status-badge";
 
 type Row = PaymentWithStudent & { studentLogin: string | null };
 
@@ -38,6 +39,8 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
               <TableHead>Дата</TableHead>
               <TableHead>Ученик</TableHead>
               <TableHead>Сумма</TableHead>
+              <TableHead>Занятий</TableHead>
+              <TableHead>Статус</TableHead>
               <TableHead className="hidden md:table-cell">Комментарий</TableHead>
               <TableHead className="w-[60px]" />
             </TableRow>
@@ -45,7 +48,7 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">Ничего не найдено.</TableCell>
+                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">Ничего не найдено.</TableCell>
               </TableRow>
             ) : (
               filtered.map((payment) => (
@@ -56,6 +59,8 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
                     {payment.studentLogin ? <span className="block text-xs text-muted-foreground">{payment.studentLogin}</span> : null}
                   </TableCell>
                   <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
+                  <TableCell>{payment.lessons ?? "—"}</TableCell>
+                  <TableCell><PaymentStatusBadge status={payment.status} /></TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">{payment.comment ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     {canManage ? <PaymentRowActions id={payment.id} /> : null}
