@@ -106,6 +106,10 @@ export function ItemCard({
   const [unnumbered, setUnnumbered] = useState(item.unnumbered);
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
   const [vocabOpen, setVocabOpen] = useState(false);
+  const [vocabBulkOpen, setVocabBulkOpen] = useState(false);
+  const [bulkTerms, setBulkTerms] = useState("");
+  const [bulkPinyin, setBulkPinyin] = useState("");
+  const [bulkTrans, setBulkTrans] = useState("");
   const [drawMode, setDrawMode] = useState(false);
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
 
@@ -425,10 +429,63 @@ export function ItemCard({
                 </Button>
               </div>
             ))}
-            <Button size="sm" variant="outline" onClick={() => setVocab((prev) => [...prev, { term: "", pinyin: "", translation: "" }])}>
-              <Plus className="h-4 w-4" />
-              Слово
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setVocab((prev) => [...prev, { term: "", pinyin: "", translation: "" }])}>
+                <Plus className="h-4 w-4" />
+                Слово
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setVocabBulkOpen((o) => !o)}>
+                {vocabBulkOpen ? "Скрыть столбики" : "Добавить столбиками"}
+              </Button>
+            </div>
+
+            {vocabBulkOpen ? (
+              <div className="space-y-2 rounded-md border bg-background/60 p-2">
+                <p className="text-xs text-muted-foreground">По одному на строку, в одном порядке во всех трёх столбиках.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Слова</label>
+                    <Textarea rows={6} value={bulkTerms} onChange={(e) => setBulkTerms(e.target.value)} placeholder={"未来\n太太\n时代"} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Транскрипция</label>
+                    <Textarea rows={6} value={bulkPinyin} onChange={(e) => setBulkPinyin(e.target.value)} placeholder={"wèilái\ntàitai\nshídài"} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Перевод</label>
+                    <Textarea rows={6} value={bulkTrans} onChange={(e) => setBulkTrans(e.target.value)} placeholder={"будущее\nгоспожа\nэпоха"} />
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const terms = bulkTerms.split("\n");
+                    const pins = bulkPinyin.split("\n");
+                    const trans = bulkTrans.split("\n");
+                    const n = Math.max(terms.length, pins.length, trans.length);
+                    const added: { term: string; pinyin: string; translation: string }[] = [];
+                    for (let i = 0; i < n; i++) {
+                      const term = (terms[i] ?? "").trim();
+                      const pinyin = (pins[i] ?? "").trim();
+                      const translation = (trans[i] ?? "").trim();
+                      if (!term && !pinyin && !translation) continue;
+                      added.push({ term, pinyin, translation });
+                    }
+                    if (added.length === 0) return;
+                    const next = [...vocab.filter((v) => v.term || v.pinyin || v.translation), ...added];
+                    setVocab(next);
+                    void saveMeta({ vocab: next });
+                    setBulkTerms("");
+                    setBulkPinyin("");
+                    setBulkTrans("");
+                    setVocabBulkOpen(false);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Добавить в список
+                </Button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </CardHeader>
