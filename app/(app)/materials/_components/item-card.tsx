@@ -445,15 +445,15 @@ export function ItemCard({
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Слова</label>
-                    <Textarea rows={6} value={bulkTerms} onChange={(e) => setBulkTerms(e.target.value)} placeholder={"未来\n太太\n时代"} />
+                    <Textarea rows={6} value={bulkTerms} onChange={(e) => setBulkTerms(e.target.value)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Транскрипция</label>
-                    <Textarea rows={6} value={bulkPinyin} onChange={(e) => setBulkPinyin(e.target.value)} placeholder={"wèilái\ntàitai\nshídài"} />
+                    <Textarea rows={6} value={bulkPinyin} onChange={(e) => setBulkPinyin(e.target.value)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Перевод</label>
-                    <Textarea rows={6} value={bulkTrans} onChange={(e) => setBulkTrans(e.target.value)} placeholder={"будущее\nгоспожа\nэпоха"} />
+                    <Textarea rows={6} value={bulkTrans} onChange={(e) => setBulkTrans(e.target.value)} />
                   </div>
                 </div>
                 <Button
