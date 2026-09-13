@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookA, Brush, ChevronDown, ChevronUp, Pin, Plus, StickyNote, Trash2 } from "lucide-react";
+import { BookA, Brush, ChevronDown, ChevronUp, Pin, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -106,10 +106,11 @@ export function ItemCard({
   const [unnumbered, setUnnumbered] = useState(item.unnumbered);
   const [noteOpen, setNoteOpen] = useState(Boolean(item.note));
   const [vocabOpen, setVocabOpen] = useState(false);
-  const [vocabBulkOpen, setVocabBulkOpen] = useState(false);
-  const [bulkTerms, setBulkTerms] = useState("");
-  const [bulkPinyin, setBulkPinyin] = useState("");
-  const [bulkTrans, setBulkTrans] = useState("");
+  // Vocab is edited as three parallel columns (one entry per line, matching
+  // order). A fully blank line is kept as a gap and shown to the student too.
+  const [bulkTerms, setBulkTerms] = useState(vocab.map((v) => v.term).join("\n"));
+  const [bulkPinyin, setBulkPinyin] = useState(vocab.map((v) => v.pinyin).join("\n"));
+  const [bulkTrans, setBulkTrans] = useState(vocab.map((v) => v.translation).join("\n"));
   const [drawMode, setDrawMode] = useState(false);
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
 
@@ -157,6 +158,28 @@ export function ItemCard({
     });
     if (result.success) router.refresh();
     else toast.error(result.error);
+  }
+
+  /** Parse the three vocab columns into rows, keeping internal blank lines as
+   *  gaps (only trailing blank rows are dropped), then persist. */
+  function saveVocabColumns() {
+    const terms = bulkTerms.split("\n");
+    const pins = bulkPinyin.split("\n");
+    const trans = bulkTrans.split("\n");
+    const n = Math.max(terms.length, pins.length, trans.length);
+    const rows: { term: string; pinyin: string; translation: string }[] = [];
+    for (let i = 0; i < n; i++) {
+      rows.push({
+        term: (terms[i] ?? "").trim(),
+        pinyin: (pins[i] ?? "").trim(),
+        translation: (trans[i] ?? "").trim(),
+      });
+    }
+    let end = rows.length;
+    while (end > 0 && !rows[end - 1].term && !rows[end - 1].pinyin && !rows[end - 1].translation) end--;
+    const next = rows.slice(0, end);
+    setVocab(next);
+    void saveMeta({ vocab: next });
   }
 
   async function togglePin(groupId: string) {
@@ -399,93 +422,27 @@ export function ItemCard({
 
         {vocabOpen ? (
           <div className="space-y-2 rounded-md bg-green-50/60 p-2">
-            <p className="text-xs font-medium text-muted-foreground">Новые слова (показываются ученику рядом с упражнением)</p>
-            {vocab.map((v, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  className="h-8"
-                  placeholder="слово"
-                  value={v.term}
-                  onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, term: e.target.value } : x)))}
-                  onBlur={() => saveMeta({ vocab })}
-                />
-                <Input
-                  className="h-8"
-                  placeholder="транскрипция"
-                  value={v.pinyin}
-                  onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, pinyin: e.target.value } : x)))}
-                  onBlur={() => saveMeta({ vocab })}
-                />
-                <Input
-                  className="h-8"
-                  placeholder="перевод"
-                  value={v.translation}
-                  onChange={(e) => setVocab((prev) => prev.map((x, j) => (j === i ? { ...x, translation: e.target.value } : x)))}
-                  onBlur={() => saveMeta({ vocab })}
-                />
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" aria-label="Удалить слово"
-                  onClick={() => { const next = vocab.filter((_, j) => j !== i); setVocab(next); void saveMeta({ vocab: next }); }}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+            <p className="text-xs font-medium text-muted-foreground">
+              Новые слова (показываются ученику рядом с упражнением). По одному на строку, в одном
+              порядке во всех трёх столбиках; пустая строка — отступ.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Слова</label>
+                <Textarea rows={6} value={bulkTerms} onChange={(e) => setBulkTerms(e.target.value)} onBlur={saveVocabColumns} />
               </div>
-            ))}
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setVocab((prev) => [...prev, { term: "", pinyin: "", translation: "" }])}>
-                <Plus className="h-4 w-4" />
-                Слово
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setVocabBulkOpen((o) => !o)}>
-                {vocabBulkOpen ? "Скрыть столбики" : "Добавить столбиками"}
-              </Button>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Транскрипция</label>
+                <Textarea rows={6} value={bulkPinyin} onChange={(e) => setBulkPinyin(e.target.value)} onBlur={saveVocabColumns} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Перевод</label>
+                <Textarea rows={6} value={bulkTrans} onChange={(e) => setBulkTrans(e.target.value)} onBlur={saveVocabColumns} />
+              </div>
             </div>
-
-            {vocabBulkOpen ? (
-              <div className="space-y-2 rounded-md border bg-background/60 p-2">
-                <p className="text-xs text-muted-foreground">По одному на строку, в одном порядке во всех трёх столбиках.</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Слова</label>
-                    <Textarea rows={6} value={bulkTerms} onChange={(e) => setBulkTerms(e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Транскрипция</label>
-                    <Textarea rows={6} value={bulkPinyin} onChange={(e) => setBulkPinyin(e.target.value)} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Перевод</label>
-                    <Textarea rows={6} value={bulkTrans} onChange={(e) => setBulkTrans(e.target.value)} />
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const terms = bulkTerms.split("\n");
-                    const pins = bulkPinyin.split("\n");
-                    const trans = bulkTrans.split("\n");
-                    const n = Math.max(terms.length, pins.length, trans.length);
-                    const added: { term: string; pinyin: string; translation: string }[] = [];
-                    for (let i = 0; i < n; i++) {
-                      const term = (terms[i] ?? "").trim();
-                      const pinyin = (pins[i] ?? "").trim();
-                      const translation = (trans[i] ?? "").trim();
-                      if (!term && !pinyin && !translation) continue;
-                      added.push({ term, pinyin, translation });
-                    }
-                    if (added.length === 0) return;
-                    const next = [...vocab.filter((v) => v.term || v.pinyin || v.translation), ...added];
-                    setVocab(next);
-                    void saveMeta({ vocab: next });
-                    setBulkTerms("");
-                    setBulkPinyin("");
-                    setBulkTrans("");
-                    setVocabBulkOpen(false);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                  Добавить в список
-                </Button>
-              </div>
-            ) : null}
+            <Button size="sm" variant="outline" onClick={saveVocabColumns}>
+              Сохранить слова
+            </Button>
           </div>
         ) : null}
       </CardHeader>

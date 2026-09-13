@@ -10,6 +10,16 @@ function nullable(v: string | undefined): string | null {
   return t === "" ? null : t;
 }
 
+/** Keep internal blank vocab rows (intentional gaps shown to the student) but
+ *  drop trailing blank rows so the list isn't padded with empty entries. */
+function trimTrailingBlankVocab(vocab: ItemMetaInput["vocab"]): ItemMetaInput["vocab"] {
+  const isBlank = (v: { term: string; pinyin: string; translation: string }) =>
+    !v.term.trim() && !v.pinyin.trim() && !v.translation.trim();
+  let end = vocab.length;
+  while (end > 0 && isBlank(vocab[end - 1])) end--;
+  return vocab.slice(0, end);
+}
+
 // ItemContent is validated app-side; it serialises cleanly to JSONB but the
 // structural `Json` type does not accept `Record<string, unknown>` (INFO doc),
 // so we widen through `unknown` at the DB boundary.
@@ -58,7 +68,7 @@ export async function updateItemMeta(db: Db, id: string, meta: ItemMetaInput): P
       font_family: meta.fontFamily,
       font_size: meta.fontSize,
       explanation: nullable(meta.explanation),
-      vocab: (meta.vocab.filter((v) => v.term.trim() || v.pinyin.trim() || v.translation.trim())) as unknown as Json,
+      vocab: trimTrailingBlankVocab(meta.vocab) as unknown as Json,
       unnumbered: meta.unnumbered,
       updated_at: new Date().toISOString(),
     })

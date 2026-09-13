@@ -103,9 +103,17 @@ export function StudentItem({
   const canRetry = !review && !item.retry_disabled && submission !== undefined && !cleared;
   const hasNote = Boolean(item.note) && !item.note_hidden;
   const [notesOpen, setNotesOpen] = useState(false);
-  const vocab = Array.isArray(item.vocab)
-    ? (item.vocab as { term: string; pinyin?: string; translation: string }[]).filter((v) => v.term || v.pinyin || v.translation)
-    : [];
+  // Keep internal blank rows as gaps (the tutor's blank lines); drop only the
+  // trailing blanks so the panel isn't padded with empty space at the end.
+  const vocab = (() => {
+    const raw = Array.isArray(item.vocab)
+      ? (item.vocab as { term: string; pinyin?: string; translation: string }[])
+      : [];
+    let end = raw.length;
+    while (end > 0 && !raw[end - 1].term && !raw[end - 1].pinyin && !raw[end - 1].translation) end--;
+    return raw.slice(0, end);
+  })();
+  const vocabHasContent = vocab.some((v) => v.term || v.pinyin || v.translation);
   const vocabHasPinyin = vocab.some((v) => v.pinyin);
   const showExplanation =
     !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
@@ -203,8 +211,8 @@ export function StudentItem({
             <FormattedText text={item.note} />
           </div>
         ) : null}
-        <div className={vocab.length > 0 ? "flex flex-col gap-4 md:flex-row" : undefined}>
-          <div className={vocab.length > 0 ? "min-w-0 flex-1 space-y-3" : "space-y-3"}>
+        <div className={vocabHasContent ? "flex flex-col gap-4 md:flex-row" : undefined}>
+          <div className={vocabHasContent ? "min-w-0 flex-1 space-y-3" : "space-y-3"}>
             <DrawableBlock
               initial={drawingOverride !== undefined ? drawingOverride : item.drawing}
               onSave={saveDrawing}
@@ -226,17 +234,21 @@ export function StudentItem({
               </Button>
             ) : null}
           </div>
-          {vocab.length > 0 ? (
+          {vocabHasContent ? (
             <aside className={vocabHasPinyin ? "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-72" : "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56"}>
               <p className="mb-2 text-xs font-semibold text-green-800">Новые слова</p>
               <div className={vocabHasPinyin ? "grid grid-cols-3 gap-x-3 gap-y-1 text-sm" : "grid grid-cols-2 gap-x-3 gap-y-1 text-sm"}>
-                {vocab.map((v, i) => (
-                  <Fragment key={i}>
-                    <span className="break-words font-medium"><FormattedText text={v.term} /></span>
-                    {vocabHasPinyin ? <span className="break-words text-muted-foreground"><FormattedText text={v.pinyin ?? ""} /></span> : null}
-                    <span className="break-words text-muted-foreground"><FormattedText text={v.translation} /></span>
-                  </Fragment>
-                ))}
+                {vocab.map((v, i) => {
+                  const blank = !v.term && !v.pinyin && !v.translation;
+                  if (blank) return <span key={i} className="col-span-full h-2" aria-hidden />;
+                  return (
+                    <Fragment key={i}>
+                      <span className="break-words font-medium"><FormattedText text={v.term} /></span>
+                      {vocabHasPinyin ? <span className="break-words text-muted-foreground"><FormattedText text={v.pinyin ?? ""} /></span> : null}
+                      <span className="break-words text-muted-foreground"><FormattedText text={v.translation} /></span>
+                    </Fragment>
+                  );
+                })}
               </div>
             </aside>
           ) : null}
