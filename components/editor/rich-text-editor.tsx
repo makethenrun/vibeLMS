@@ -34,7 +34,7 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
     editorProps: {
       attributes: {
         class: cn(
-          "min-h-[160px] px-3 py-2 text-sm focus:outline-none",
+          "pinyin-content min-h-[160px] px-3 py-2 text-sm focus:outline-none",
           "[&_h2]:mt-2 [&_h2]:text-lg [&_h2]:font-semibold",
           "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
           "[&_a]:text-primary [&_a]:underline",

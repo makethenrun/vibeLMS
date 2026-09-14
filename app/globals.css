@@ -92,27 +92,32 @@
 }
 
 /* Pinyin annotation (INFO rich-text mark, components/editor/pinyin-mark.ts).
-   The base text is ordinary inline-block span content; the annotation from
-   data-pinyin is drawn above it via ::before. padding-top reserves room so the
-   line grows and the annotation never overlaps the line above, while
-   vertical-align:baseline keeps the base text sitting on the normal text line. */
+   The mark stays a PLAIN INLINE span so its base text always flows and renders
+   normally (inline-block marks break text rendering inside a ProseMirror view).
+   The annotation from data-pinyin is drawn above via an absolutely-positioned
+   ::before; the content's larger line-height (below) leaves room for it. */
 .pinyin-ruby {
   position: relative;
-  display: inline-block;
-  padding-top: 0.95em;
-  line-height: 1;
-  vertical-align: baseline;
 }
 .pinyin-ruby::before {
   content: attr(data-pinyin);
   position: absolute;
-  top: 0;
   left: 50%;
+  bottom: 100%;
   transform: translateX(-50%);
+  margin-bottom: -0.15em;
   font-size: 0.6em;
+  font-weight: normal;
+  font-style: normal;
   line-height: 1;
   white-space: nowrap;
   color: inherit;
   opacity: 0.85;
   pointer-events: none;
+}
+/* Room above each line for the annotation. */
+.pinyin-content p,
+.pinyin-content li,
+.pinyin-content h2 {
+  line-height: 2.1;
 }
