@@ -61,7 +61,7 @@ export function RichTextEditor({ value, onChange, onReady, className }: RichText
   if (!editor) return null;
 
   return (
-    <div className={cn("rounded-md border", className)}>
+    <div className={cn("rounded-md border", className)} data-build="pinyin-save-live">
       <RichTextToolbar editor={editor} />
       <EditorContent editor={editor} />
       <PinyinSelection editor={editor} />
