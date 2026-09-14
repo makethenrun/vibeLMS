@@ -42,11 +42,25 @@ export const Pinyin = Mark.create({
   },
 
   parseHTML() {
-    return [{ tag: "rt", ignore: true }, { tag: "span.pinyin-ruby" }, { tag: "ruby" }];
+    return [
+      { tag: "rt", ignore: true },
+      { tag: "span.pinyin-rt", ignore: true },
+      { tag: "span.pinyin-ruby" },
+      { tag: "ruby" },
+    ];
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ["span", mergeAttributes(HTMLAttributes, { class: "pinyin-ruby" }), 0];
+  renderHTML({ mark, HTMLAttributes }) {
+    const pinyin = (mark.attrs.pinyin as string) ?? "";
+    // Annotation is a real (contenteditable-false) element rather than a CSS
+    // ::before, because browsers don't reliably render generated content inside
+    // a contenteditable region (it showed for students but not in the editor).
+    return [
+      "span",
+      mergeAttributes(HTMLAttributes, { class: "pinyin-ruby" }),
+      ["span", { class: "pinyin-rt", contenteditable: "false" }, pinyin],
+      ["span", { class: "pinyin-base" }, 0],
+    ];
   },
 
   addCommands() {
