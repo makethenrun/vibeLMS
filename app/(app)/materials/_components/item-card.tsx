@@ -125,9 +125,8 @@ export function ItemCard({
   };
 
   const onSave = async (content: ItemContent) => {
-    const result = await updateItemAction(item.id, content);
+    const result = await updateItemAction(item.id, JSON.stringify(content));
     if (result.success) {
-      if (result.data && String(content.type) === "INFO") window.alert("DEBUG сервер\n" + result.data);
       toast.success("Сохранено");
       router.refresh();
     } else {
