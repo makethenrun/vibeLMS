@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { Editor } from "@tiptap/react";
 
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { LoadingButton } from "@/components/shared/loading-button";
@@ -13,12 +14,16 @@ interface EditorProps {
 
 export function InfoEditor({ content, onSave }: EditorProps) {
   const [doc, setDoc] = useState<Record<string, unknown>>(content.doc);
+  const editorRef = useRef<Editor | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave({ type: "INFO", doc });
+      // Read the live editor state so a just-applied mark (e.g. pinyin) is never
+      // missed by a lagging React state update.
+      const latest = (editorRef.current?.getJSON() as Record<string, unknown> | undefined) ?? doc;
+      await onSave({ type: "INFO", doc: latest });
     } finally {
       setSaving(false);
     }
@@ -26,7 +31,7 @@ export function InfoEditor({ content, onSave }: EditorProps) {
 
   return (
     <div className="space-y-3">
-      <RichTextEditor value={doc} onChange={setDoc} />
+      <RichTextEditor value={doc} onChange={setDoc} onReady={(e) => (editorRef.current = e)} />
       <LoadingButton size="sm" loading={saving} onClick={handleSave}>
         Сохранить
       </LoadingButton>
