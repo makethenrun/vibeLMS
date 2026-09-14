@@ -305,15 +305,20 @@ export async function createItemAction(moduleId: string, content: unknown): Prom
   return ok();
 }
 
-export async function updateItemAction(id: string, content: unknown): Promise<ActionResult<string>> {
+export async function updateItemAction(id: string, contentJson: string): Promise<ActionResult> {
   const denied = await requireEdit("item", id);
-  if (denied) return denied as ActionResult<string>;
-  // TEMP DEBUG: does a non-empty pinyin value survive Server Action transport / zod?
-  const hasVal = (o: unknown) => /"attrs":\{"pinyin":"[^"]+"/.test(JSON.stringify(o));
-  const rawHas = hasVal(content);
+  if (denied) return denied;
+  // Content is sent as a JSON string: passing the nested object directly through
+  // the Server Action boundary dropped deep values (e.g. a mark's attrs), so we
+  // transport it as an opaque string and parse it here.
+  let content: unknown;
+  try {
+    content = JSON.parse(contentJson);
+  } catch {
+    return fail("Некорректные данные упражнения");
+  }
   const parsed = itemContentSchema.safeParse(content);
   if (!parsed.success) return fail("Проверьте упражнение", parsed.error.flatten().fieldErrors);
-  const parsedHas = hasVal(parsed.data);
   const db = createServerSupabaseClient();
   try {
     await items.updateItemContent(db, id, parsed.data);
@@ -322,7 +327,7 @@ export async function updateItemAction(id: string, content: unknown): Promise<Ac
   }
   revalidatePath("/materials", "layout");
   revalidatePath("/learn", "layout");
-  return ok(`RAW(получено сервером) hasValue=${rawHas} | PARSED(после zod) hasValue=${parsedHas}`);
+  return ok();
 }
 
 export async function deleteItemAction(id: string): Promise<ActionResult> {
