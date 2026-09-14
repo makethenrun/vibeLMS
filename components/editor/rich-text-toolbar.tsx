@@ -7,6 +7,7 @@ import {
   Heading2,
   ImagePlus,
   Italic,
+  Languages,
   Link2,
   List,
   ListOrdered,
@@ -57,6 +58,19 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
     }
   }
 
+  function togglePinyin() {
+    if (editor.state.selection.empty) {
+      toast.error("Сначала выделите текст");
+      return;
+    }
+    const previous = (editor.getAttributes("pinyin").pinyin as string) ?? "";
+    const value = window.prompt("Текст над выделением (пусто — убрать):", previous);
+    if (value === null) return;
+    const pinyin = value.trim();
+    if (pinyin) editor.chain().focus().setMark("pinyin", { pinyin }).run();
+    else editor.chain().focus().unsetMark("pinyin").run();
+  }
+
   function toggleLink() {
     const previous = editor.getAttributes("link").href as string | undefined;
     const url = window.prompt("Ссылка (URL):", previous ?? "https://");
@@ -96,6 +110,10 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
       <Button type="button" size="icon" variant="ghost" className={btn(editor.isActive("link"))}
         onClick={toggleLink} aria-label="Ссылка">
         <Link2 className="h-4 w-4" />
+      </Button>
+      <Button type="button" size="icon" variant="ghost" className={btn(editor.isActive("pinyin"))}
+        onClick={togglePinyin} aria-label="Текст над выделением" title="Текст над выделением (транскрипция)">
+        <Languages className="h-4 w-4" />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

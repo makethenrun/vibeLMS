@@ -53,13 +53,13 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
     const input = window.prompt("Текст над выделением (пусто — убрать):", current);
     if (input === null) return;
     const pinyin = input.trim();
-    if (pinyin) editor.chain().focus().setPinyin(pinyin).run();
-    else editor.chain().focus().unsetPinyin().run();
+    if (pinyin) editor.chain().focus().setMark("pinyin", { pinyin }).run();
+    else editor.chain().focus().unsetMark("pinyin").run();
     setPos(null);
   }
 
   function remove() {
-    editor.chain().focus().unsetPinyin().run();
+    editor.chain().focus().unsetMark("pinyin").run();
     setPos(null);
   }
 
