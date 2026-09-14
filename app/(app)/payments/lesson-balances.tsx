@@ -21,7 +21,7 @@ import { addLessonAdjustmentAction } from "./actions";
 /** Low-balance colour: red at 1 or fewer, amber at 2–3, default above. */
 export function remainingColor(n: number): string {
   if (n <= 1) return "text-destructive";
-  if (n <= 3) return "text-amber-600";
+  if (n <= 3) return "text-yellow-500";
   return "";
 }
 
