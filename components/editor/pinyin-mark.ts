@@ -12,15 +12,13 @@ declare module "@tiptap/core" {
 }
 
 /**
- * Inline mark that renders selected text as a native ruby annotation: the base
- * text stays on the line and the stored `pinyin` is shown above it via a real
- * `<rt>` element. Native ruby positions the annotation above the base and grows
- * the line box to fit it (so the previous line isn't overlapped) with no custom
- * CSS, which also means students see it in the read-only view.
- *
- * The base text is wrapped in `<span class="pinyin-base">` (the ProseMirror
- * content hole must be the only child of its parent), and `<rt>` is ignored on
- * parse so copy/paste doesn't duplicate the annotation text into the document.
+ * Inline mark that shows the stored `pinyin` above the selected text. It renders
+ * as a plain `<span class="pinyin-ruby" data-pinyin="…">base</span>`: the base is
+ * ordinary span content (so it can never collapse the way a native <ruby> base
+ * can), and the annotation is painted above it purely in CSS via a `::before`
+ * pseudo-element (see globals.css). Because the annotation lives in an attribute,
+ * not in rendered HTML, changing this renderer also fixes annotations saved by
+ * earlier versions.
  */
 export const Pinyin = Mark.create({
   name: "pinyin",
@@ -31,8 +29,8 @@ export const Pinyin = Mark.create({
       pinyin: {
         default: "",
         parseHTML: (element) =>
-          element.querySelector("rt")?.textContent?.trim() ??
           element.getAttribute("data-pinyin") ??
+          element.querySelector("rt")?.textContent?.trim() ??
           "",
         renderHTML: (attributes) => {
           const pinyin = (attributes.pinyin as string) ?? "";
@@ -44,17 +42,11 @@ export const Pinyin = Mark.create({
   },
 
   parseHTML() {
-    return [{ tag: "rt", ignore: true }, { tag: "ruby" }];
+    return [{ tag: "rt", ignore: true }, { tag: "span.pinyin-ruby" }, { tag: "ruby" }];
   },
 
-  renderHTML({ mark, HTMLAttributes }) {
-    const pinyin = (mark.attrs.pinyin as string) ?? "";
-    return [
-      "ruby",
-      mergeAttributes(HTMLAttributes, { class: "pinyin-ruby" }),
-      ["span", { class: "pinyin-base" }, 0],
-      ["rt", { class: "pinyin-rt", contenteditable: "false" }, pinyin],
-    ];
+  renderHTML({ HTMLAttributes }) {
+    return ["span", mergeAttributes(HTMLAttributes, { class: "pinyin-ruby" }), 0];
   },
 
   addCommands() {
