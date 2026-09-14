@@ -317,6 +317,7 @@ export async function updateItemAction(id: string, content: unknown): Promise<Ac
     return fail(getErrorMessage(e));
   }
   revalidatePath("/materials", "layout");
+  revalidatePath("/learn", "layout");
   return ok();
 }
 

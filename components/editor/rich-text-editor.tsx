@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
+import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -16,10 +16,11 @@ import { PinyinSelection } from "./pinyin-selection";
 interface RichTextEditorProps {
   value: Record<string, unknown>;
   onChange: (doc: Record<string, unknown>) => void;
+  onReady?: (editor: Editor) => void;
   className?: string;
 }
 
-export function RichTextEditor({ value, onChange, className }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, onReady, className }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -45,7 +46,12 @@ export function RichTextEditor({ value, onChange, className }: RichTextEditorPro
     onUpdate: ({ editor }) => onChange(editor.getJSON() as Record<string, unknown>),
   });
 
-  // Keep the editor in sync if the incoming value changes identity (e.g. reset).
+  // Hand the live editor to the parent so it can read the latest JSON at save
+  // time (the onChange-mirrored state can lag a just-applied command).
+  useEffect(() => {
+    if (editor) onReady?.(editor);
+  }, [editor, onReady]);
+
   useEffect(() => {
     return () => {
       editor?.destroy();
