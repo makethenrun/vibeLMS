@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { DictionaryEntry } from "@/types";
 import { EntryRow } from "./entry-row";
 
-export function DictionaryTable({ entries }: { entries: DictionaryEntry[] }) {
+export function DictionaryTable({ entries, enabledKeyboards = [] }: { entries: DictionaryEntry[]; enabledKeyboards?: string[] }) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -41,7 +41,7 @@ export function DictionaryTable({ entries }: { entries: DictionaryEntry[] }) {
               <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">Ничего не найдено.</TableCell>
             </TableRow>
           ) : (
-            filtered.map((entry) => <EntryRow key={entry.id} entry={entry} />)
+            filtered.map((entry) => <EntryRow key={entry.id} entry={entry} enabledKeyboards={enabledKeyboards} />)
           )}
         </TableBody>
       </Table>

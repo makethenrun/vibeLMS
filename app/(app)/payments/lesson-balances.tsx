@@ -18,6 +18,13 @@ import {
 import { cn } from "@/lib/utils";
 import { addLessonAdjustmentAction } from "./actions";
 
+/** Low-balance colour: red at 1 or fewer, amber at 2–3, default above. */
+export function remainingColor(n: number): string {
+  if (n <= 1) return "text-destructive";
+  if (n <= 3) return "text-amber-600";
+  return "";
+}
+
 export interface BalanceRow {
   id: string;
   name: string;
@@ -85,7 +92,7 @@ export function LessonBalances({ rows, canManage }: { rows: BalanceRow[]; canMan
                   </TableCell>
                   <TableCell className="text-right">{r.paid}</TableCell>
                   <TableCell className="text-right">{r.consumed}</TableCell>
-                  <TableCell className={cn("text-right font-semibold", r.remaining <= 0 && "text-destructive")}>
+                  <TableCell className={cn("text-right font-semibold", remainingColor(r.remaining))}>
                     {r.remaining}
                   </TableCell>
                   {canManage ? (

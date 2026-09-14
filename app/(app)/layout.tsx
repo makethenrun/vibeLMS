@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       liveIndicator={liveIndicator}
     >
       {children}
-      <AddToDictionary />
+      <AddToDictionary enabledKeyboards={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />
       <PinyinBar />
       <FormatBar />
       <ExtraKeyboards enabled={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />

@@ -9,7 +9,7 @@ import type { DictionaryEntry } from "@/types";
 import { deleteEntryAction } from "./actions";
 import { EntryDialog } from "./entry-dialog";
 
-export function EntryRow({ entry }: { entry: DictionaryEntry }) {
+export function EntryRow({ entry, enabledKeyboards = [] }: { entry: DictionaryEntry; enabledKeyboards?: string[] }) {
   return (
     <TableRow>
       <TableCell className="font-medium">{entry.term}</TableCell>
@@ -20,6 +20,7 @@ export function EntryRow({ entry }: { entry: DictionaryEntry }) {
         <div className="flex justify-end gap-1">
           <EntryDialog
             entry={entry}
+            enabledKeyboards={enabledKeyboards}
             trigger={<Button size="icon" variant="ghost" aria-label="Редактировать"><Pencil className="h-4 w-4" /></Button>}
           />
           <ConfirmDialog

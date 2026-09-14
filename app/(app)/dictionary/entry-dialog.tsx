@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { applyFieldErrors } from "@/lib/utils/form";
 import { PinyinKeys } from "@/components/editor/pinyin-bar";
+import { ExtraKeyboardsInline } from "@/components/editor/extra-keyboards";
 import { dictionaryEntrySchema, type DictionaryEntryInput } from "@/lib/validators";
 import type { DictionaryEntry } from "@/types";
 import { createEntryAction, updateEntryAction } from "./actions";
@@ -38,12 +39,14 @@ export function EntryDialog({
   defaultTerm,
   open: openProp,
   onOpenChange,
+  enabledKeyboards = [],
 }: {
   trigger?: ReactNode;
   entry?: DictionaryEntry;
   defaultTerm?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  enabledKeyboards?: string[];
 }) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -100,7 +103,10 @@ export function EntryDialog({
               <FormItem>
                 <FormLabel>Транскрипция (необязательно)</FormLabel>
                 <FormControl><Input placeholder="xièxie" {...field} /></FormControl>
-                <PinyinKeys className="pt-1" />
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <PinyinKeys />
+                  <ExtraKeyboardsInline enabled={enabledKeyboards} />
+                </div>
                 <FormMessage />
               </FormItem>
             )} />
