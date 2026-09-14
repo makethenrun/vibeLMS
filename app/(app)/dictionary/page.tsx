@@ -4,12 +4,11 @@ import { BookA, Plus } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireUser } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { listDictionary } from "@/services/dictionary/dictionary.service";
+import { DictionaryTable } from "./dictionary-table";
 import { EntryDialog } from "./entry-dialog";
-import { EntryRow } from "./entry-row";
 
 export const metadata: Metadata = { title: "Словарь" };
 
@@ -42,22 +41,7 @@ export default async function DictionaryPage() {
           action={<EntryDialog trigger={addButton} />}
         />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Слово</TableHead>
-              <TableHead>Транскрипция</TableHead>
-              <TableHead>Перевод</TableHead>
-              <TableHead>Заметка</TableHead>
-              <TableHead className="text-right">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} />
-            ))}
-          </TableBody>
-        </Table>
+        <DictionaryTable entries={entries} />
       )}
     </div>
   );
