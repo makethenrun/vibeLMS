@@ -63,12 +63,16 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
       toast.error("Сначала выделите текст");
       return;
     }
+    // Capture the range now — window.prompt can drop the DOM selection, so we
+    // re-select it explicitly before applying the mark.
+    const { from, to } = editor.state.selection;
     const previous = (editor.getAttributes("pinyin").pinyin as string) ?? "";
     const value = window.prompt("Текст над выделением (пусто — убрать):", previous);
     if (value === null) return;
     const pinyin = value.trim();
-    if (pinyin) editor.chain().focus().setMark("pinyin", { pinyin }).run();
-    else editor.chain().focus().unsetMark("pinyin").run();
+    const chain = editor.chain().focus().setTextSelection({ from, to });
+    if (pinyin) chain.setMark("pinyin", { pinyin }).run();
+    else chain.unsetMark("pinyin").run();
   }
 
   function toggleLink() {

@@ -49,17 +49,22 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
   if (!pos) return null;
 
   function apply() {
+    // Capture the range now — window.prompt can drop the DOM selection, so we
+    // re-select it explicitly before applying the mark.
+    const { from, to } = editor.state.selection;
     const current = (editor.getAttributes("pinyin").pinyin as string) ?? "";
     const input = window.prompt("Текст над выделением (пусто — убрать):", current);
     if (input === null) return;
     const pinyin = input.trim();
-    if (pinyin) editor.chain().focus().setMark("pinyin", { pinyin }).run();
-    else editor.chain().focus().unsetMark("pinyin").run();
+    const chain = editor.chain().focus().setTextSelection({ from, to });
+    if (pinyin) chain.setMark("pinyin", { pinyin }).run();
+    else chain.unsetMark("pinyin").run();
     setPos(null);
   }
 
   function remove() {
-    editor.chain().focus().unsetMark("pinyin").run();
+    const { from, to } = editor.state.selection;
+    editor.chain().focus().setTextSelection({ from, to }).unsetMark("pinyin").run();
     setPos(null);
   }
 
