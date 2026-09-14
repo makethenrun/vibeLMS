@@ -23,6 +23,8 @@ export function InfoEditor({ content, onSave }: EditorProps) {
       // Read the live editor state so a just-applied mark (e.g. pinyin) is never
       // missed by a lagging React state update.
       const latest = (editorRef.current?.getJSON() as Record<string, unknown> | undefined) ?? doc;
+      const clientHas = /"attrs":\{"pinyin":"[^"]+"/.test(JSON.stringify(latest));
+      window.alert(`DEBUG клиент\nЗначение подписи в отправляемом JSON: ${clientHas}`);
       await onSave({ type: "INFO", doc: latest });
     } finally {
       setSaving(false);
