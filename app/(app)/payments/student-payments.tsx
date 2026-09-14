@@ -19,6 +19,7 @@ import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type { Payment } from "@/types";
 import type { LessonBalance } from "@/services/payments/payments.service";
 import { PaymentStatusBadge } from "./payment-status-badge";
+import { remainingColor } from "./lesson-balances";
 import { createStudentPaymentAction } from "./actions";
 
 export function StudentPayments({ payments, balance }: { payments: Payment[]; balance: LessonBalance | null }) {
@@ -48,7 +49,7 @@ export function StudentPayments({ payments, balance }: { payments: Payment[]; ba
           <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-2 pt-6">
             <div>
               <p className="text-xs text-muted-foreground">Осталось занятий</p>
-              <p className={cn("text-2xl font-semibold", balance.remaining <= 0 && "text-destructive")}>
+              <p className={cn("text-2xl font-semibold", remainingColor(balance.remaining))}>
                 {balance.remaining}
               </p>
             </div>

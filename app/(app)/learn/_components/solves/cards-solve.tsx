@@ -95,7 +95,7 @@ export function CardsSolve({
       {/* Flip card: image on the front, hint on the back */}
       <div className="relative mx-auto w-full max-w-sm [perspective:1000px]">
         {!textFront && card.imageUrl && !flipped ? (
-          <ImageZoom src={card.imageUrl} inline className="absolute right-1 top-1 z-20" />
+          <ImageZoom src={card.imageUrl} inline className="absolute left-full top-0 z-20 ml-2" />
         ) : null}
         <button
           type="button"
