@@ -305,11 +305,15 @@ export async function createItemAction(moduleId: string, content: unknown): Prom
   return ok();
 }
 
-export async function updateItemAction(id: string, content: unknown): Promise<ActionResult> {
+export async function updateItemAction(id: string, content: unknown): Promise<ActionResult<string>> {
   const denied = await requireEdit("item", id);
-  if (denied) return denied;
+  if (denied) return denied as ActionResult<string>;
+  // TEMP DEBUG: does a non-empty pinyin value survive Server Action transport / zod?
+  const hasVal = (o: unknown) => /"attrs":\{"pinyin":"[^"]+"/.test(JSON.stringify(o));
+  const rawHas = hasVal(content);
   const parsed = itemContentSchema.safeParse(content);
   if (!parsed.success) return fail("Проверьте упражнение", parsed.error.flatten().fieldErrors);
+  const parsedHas = hasVal(parsed.data);
   const db = createServerSupabaseClient();
   try {
     await items.updateItemContent(db, id, parsed.data);
@@ -318,7 +322,7 @@ export async function updateItemAction(id: string, content: unknown): Promise<Ac
   }
   revalidatePath("/materials", "layout");
   revalidatePath("/learn", "layout");
-  return ok();
+  return ok(`RAW(получено сервером) hasValue=${rawHas} | PARSED(после zod) hasValue=${parsedHas}`);
 }
 
 export async function deleteItemAction(id: string): Promise<ActionResult> {

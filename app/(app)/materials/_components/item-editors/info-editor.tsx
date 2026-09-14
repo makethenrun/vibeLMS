@@ -23,13 +23,6 @@ export function InfoEditor({ content, onSave }: EditorProps) {
       // Read the live editor state so a just-applied mark (e.g. pinyin) is never
       // missed by a lagging React state update.
       const latest = (editorRef.current?.getJSON() as Record<string, unknown> | undefined) ?? doc;
-      // TEMP DEBUG: show whether the pinyin value survives into the saved JSON.
-      const s = JSON.stringify(latest);
-      if (s.includes('"pinyin"')) {
-        const hasValue = /"attrs":\{"pinyin":"[^"]+"/.test(s);
-        const sample = (s.match(/\{"type":"pinyin"[^}]*\}\}?/g) || []).slice(0, 3).join("  ");
-        window.alert(`DEBUG сохранение\nЗначение подписи в JSON: ${hasValue}\n${sample}`);
-      }
       await onSave({ type: "INFO", doc: latest });
     } finally {
       setSaving(false);
