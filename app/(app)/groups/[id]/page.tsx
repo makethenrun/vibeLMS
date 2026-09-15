@@ -10,9 +10,10 @@ import { requireStaff } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { assistantMaterialAccess, canAccessGroup } from "@/services/assistants/assistants.service";
 import { getGroupWithMembers, listAddableStudents } from "@/services/groups/groups.service";
-import { listGroupMaterials } from "@/services/materials/material-groups.service";
+import { listGroupMaterials, listMaterialsAddableToGroup } from "@/services/materials/material-groups.service";
 import { GroupDialog } from "../group-dialog";
 import { GroupMembers } from "./group-members";
+import { AddMaterialToGroup } from "./add-material";
 
 export const metadata: Metadata = { title: "Группа" };
 
@@ -32,6 +33,7 @@ export default async function GroupDetailPage({
   if (!group) notFound();
 
   const addable = canManage ? await listAddableStudents(db, id) : [];
+  const addableMaterials = canManage ? await listMaterialsAddableToGroup(db, id) : [];
   let materials = await listGroupMaterials(db, id);
   if (!isTutor) {
     const access = await assistantMaterialAccess(db, user.id);
@@ -83,8 +85,9 @@ export default async function GroupDetailPage({
       )}
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex-row items-center justify-between pb-2">
           <CardTitle className="text-base">Доступные материалы ({materials.length})</CardTitle>
+          {canManage ? <AddMaterialToGroup groupId={group.id} materials={addableMaterials.map((m) => ({ id: m.id, title: m.title }))} /> : null}
         </CardHeader>
         <CardContent>
           {materials.length === 0 ? (
