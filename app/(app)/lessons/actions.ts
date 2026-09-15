@@ -16,6 +16,7 @@ import {
   getLessonRoster,
   getSeriesEditData,
   listLessonSeries,
+  regenerateLessonSeries,
   setLessonAttendance,
   setLessonStatus,
   updateLesson,
@@ -184,6 +185,35 @@ export async function updateLessonSeriesAction(
   const db = createServerSupabaseClient();
   try {
     const count = await updateLessonSeries(db, title.trim(), meetingUrl, rows);
+    revalidatePath("/lessons");
+    revalidatePath("/dashboard");
+    return ok({ count });
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+}
+
+/** Regenerates a series' upcoming lessons for new days/times (deletes + recreates). */
+export async function regenerateLessonSeriesAction(
+  seriesId: string,
+  title: string,
+  meetingUrl: string | undefined,
+  rows: BulkLessonRow[],
+): Promise<ActionResult<{ count: number }>> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  if (!seriesId) return fail("Не выбрана серия");
+  if (title.trim().length < 2) return fail("Название: минимум 2 символа");
+  if (!Array.isArray(rows) || rows.length === 0) return fail("Нет занятий — проверьте период и дни");
+  if (rows.length > 400) return fail("Слишком много занятий (максимум 400)");
+  for (const r of rows) {
+    if (!r.title || r.title.trim().length < 2) return fail("Название: минимум 2 символа");
+    if (Number.isNaN(Date.parse(r.startTime)) || Number.isNaN(Date.parse(r.endTime))) return fail("Некорректные даты");
+    if (Date.parse(r.endTime) <= Date.parse(r.startTime)) return fail("Окончание должно быть позже начала");
+  }
+  const db = createServerSupabaseClient();
+  try {
+    const count = await regenerateLessonSeries(db, seriesId, title.trim(), meetingUrl, rows);
     revalidatePath("/lessons");
     revalidatePath("/dashboard");
     return ok({ count });

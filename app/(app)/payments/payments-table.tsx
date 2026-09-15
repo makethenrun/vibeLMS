@@ -30,6 +30,7 @@ function monthLabel(m: string): string {
 export function PaymentsTable({ payments, canManage }: { payments: Row[]; canManage: boolean }) {
   const [query, setQuery] = useState("");
   const [month, setMonth] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "date", dir: "desc" });
 
   function toggleSort(key: SortKey) {
@@ -41,8 +42,17 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
     [payments],
   );
 
+  const students = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const p of payments) if (!byId.has(p.student_id)) byId.set(p.student_id, p.studentName);
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  }, [payments]);
+
   const q = query.trim().toLowerCase();
   const filtered = payments.filter((p) => {
+    if (studentId && p.student_id !== studentId) return false;
     if (month && p.payment_date.slice(0, 7) !== month) return false;
     if (q && !(p.studentName.toLowerCase().includes(q) || (p.studentLogin ?? "").toLowerCase().includes(q))) return false;
     return true;
@@ -94,6 +104,17 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по имени или логину" className="pl-8" />
         </div>
+        <select
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          className="h-9 max-w-[12rem] rounded-md border bg-background px-2 text-sm"
+          aria-label="Фильтр по ученику"
+        >
+          <option value="">Все ученики</option>
+          {students.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
         <select
           value={month}
           onChange={(e) => setMonth(e.target.value)}
