@@ -13,6 +13,7 @@ import {
   removeGroupMember,
   updateGroup,
 } from "@/services/groups/groups.service";
+import { addGroupToMaterial } from "@/services/materials/material-groups.service";
 
 export async function createGroupAction(input: GroupInput): Promise<ActionResult> {
   const tutor = await getTutorOrNull();
@@ -99,5 +100,23 @@ export async function removeMemberAction(
   }
 
   revalidatePath(`/groups/${groupId}`);
+  return ok();
+}
+
+/** Grants a group access to a material from the group page. */
+export async function addMaterialToGroupAction(groupId: string, materialId: string): Promise<ActionResult> {
+  const manager = await getManagerOrNull();
+  if (!manager) return fail("Недостаточно прав");
+  if (!groupId || !materialId) return fail("Выберите материал");
+
+  const db = createServerSupabaseClient();
+  try {
+    await addGroupToMaterial(db, materialId, groupId);
+  } catch (error) {
+    return fail(getErrorMessage(error));
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath(`/materials/${materialId}`);
   return ok();
 }

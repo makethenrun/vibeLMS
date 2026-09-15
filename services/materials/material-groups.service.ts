@@ -40,6 +40,28 @@ export async function listGroupMaterials(db: Db, groupId: string): Promise<Mater
   return data ?? [];
 }
 
+/** Materials the group does NOT yet have access to (for the "add material" picker). */
+export async function listMaterialsAddableToGroup(db: Db, groupId: string): Promise<MaterialRow[]> {
+  const { data: links, error: linkErr } = await db
+    .from("material_groups")
+    .select("material_id")
+    .eq("group_id", groupId);
+  if (linkErr) throw new Error(linkErr.message);
+  const have = new Set((links ?? []).map((r) => r.material_id));
+
+  const { data, error } = await db.from("materials").select("*").order("title", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).filter((m) => !have.has(m.id));
+}
+
+/** Grants a group access to a material (idempotent). */
+export async function addGroupToMaterial(db: Db, materialId: string, groupId: string): Promise<void> {
+  const existing = await listMaterialGroupIds(db, materialId);
+  if (existing.includes(groupId)) return;
+  const { error } = await db.from("material_groups").insert({ material_id: materialId, group_id: groupId });
+  if (error) throw new Error(error.message);
+}
+
 export async function setMaterialGroups(db: Db, materialId: string, groupIds: string[]): Promise<void> {
   const { error: delErr } = await db.from("material_groups").delete().eq("material_id", materialId);
   if (delErr) throw new Error(delErr.message);
