@@ -32,6 +32,7 @@ import { FreeSolve } from "./free-solve";
 import { GapsSolve } from "./gaps-solve";
 import { ImageAnnotate } from "./image-annotate";
 import { InfoView } from "./info-view";
+import { ImportVocabButton } from "./import-vocab-button";
 import { QuizSolve } from "./quiz-solve";
 import { GapsDragSolve } from "./solves/gaps-drag-solve";
 import { ImageTaskSolve } from "./solves/image-task-solve";
@@ -115,6 +116,12 @@ export function StudentItem({
   })();
   const vocabHasContent = vocab.some((v) => v.term || v.pinyin || v.translation);
   const vocabHasPinyin = vocab.some((v) => v.pinyin);
+  // Gradable items import the vocab automatically on submit; items without a
+  // submit (INFO/audio/image/link, or cards in study mode) get a manual button.
+  const submitsAnswer =
+    ["QUIZ", "GAPS", "IMAGE_TASK", "SENTENCE_TASK", "MATCH", "FREE"].includes(item.type) ||
+    (item.type === "CARDS" && (item.content as unknown as CardsContent).mode === "ANSWER");
+  const showVocabImport = vocabHasContent && !submitsAnswer;
   const showExplanation =
     !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
   // Remount the solve on retake / new submission so its internal state resets.
@@ -233,6 +240,7 @@ export function StudentItem({
                 Пройти заново
               </Button>
             ) : null}
+            {showVocabImport ? <ImportVocabButton itemId={item.id} /> : null}
           </div>
           {vocabHasContent ? (
             <aside className={vocabHasPinyin ? "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-72" : "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56"}>

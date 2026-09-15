@@ -58,3 +58,29 @@ export async function submitItemAction(
   revalidatePath("/learn", "layout");
   return ok({ score });
 }
+
+/** Manually imports an item's "new words" into the student's dictionary (used
+ *  for exercises that have no submit, e.g. INFO/audio/image/link). */
+export async function importItemVocabAction(itemId: string): Promise<ActionResult<{ count: number }>> {
+  const student = await getStudentOrNull();
+  if (!student) return fail("Недостаточно прав");
+
+  const db = createServerSupabaseClient();
+  const allowed = await studentHasItemAccess(db, student.studentId, itemId);
+  if (!allowed) return fail("Нет доступа к упражнению");
+
+  const { data: item, error } = await db.from("material_items").select("vocab").eq("id", itemId).maybeSingle();
+  if (error) return fail(error.message);
+  const vocab = Array.isArray(item?.vocab)
+    ? (item.vocab as { term?: string; pinyin?: string; translation?: string }[])
+    : [];
+  if (vocab.length === 0) return ok({ count: 0 });
+
+  try {
+    const count = await importVocabToDictionary(db, student.user.id, vocab);
+    revalidatePath("/dictionary");
+    return ok({ count });
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
