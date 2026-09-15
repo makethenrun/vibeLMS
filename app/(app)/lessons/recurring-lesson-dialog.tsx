@@ -17,24 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { cn } from "@/lib/utils";
+import { WEEKDAYS, buildRecurringRows, validateDayTimes, type DayTime } from "@/lib/lessons/recurring";
 import { createRecurringLessonsAction } from "./actions";
 
 interface GroupOption { id: string; name: string }
-
-// Пн..Вс → JS getDay() values (Sun = 0).
-const WEEKDAYS: { label: string; day: number }[] = [
-  { label: "Пн", day: 1 },
-  { label: "Вт", day: 2 },
-  { label: "Ср", day: 3 },
-  { label: "Чт", day: 4 },
-  { label: "Пт", day: 5 },
-  { label: "Сб", day: 6 },
-  { label: "Вс", day: 0 },
-];
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
 
 export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption[]; trigger: ReactNode }) {
   const router = useRouter();
@@ -44,51 +30,37 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
   const [numbered, setNumbered] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [days, setDays] = useState<Set<number>>(new Set());
-  const [startTime, setStartTime] = useState("10:00");
-  const [endTime, setEndTime] = useState("11:00");
+  // Each selected weekday has its own start/end time.
+  const [dayTimes, setDayTimes] = useState<Map<number, DayTime>>(new Map());
   const [meetingUrl, setMeetingUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   function toggleDay(day: number) {
-    setDays((prev) => {
-      const next = new Set(prev);
+    setDayTimes((prev) => {
+      const next = new Map(prev);
       if (next.has(day)) next.delete(day);
-      else next.add(day);
+      else next.set(day, { start: "10:00", end: "11:00" });
       return next;
     });
   }
 
-  function buildRows(): { title: string; startTime: string; endTime: string }[] {
-    const [fy, fm, fd] = fromDate.split("-").map(Number);
-    const [ty, tm, td] = toDate.split("-").map(Number);
-    const cur = new Date(fy, fm - 1, fd);
-    const end = new Date(ty, tm - 1, td);
-    const rows: { title: string; startTime: string; endTime: string }[] = [];
-    let n = 0;
-    while (cur <= end && rows.length < 400) {
-      if (days.has(cur.getDay())) {
-        const ds = `${cur.getFullYear()}-${pad(cur.getMonth() + 1)}-${pad(cur.getDate())}`;
-        n += 1;
-        rows.push({
-          title: numbered ? `${title.trim()} №${n}` : title.trim(),
-          startTime: new Date(`${ds}T${startTime}`).toISOString(),
-          endTime: new Date(`${ds}T${endTime}`).toISOString(),
-        });
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return rows;
+  function setDayTime(day: number, field: "start" | "end", value: string) {
+    setDayTimes((prev) => {
+      const next = new Map(prev);
+      const cur = next.get(day);
+      if (cur) next.set(day, { ...cur, [field]: value });
+      return next;
+    });
   }
 
   async function submit() {
     if (!groupId) return toast.error("Выберите группу");
     if (title.trim().length < 2) return toast.error("Название: минимум 2 символа");
     if (!fromDate || !toDate) return toast.error("Укажите период");
-    if (days.size === 0) return toast.error("Выберите хотя бы один день недели");
-    if (endTime <= startTime) return toast.error("Окончание должно быть позже начала");
+    const err = validateDayTimes(dayTimes);
+    if (err) return toast.error(err);
 
-    const rows = buildRows();
+    const rows = buildRecurringRows({ fromDate, toDate, dayTimes, title, numbered });
     if (rows.length === 0) return toast.error("В выбранном периоде нет таких дней");
 
     setSaving(true);
@@ -98,7 +70,7 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
       toast.success(`Создано занятий: ${result.data.count}`);
       setOpen(false);
       setTitle("");
-      setDays(new Set());
+      setDayTimes(new Map());
       router.refresh();
     } else {
       toast.error(result.error);
@@ -111,7 +83,7 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Регулярные занятия</DialogTitle>
-          <DialogDescription>Создайте серию занятий по дням недели за период.</DialogDescription>
+          <DialogDescription>Создайте серию занятий по дням недели за период. У каждого дня своё время.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -147,8 +119,8 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Дни недели</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Дни недели и время</label>
             <div className="flex flex-wrap gap-1">
               {WEEKDAYS.map((w) => (
                 <button
@@ -157,24 +129,24 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
                   onClick={() => toggleDay(w.day)}
                   className={cn(
                     "h-9 w-10 rounded-md border text-sm",
-                    days.has(w.day) ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent",
+                    dayTimes.has(w.day) ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent",
                   )}
                 >
                   {w.label}
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Начало</label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Окончание</label>
-              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-            </div>
+            {WEEKDAYS.filter((w) => dayTimes.has(w.day)).map((w) => {
+              const dt = dayTimes.get(w.day)!;
+              return (
+                <div key={w.day} className="flex items-center gap-2">
+                  <span className="w-8 shrink-0 text-sm text-muted-foreground">{w.label}</span>
+                  <Input type="time" value={dt.start} onChange={(e) => setDayTime(w.day, "start", e.target.value)} className="h-8" />
+                  <span className="text-muted-foreground">—</span>
+                  <Input type="time" value={dt.end} onChange={(e) => setDayTime(w.day, "end", e.target.value)} className="h-8" />
+                </div>
+              );
+            })}
           </div>
 
           <div className="space-y-1">

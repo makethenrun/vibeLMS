@@ -170,15 +170,16 @@ export async function listLessonSeries(db: Db): Promise<LessonSeriesSummary[]> {
 export interface SeriesEditData {
   title: string;
   meetingUrl: string | null;
+  groupId: string | null;
   lessons: { id: string; start_time: string; end_time: string }[];
 }
 
-/** Upcoming lessons of a series plus the shared title/link, for editing. */
+/** Upcoming lessons of a series plus the shared title/link/group, for editing. */
 export async function getSeriesEditData(db: Db, seriesId: string): Promise<SeriesEditData> {
   const now = new Date().toISOString();
   const { data } = await db
     .from("lessons")
-    .select("id, title, meeting_url, start_time, end_time")
+    .select("id, title, meeting_url, group_id, start_time, end_time")
     .eq("series_id", seriesId)
     .gte("start_time", now)
     .order("start_time", { ascending: true });
@@ -186,8 +187,52 @@ export async function getSeriesEditData(db: Db, seriesId: string): Promise<Serie
   return {
     title: lessons[0]?.title ?? "",
     meetingUrl: lessons[0]?.meeting_url ?? null,
+    groupId: lessons[0]?.group_id ?? null,
     lessons: lessons.map((l) => ({ id: l.id, start_time: l.start_time, end_time: l.end_time })),
   };
+}
+
+/**
+ * Rebuilds a series' upcoming lessons: deletes the current upcoming lessons and
+ * inserts the given rows under the same series id and group. Used when editing
+ * changes the days/times (not just times), which requires regenerating.
+ */
+export async function regenerateLessonSeries(
+  db: Db,
+  seriesId: string,
+  title: string,
+  meetingUrl: string | undefined,
+  rows: BulkLessonRow[],
+): Promise<number> {
+  const now = new Date().toISOString();
+  const { data: existing } = await db
+    .from("lessons")
+    .select("group_id")
+    .eq("series_id", seriesId)
+    .limit(1);
+  const groupId = existing?.[0]?.group_id;
+  if (!groupId) throw new Error("Серия не найдена");
+
+  const { error: delError } = await db
+    .from("lessons")
+    .delete()
+    .eq("series_id", seriesId)
+    .gte("start_time", now);
+  if (delError) throw new Error(delError.message);
+
+  if (rows.length === 0) return 0;
+  const insert = rows.map((r) => ({
+    title,
+    group_id: groupId,
+    start_time: toIso(r.startTime),
+    end_time: toIso(r.endTime),
+    meeting_url: normalizeMeetingUrl(meetingUrl),
+    status: "SCHEDULED" as const,
+    series_id: seriesId,
+  }));
+  const { error } = await db.from("lessons").insert(insert);
+  if (error) throw new Error(error.message);
+  return insert.length;
 }
 
 /** Applies title/link/time to each given lesson of a series. */
