@@ -45,6 +45,7 @@ function buildDefaults(): PaymentInput {
   return {
     studentId: "",
     amount: 0,
+    lessons: 0,
     paymentDate: new Date().toISOString().slice(0, 10),
     comment: "",
   };
@@ -112,7 +113,7 @@ export function PaymentDialog({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <FormField
                 control={form.control}
                 name="amount"
@@ -121,6 +122,19 @@ export function PaymentDialog({
                     <FormLabel>Сумма</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lessons"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Занятий</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} step="1" {...field} value={field.value ?? 0} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

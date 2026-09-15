@@ -6,6 +6,12 @@ export const paymentSchema = z.object({
     .number({ invalid_type_error: "Введите сумму" })
     .positive("Сумма должна быть больше 0")
     .max(100_000_000, "Слишком большая сумма"),
+  lessons: z.coerce
+    .number({ invalid_type_error: "Введите количество" })
+    .int("Целое число")
+    .min(0, "Не меньше 0")
+    .max(1000, "Слишком много")
+    .optional(),
   paymentDate: z
     .string()
     .min(1, "Укажите дату")
