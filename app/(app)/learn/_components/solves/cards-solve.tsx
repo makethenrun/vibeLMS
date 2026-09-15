@@ -93,10 +93,8 @@ export function CardsSolve({
       </div>
 
       {/* Flip card: image on the front, hint on the back */}
-      <div className="relative mx-auto w-full max-w-sm [perspective:1000px]">
-        {!textFront && card.imageUrl && !flipped ? (
-          <ImageZoom src={card.imageUrl} inline className="absolute left-full top-0 z-20 ml-2" />
-        ) : null}
+      <div className="mx-auto flex w-full max-w-sm items-start justify-center gap-1">
+        <div className="relative w-full [perspective:1000px]">
         <button
           type="button"
           onClick={() => setFlipped((f) => !f)}
@@ -122,6 +120,10 @@ export function CardsSolve({
             {card.hint ? <FormattedText text={card.hint} /> : <span className="text-sm text-muted-foreground">{textFront ? "Перевода нет" : "Подсказки нет"}</span>}
           </span>
         </button>
+        </div>
+        {!textFront && card.imageUrl && !flipped ? (
+          <ImageZoom src={card.imageUrl} inline />
+        ) : null}
       </div>
 
       {studyMode ? null : (
