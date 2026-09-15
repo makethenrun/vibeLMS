@@ -21,18 +21,32 @@ type Row = PaymentWithStudent & { studentLogin: string | null };
 
 type SortKey = "date" | "student" | "amount" | "lessons" | "status";
 
+function monthLabel(m: string): string {
+  const [y, mo] = m.split("-").map(Number);
+  const label = new Date(y, mo - 1, 1).toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export function PaymentsTable({ payments, canManage }: { payments: Row[]; canManage: boolean }) {
   const [query, setQuery] = useState("");
+  const [month, setMonth] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "date", dir: "desc" });
 
   function toggleSort(key: SortKey) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
   }
 
+  const months = useMemo(
+    () => [...new Set(payments.map((p) => p.payment_date.slice(0, 7)))].sort().reverse(),
+    [payments],
+  );
+
   const q = query.trim().toLowerCase();
-  const filtered = q
-    ? payments.filter((p) => p.studentName.toLowerCase().includes(q) || (p.studentLogin ?? "").toLowerCase().includes(q))
-    : payments;
+  const filtered = payments.filter((p) => {
+    if (month && p.payment_date.slice(0, 7) !== month) return false;
+    if (q && !(p.studentName.toLowerCase().includes(q) || (p.studentLogin ?? "").toLowerCase().includes(q))) return false;
+    return true;
+  });
 
   const sorted = useMemo(() => {
     const rows = [...filtered];
@@ -75,9 +89,22 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
 
   return (
     <div className="space-y-3">
-      <div className="relative max-w-xs">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по имени или логину" className="pl-8" />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative max-w-xs flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по имени или логину" className="pl-8" />
+        </div>
+        <select
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          className="h-9 rounded-md border bg-background px-2 text-sm"
+          aria-label="Фильтр по месяцу"
+        >
+          <option value="">Все месяцы</option>
+          {months.map((m) => (
+            <option key={m} value={m}>{monthLabel(m)}</option>
+          ))}
+        </select>
       </div>
       <div className="rounded-lg border">
         <Table>

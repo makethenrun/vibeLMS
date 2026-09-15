@@ -65,6 +65,7 @@ export async function createPayment(db: Db, input: PaymentInput): Promise<Paymen
     .insert({
       student_id: input.studentId,
       amount: input.amount,
+      lessons: input.lessons && input.lessons > 0 ? input.lessons : null,
       payment_date: paymentDate,
       comment: normalizeComment(input.comment),
     })
