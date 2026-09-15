@@ -50,7 +50,7 @@ export function ImageZoom({ src, className, inline = false }: { src: string; cla
           aria-modal="true"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt="" className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          <img src={src} alt="" className="h-full w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
           <button
             type="button"
             onClick={() => setOpen(false)}
