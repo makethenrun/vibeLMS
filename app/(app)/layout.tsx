@@ -6,6 +6,7 @@ import { getLiveIndicator } from "@/services/materials/live-session.service";
 import { AddToDictionary } from "./dictionary/add-to-dictionary";
 import { PinyinBar } from "@/components/editor/pinyin-bar";
 import { ExtraKeyboards } from "@/components/editor/extra-keyboards";
+import { EnabledKeyboardsProvider } from "@/components/editor/keyboards-context";
 import { FormatBar } from "@/components/editor/format-bar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -24,7 +25,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       logoUrl={settings.logo_url}
       liveIndicator={liveIndicator}
     >
-      {children}
+      <EnabledKeyboardsProvider value={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []}>
+        {children}
+      </EnabledKeyboardsProvider>
       <AddToDictionary enabledKeyboards={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />
       <PinyinBar />
       <FormatBar />

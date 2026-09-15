@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { Languages, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PinyinInputDialog } from "./pinyin-input-dialog";
 
 interface Pos {
   top: number;
@@ -14,11 +15,14 @@ interface Pos {
 
 /**
  * Floating "Добавить над" button that appears above a non-empty text selection
- * inside the rich-text editor (mirrors the "Добавить в словарь" mechanic).
- * Clicking it prompts for pinyin and annotates the selection with a ruby mark.
+ * inside the rich-text editor. Opens a dialog to enter the annotation (with the
+ * transcription keyboards) and applies it as a ruby-style mark over the selection.
  */
 export function PinyinSelection({ editor }: { editor: Editor }) {
   const [pos, setPos] = useState<Pos | null>(null);
+  const [dlgOpen, setDlgOpen] = useState(false);
+  const [range, setRange] = useState<{ from: number; to: number }>({ from: 0, to: 0 });
+  const [current, setCurrent] = useState("");
 
   useEffect(() => {
     function update() {
@@ -46,19 +50,11 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
     };
   }, [editor]);
 
-  if (!pos) return null;
-
-  function apply() {
-    // Capture the range now — window.prompt can drop the DOM selection, so we
-    // re-select it explicitly before applying the mark.
+  function openDialog() {
     const { from, to } = editor.state.selection;
-    const current = (editor.getAttributes("pinyin").pinyin as string) ?? "";
-    const input = window.prompt("Текст над выделением (пусто — убрать):", current);
-    if (input === null) return;
-    const pinyin = input.trim();
-    const chain = editor.chain().focus().setTextSelection({ from, to });
-    if (pinyin) chain.setMark("pinyin", { pinyin }).run();
-    else chain.unsetMark("pinyin").run();
+    setRange({ from, to });
+    setCurrent((editor.getAttributes("pinyin").pinyin as string) ?? "");
+    setDlgOpen(true);
     setPos(null);
   }
 
@@ -68,22 +64,34 @@ export function PinyinSelection({ editor }: { editor: Editor }) {
     setPos(null);
   }
 
+  function applyValue(value: string) {
+    const chain = editor.chain().focus().setTextSelection(range);
+    if (value) chain.setMark("pinyin", { pinyin: value }).run();
+    else chain.unsetMark("pinyin").run();
+  }
+
   return (
-    <div
-      className="fixed z-50 flex -translate-x-1/2 gap-1"
-      style={{ top: pos.top, left: pos.left }}
-      onMouseDown={(e) => e.preventDefault()}
-    >
-      <Button size="sm" className="shadow-md" onClick={apply}>
-        <Languages className="h-4 w-4" />
-        {pos.annotated ? "Изменить над" : "Добавить над"}
-      </Button>
-      {pos.annotated ? (
-        <Button size="sm" variant="secondary" className="shadow-md" onClick={remove}>
-          <X className="h-4 w-4" />
-          Убрать над
-        </Button>
+    <>
+      {pos ? (
+        <div
+          className="fixed z-50 flex -translate-x-1/2 gap-1"
+          style={{ top: pos.top, left: pos.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <Button size="sm" className="shadow-md" onClick={openDialog}>
+            <Languages className="h-4 w-4" />
+            {pos.annotated ? "Изменить над" : "Добавить над"}
+          </Button>
+          {pos.annotated ? (
+            <Button size="sm" variant="secondary" className="shadow-md" onClick={remove}>
+              <X className="h-4 w-4" />
+              Убрать над
+            </Button>
+          ) : null}
+        </div>
       ) : null}
-    </div>
+
+      <PinyinInputDialog open={dlgOpen} defaultValue={current} onOpenChange={setDlgOpen} onConfirm={applyValue} />
+    </>
   );
 }
