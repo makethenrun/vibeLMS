@@ -10,6 +10,7 @@ import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
 import { studentHasItemAccess } from "@/services/materials/student-access.service";
 import { upsertSubmission } from "@/services/materials/submissions.service";
+import { importVocabToDictionary } from "@/services/dictionary/dictionary.service";
 
 export async function submitItemAction(
   itemId: string,
@@ -25,7 +26,7 @@ export async function submitItemAction(
 
   const { data: item, error } = await db
     .from("material_items")
-    .select("content")
+    .select("content, vocab")
     .eq("id", itemId)
     .maybeSingle();
   if (error) return fail(error.message);
@@ -37,6 +38,21 @@ export async function submitItemAction(
     await upsertSubmission(db, student.studentId, itemId, answer, score);
   } catch (e) {
     return fail(getErrorMessage(e));
+  }
+
+  // Completing an exercise imports its "new words" into the student's own
+  // dictionary (best-effort — never blocks the submission).
+  if (Array.isArray(item.vocab) && item.vocab.length > 0) {
+    try {
+      await importVocabToDictionary(
+        db,
+        student.user.id,
+        item.vocab as { term?: string; pinyin?: string; translation?: string }[],
+      );
+      revalidatePath("/dictionary");
+    } catch {
+      // ignore — the submission already succeeded
+    }
   }
 
   revalidatePath("/learn", "layout");
