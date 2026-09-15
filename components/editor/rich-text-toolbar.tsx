@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import {
   Bold,
@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { PinyinInputDialog } from "./pinyin-input-dialog";
 
 const FONTS: { label: string; value: string | null }[] = [
   { label: "Стандартный", value: null },
@@ -38,6 +39,9 @@ interface UploadResponse {
 
 export function RichTextToolbar({ editor }: { editor: Editor }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pinyinOpen, setPinyinOpen] = useState(false);
+  const [pinyinRange, setPinyinRange] = useState<{ from: number; to: number }>({ from: 0, to: 0 });
+  const [pinyinCurrent, setPinyinCurrent] = useState("");
   const uploadingRef = useRef(false);
 
   async function handleImage(file: File) {
@@ -58,20 +62,20 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
     }
   }
 
-  function togglePinyin() {
+  function openPinyin() {
     if (editor.state.selection.empty) {
       toast.error("Сначала выделите текст");
       return;
     }
-    // Capture the range now — window.prompt can drop the DOM selection, so we
-    // re-select it explicitly before applying the mark.
     const { from, to } = editor.state.selection;
-    const previous = (editor.getAttributes("pinyin").pinyin as string) ?? "";
-    const value = window.prompt("Текст над выделением (пусто — убрать):", previous);
-    if (value === null) return;
-    const pinyin = value.trim();
-    const chain = editor.chain().focus().setTextSelection({ from, to });
-    if (pinyin) chain.setMark("pinyin", { pinyin }).run();
+    setPinyinRange({ from, to });
+    setPinyinCurrent((editor.getAttributes("pinyin").pinyin as string) ?? "");
+    setPinyinOpen(true);
+  }
+
+  function applyPinyin(value: string) {
+    const chain = editor.chain().focus().setTextSelection(pinyinRange);
+    if (value) chain.setMark("pinyin", { pinyin: value }).run();
     else chain.unsetMark("pinyin").run();
   }
 
@@ -90,6 +94,7 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
     cn("h-8 w-8", active && "bg-accent text-accent-foreground");
 
   return (
+    <>
     <div className="flex flex-wrap items-center gap-1 border-b p-1">
       <Button type="button" size="icon" variant="ghost" className={btn(editor.isActive("bold"))}
         onClick={() => editor.chain().focus().toggleBold().run()} aria-label="Жирный">
@@ -116,7 +121,7 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
         <Link2 className="h-4 w-4" />
       </Button>
       <Button type="button" size="icon" variant="ghost" className={btn(editor.isActive("pinyin"))}
-        onClick={togglePinyin} aria-label="Текст над выделением" title="Текст над выделением (транскрипция)">
+        onClick={openPinyin} aria-label="Текст над выделением" title="Текст над выделением (транскрипция)">
         <Languages className="h-4 w-4" />
       </Button>
       <DropdownMenu>
@@ -157,5 +162,7 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
         }}
       />
     </div>
+    <PinyinInputDialog open={pinyinOpen} defaultValue={pinyinCurrent} onOpenChange={setPinyinOpen} onConfirm={applyPinyin} />
+    </>
   );
 }
