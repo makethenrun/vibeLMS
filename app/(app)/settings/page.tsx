@@ -21,6 +21,7 @@ export default async function SettingsPage() {
     organizationName: settings.organization_name,
     logoUrl: settings.logo_url ?? "",
     enabledKeyboards: Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : [],
+    languages: Array.isArray(settings.languages) ? (settings.languages as string[]) : [],
   };
 
   return (

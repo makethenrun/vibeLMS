@@ -232,6 +232,7 @@ export interface Database {
           title: string;
           description: string | null;
           cover_url: string | null;
+          language: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -240,6 +241,7 @@ export interface Database {
           title: string;
           description?: string | null;
           cover_url?: string | null;
+          language?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -248,6 +250,7 @@ export interface Database {
           title?: string;
           description?: string | null;
           cover_url?: string | null;
+          language?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -823,6 +826,7 @@ export interface Database {
           organization_name: string;
           logo_url: string | null;
           enabled_keyboards: Json;
+          languages: Json;
           created_at: string;
         };
         Insert: {
@@ -830,6 +834,7 @@ export interface Database {
           organization_name?: string;
           logo_url?: string | null;
           enabled_keyboards?: Json;
+          languages?: Json;
           created_at?: string;
         };
         Update: {
@@ -837,6 +842,7 @@ export interface Database {
           organization_name?: string;
           logo_url?: string | null;
           enabled_keyboards?: Json;
+          languages?: Json;
           created_at?: string;
         };
         Relationships: [];

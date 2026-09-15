@@ -69,6 +69,20 @@ export async function createMaterialAction(input: MaterialInput): Promise<Action
   return ok();
 }
 
+export async function setMaterialLanguageAction(id: string, language: string | null): Promise<ActionResult> {
+  const denied = await requireEdit("material", id);
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await materials.setMaterialLanguage(db, id, language);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials");
+  revalidatePath(`/materials/${id}`);
+  return ok();
+}
+
 export async function updateMaterialAction(id: string, input: MaterialInput): Promise<ActionResult> {
   const denied = await requireEdit("material", id);
   if (denied) return denied;
