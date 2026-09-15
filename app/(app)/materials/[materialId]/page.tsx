@@ -6,17 +6,19 @@ import { BarChart3, Pencil } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { requireStaff } from "@/lib/auth/guards";
-import { canViewMaterial } from "@/services/assistants/assistants.service";
+import { canEditMaterial, canViewMaterial } from "@/services/assistants/assistants.service";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
 import { listMaterialGroupIds } from "@/services/materials/material-groups.service";
 import { listGroups } from "@/services/groups/groups.service";
+import { getSettings } from "@/services/settings/settings.service";
 import { Breadcrumbs } from "../_components/breadcrumbs";
 import { Workspace } from "../_components/workspace";
 import { MaterialFormDialog } from "../material-form-dialog";
 import { GroupsAccess } from "./groups-access";
 import { MaterialCover } from "./material-cover";
+import { MaterialLanguage } from "./material-language";
 import { SectionTree } from "./section-tree";
 
 export const metadata: Metadata = { title: "Материал" };
@@ -34,11 +36,14 @@ export default async function MaterialOverviewPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const [sections, groups, selectedGroupIds] = await Promise.all([
+  const [sections, groups, selectedGroupIds, settings, canEdit] = await Promise.all([
     getSectionsWithLessons(db, materialId),
     listGroups(db),
     listMaterialGroupIds(db, materialId),
+    getSettings(db),
+    canEditMaterial(db, user, materialId),
   ]);
+  const languages = Array.isArray(settings.languages) ? (settings.languages as string[]) : [];
 
   return (
     <div className="space-y-6">
@@ -73,6 +78,7 @@ export default async function MaterialOverviewPage({
       />
       <Workspace tree={<SectionTree materialId={material.id} sections={sections} />} treeTitle="Разделы">
         <div className="space-y-6">
+          <MaterialLanguage materialId={material.id} language={material.language} languages={languages} canEdit={canEdit} />
           <MaterialCover material={material} />
           <GroupsAccess materialId={material.id} groups={groups} selectedIds={selectedGroupIds} />
         </div>

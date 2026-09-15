@@ -56,6 +56,15 @@ export async function updateMaterial(db: Db, id: string, input: MaterialInput): 
   if (error) throw new Error(error.message);
 }
 
+export async function setMaterialLanguage(db: Db, id: string, language: string | null): Promise<void> {
+  const value = language && language.trim() !== "" ? language.trim() : null;
+  const { error } = await db
+    .from("materials")
+    .update({ language: value, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 export async function deleteMaterial(db: Db, id: string): Promise<void> {
   const { error } = await db.from("materials").delete().eq("id", id);
   if (error) throw new Error(error.message);

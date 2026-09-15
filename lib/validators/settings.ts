@@ -8,5 +8,6 @@ export const settingsSchema = z.object({
     .max(160, "Максимум 160 символов"),
   logoUrl: z.string().trim().url("Некорректная ссылка").max(1000).optional().or(z.literal("")),
   enabledKeyboards: z.array(z.string().max(40)).max(20).default([]),
+  languages: z.array(z.string().trim().min(1).max(40)).max(50).default([]),
 });
 export type SettingsInput = z.infer<typeof settingsSchema>;

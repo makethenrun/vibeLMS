@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -15,6 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { applyFieldErrors } from "@/lib/utils/form";
@@ -24,6 +27,7 @@ import { updateSettingsAction } from "./actions";
 
 export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
   const router = useRouter();
+  const [newLang, setNewLang] = useState("");
   const form = useForm<SettingsInput>({
     resolver: zodResolver(settingsSchema),
     defaultValues: defaults,
@@ -109,6 +113,63 @@ export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
                   <FormMessage />
                 </FormItem>
               )}
+            />
+            <FormField
+              control={form.control}
+              name="languages"
+              render={({ field }) => {
+                const list = field.value ?? [];
+                const add = () => {
+                  const v = newLang.trim();
+                  if (!v || list.some((l) => l.toLowerCase() === v.toLowerCase())) {
+                    setNewLang("");
+                    return;
+                  }
+                  field.onChange([...list, v]);
+                  setNewLang("");
+                };
+                return (
+                  <FormItem>
+                    <FormLabel>Языки изучения</FormLabel>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newLang}
+                        onChange={(e) => setNewLang(e.target.value)}
+                        placeholder="Например: Английский"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            add();
+                          }
+                        }}
+                      />
+                      <Button type="button" variant="outline" onClick={add}>
+                        <Plus className="h-4 w-4" />
+                        Добавить
+                      </Button>
+                    </div>
+                    {list.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {list.map((l) => (
+                          <span key={l} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm">
+                            {l}
+                            <button
+                              type="button"
+                              onClick={() => field.onChange(list.filter((x) => x !== l))}
+                              className="text-muted-foreground hover:text-destructive"
+                              aria-label={`Удалить ${l}`}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <FormDescription>Эти языки можно выбрать как «язык изучения» на странице материала.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
             <LoadingButton type="submit" loading={form.formState.isSubmitting}>
               Сохранить
