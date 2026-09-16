@@ -9,14 +9,14 @@ import { dictionaryEntrySchema, type DictionaryEntryInput } from "@/lib/validato
 import type { DictionaryEntry } from "@/types";
 import { createEntry, deleteEntry, listDictionary, updateEntry } from "@/services/dictionary/dictionary.service";
 
-export async function createEntryAction(input: DictionaryEntryInput): Promise<ActionResult> {
+export async function createEntryAction(input: DictionaryEntryInput, language: string | null = null): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return fail("Не авторизовано");
   const parsed = dictionaryEntrySchema.safeParse(input);
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    await createEntry(db, user.id, parsed.data);
+    await createEntry(db, user.id, parsed.data, language);
   } catch (e) {
     return fail(getErrorMessage(e));
   }

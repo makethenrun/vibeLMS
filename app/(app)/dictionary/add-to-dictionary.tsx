@@ -16,7 +16,7 @@ interface Pos {
  * Shows a floating "Добавить в словарь" button when the tutor selects a short
  * piece of text anywhere in the app. Mounted app-wide for tutors.
  */
-export function AddToDictionary({ enabledKeyboards = [] }: { enabledKeyboards?: string[] }) {
+export function AddToDictionary({ enabledKeyboards = [], languages = [] }: { enabledKeyboards?: string[]; languages?: string[] }) {
   const [pos, setPos] = useState<Pos | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [term, setTerm] = useState("");
@@ -68,7 +68,13 @@ export function AddToDictionary({ enabledKeyboards = [] }: { enabledKeyboards?: 
         </div>
       ) : null}
 
-      <EntryDialog open={dialogOpen} onOpenChange={setDialogOpen} defaultTerm={term} enabledKeyboards={enabledKeyboards} />
+      <EntryDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        defaultTerm={term}
+        enabledKeyboards={enabledKeyboards}
+        languageOptions={languages}
+      />
     </>
   );
 }

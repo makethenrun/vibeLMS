@@ -40,6 +40,8 @@ export function EntryDialog({
   open: openProp,
   onOpenChange,
   enabledKeyboards = [],
+  language = null,
+  languageOptions,
 }: {
   trigger?: ReactNode;
   entry?: DictionaryEntry;
@@ -47,12 +49,22 @@ export function EntryDialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   enabledKeyboards?: string[];
+  /** Language of a newly created entry (fixed by the active dictionary tab). */
+  language?: string | null;
+  /** When given, show a dictionary picker instead of a fixed language. */
+  languageOptions?: string[];
 }) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const isEdit = Boolean(entry);
+  const [selectedLang, setSelectedLang] = useState<string>(language ?? "");
+
+  useEffect(() => {
+    if (open) setSelectedLang(entry?.language ?? language ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const form = useForm<DictionaryEntryInput>({
     resolver: zodResolver(dictionaryEntrySchema),
@@ -72,7 +84,8 @@ export function EntryDialog({
   }, [open]);
 
   async function onSubmit(values: DictionaryEntryInput) {
-    const result = isEdit ? await updateEntryAction(entry!.id, values) : await createEntryAction(values);
+    const lang = languageOptions ? (selectedLang || null) : (language ?? null);
+    const result = isEdit ? await updateEntryAction(entry!.id, values) : await createEntryAction(values, lang);
     if (result.success) {
       toast.success(isEdit ? "Сохранено" : "Добавлено");
       setOpen(false);
@@ -92,6 +105,21 @@ export function EntryDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {languageOptions && !isEdit ? (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Словарь</label>
+                <select
+                  value={selectedLang}
+                  onChange={(e) => setSelectedLang(e.target.value)}
+                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                >
+                  <option value="">Общий</option>
+                  {languageOptions.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             <FormField control={form.control} name="term" render={({ field }) => (
               <FormItem>
                 <FormLabel>Слово</FormLabel>

@@ -28,7 +28,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <EnabledKeyboardsProvider value={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []}>
         {children}
       </EnabledKeyboardsProvider>
-      <AddToDictionary enabledKeyboards={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />
+      <AddToDictionary
+        enabledKeyboards={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []}
+        languages={Array.isArray(settings.languages) ? (settings.languages as string[]) : []}
+      />
       <PinyinBar />
       <FormatBar />
       <ExtraKeyboards enabled={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />

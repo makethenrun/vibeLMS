@@ -59,6 +59,18 @@ export async function lessonMaterialId(db: Db, lessonId: string): Promise<string
   return section?.material_id ?? null;
 }
 
+/** The study language of the material that owns an item (null if none). */
+export async function itemMaterialLanguage(db: Db, itemId: string): Promise<string | null> {
+  const { data: item } = await db.from("material_items").select("module_id").eq("id", itemId).maybeSingle();
+  if (!item) return null;
+  const { data: mod } = await db.from("material_modules").select("lesson_id").eq("id", item.module_id).maybeSingle();
+  if (!mod) return null;
+  const materialId = await lessonMaterialId(db, mod.lesson_id);
+  if (!materialId) return null;
+  const { data: material } = await db.from("materials").select("language").eq("id", materialId).maybeSingle();
+  return material?.language ?? null;
+}
+
 export async function studentHasItemAccess(db: Db, studentId: string, itemId: string): Promise<boolean> {
   const { data: item } = await db.from("material_items").select("module_id").eq("id", itemId).maybeSingle();
   if (!item) return false;
