@@ -8,7 +8,7 @@ import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action
 import { checkItem } from "@/lib/materials/scoring";
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
-import { studentHasItemAccess } from "@/services/materials/student-access.service";
+import { itemMaterialLanguage, studentHasItemAccess } from "@/services/materials/student-access.service";
 import { upsertSubmission } from "@/services/materials/submissions.service";
 import { importVocabToDictionary } from "@/services/dictionary/dictionary.service";
 
@@ -44,10 +44,12 @@ export async function submitItemAction(
   // dictionary (best-effort — never blocks the submission).
   if (Array.isArray(item.vocab) && item.vocab.length > 0) {
     try {
+      const language = await itemMaterialLanguage(db, itemId);
       await importVocabToDictionary(
         db,
         student.user.id,
         item.vocab as { term?: string; pinyin?: string; translation?: string }[],
+        language,
       );
       revalidatePath("/dictionary");
     } catch {
@@ -77,7 +79,8 @@ export async function importItemVocabAction(itemId: string): Promise<ActionResul
   if (vocab.length === 0) return ok({ count: 0 });
 
   try {
-    const count = await importVocabToDictionary(db, student.user.id, vocab);
+    const language = await itemMaterialLanguage(db, itemId);
+    const count = await importVocabToDictionary(db, student.user.id, vocab, language);
     revalidatePath("/dictionary");
     return ok({ count });
   } catch (e) {

@@ -30,6 +30,7 @@ export interface Database {
           translation: string;
           pinyin: string | null;
           note: string | null;
+          language: string | null;
           created_at: string;
         };
         Insert: {
@@ -39,6 +40,7 @@ export interface Database {
           translation: string;
           pinyin?: string | null;
           note?: string | null;
+          language?: string | null;
           created_at?: string;
         };
         Update: {
@@ -48,6 +50,7 @@ export interface Database {
           translation?: string;
           pinyin?: string | null;
           note?: string | null;
+          language?: string | null;
           created_at?: string;
         };
         Relationships: [];

@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { BookA, Plus } from "lucide-react";
 
-import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { requireUser } from "@/lib/auth/guards";
+import { getStudentOrNull, requireUser } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
-import { listDictionary } from "@/services/dictionary/dictionary.service";
+import { listDictionary, listOwnerLanguages } from "@/services/dictionary/dictionary.service";
 import { getSettings } from "@/services/settings/settings.service";
-import { DictionaryTable } from "./dictionary-table";
-import { EntryDialog } from "./entry-dialog";
+import { listStudentMaterials } from "@/services/materials/student-access.service";
+import { DictionaryTabs } from "./dictionary-tabs";
 
 export const metadata: Metadata = { title: "Словарь" };
 
@@ -19,32 +16,32 @@ export default async function DictionaryPage() {
   const db = createServerSupabaseClient();
   const [entries, settings] = await Promise.all([listDictionary(db, user.id), getSettings(db)]);
   const enabledKeyboards = Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : [];
+  const settingsLanguages = Array.isArray(settings.languages) ? (settings.languages as string[]) : [];
 
-  const addButton = (
-    <Button>
-      <Plus className="h-4 w-4" />
-      Добавить слово
-    </Button>
-  );
+  // Which dictionaries this user has (one per language).
+  let languages: string[];
+  if (user.role !== "STUDENT") {
+    languages = settingsLanguages;
+  } else {
+    // Student: languages of accessible materials + languages already used —
+    // so a dictionary is kept even after material access ends.
+    const student = await getStudentOrNull();
+    const langs = new Set<string>();
+    if (student) {
+      const materials = await listStudentMaterials(db, student.studentId);
+      for (const m of materials) if (m.language) langs.add(m.language);
+    }
+    for (const l of await listOwnerLanguages(db, user.id)) langs.add(l);
+    languages = [...langs];
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Словарь"
-        description="Ваш личный словарь слов и переводов."
-        actions={<EntryDialog trigger={addButton} enabledKeyboards={enabledKeyboards} />}
+        title="Словари"
+        description="По одному словарю на язык изучения."
       />
-
-      {entries.length === 0 ? (
-        <EmptyState
-          icon={BookA}
-          title="Словарь пуст"
-          description="Добавьте первое слово."
-          action={<EntryDialog trigger={addButton} enabledKeyboards={enabledKeyboards} />}
-        />
-      ) : (
-        <DictionaryTable entries={entries} enabledKeyboards={enabledKeyboards} />
-      )}
+      <DictionaryTabs entries={entries} languages={languages} enabledKeyboards={enabledKeyboards} />
     </div>
   );
 }
