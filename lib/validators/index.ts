@@ -8,4 +8,5 @@ export * from "./materials";
 export * from "./homework";
 export * from "./dictionary";
 export * from "./payment";
+export * from "./grammar";
 export * from "./settings";
