@@ -102,14 +102,7 @@ export default async function PaymentsPage() {
 
       <PendingPayments pending={pending} />
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-base font-semibold">Баланс занятий</h2>
-          <p className="text-xs text-muted-foreground">
-            Осталось = оплачено − проведено (списывается за каждое запланированное занятие, независимо от посещения).
-            Кнопками можно вручную начислить или списать занятия.
-          </p>
-        </div>
+      <section>
         <LessonBalances rows={balanceRows} canManage={isManager} />
       </section>
 

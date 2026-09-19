@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Minus, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export function LessonBalances({ rows, canManage }: { rows: BalanceRow[]; canMan
   const [query, setQuery] = useState("");
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [open, setOpen] = useState(true);
 
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -61,6 +62,27 @@ export function LessonBalances({ rows, canManage }: { rows: BalanceRow[]; canMan
 
   return (
     <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-start gap-2 text-left"
+        aria-expanded={open}
+      >
+        {open ? (
+          <ChevronDown className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+        )}
+        <span>
+          <span className="block text-base font-semibold">Баланс занятий</span>
+          <span className="block text-xs text-muted-foreground">
+            Осталось = оплачено − проведено (списывается за каждое запланированное занятие, независимо от посещения).
+            Кнопками можно вручную начислить или списать занятия.
+          </span>
+        </span>
+      </button>
+      {open ? (
+        <>
       <div className="relative max-w-xs">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск по имени или логину" className="pl-8" />
@@ -135,6 +157,8 @@ export function LessonBalances({ rows, canManage }: { rows: BalanceRow[]; canMan
           </TableBody>
         </Table>
       </div>
+        </>
+      ) : null}
     </div>
   );
 }
