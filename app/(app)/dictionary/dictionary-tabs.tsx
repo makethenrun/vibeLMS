@@ -68,7 +68,13 @@ export function DictionaryTabs({
           В словаре «{current ?? "Общий"}» пока нет слов.
         </p>
       ) : (
-        <DictionaryTable entries={list} enabledKeyboards={enabledKeyboards} />
+        <DictionaryTable
+          key={current ?? "__null"}
+          entries={list}
+          enabledKeyboards={enabledKeyboards}
+          currentLanguage={current}
+          languages={languages}
+        />
       )}
     </div>
   );

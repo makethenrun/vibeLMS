@@ -7,7 +7,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
 import { dictionaryEntrySchema, type DictionaryEntryInput } from "@/lib/validators";
 import type { DictionaryEntry } from "@/types";
-import { createEntry, deleteEntry, listDictionary, updateEntry } from "@/services/dictionary/dictionary.service";
+import { createEntry, deleteEntry, listDictionary, moveEntriesLanguage, updateEntry } from "@/services/dictionary/dictionary.service";
 
 export async function createEntryAction(input: DictionaryEntryInput, language: string | null = null): Promise<ActionResult> {
   const user = await getCurrentUser();
@@ -45,6 +45,20 @@ export async function deleteEntryAction(id: string): Promise<ActionResult> {
   const db = createServerSupabaseClient();
   try {
     await deleteEntry(db, user.id, id);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/dictionary");
+  return ok();
+}
+
+/** Move selected entries into another language dictionary (null = «Общий»). */
+export async function moveEntriesLanguageAction(ids: string[], language: string | null): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return fail("Не авторизовано");
+  const db = createServerSupabaseClient();
+  try {
+    await moveEntriesLanguage(db, user.id, ids, language);
   } catch (e) {
     return fail(getErrorMessage(e));
   }
