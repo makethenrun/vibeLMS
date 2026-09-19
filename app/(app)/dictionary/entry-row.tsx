@@ -9,9 +9,32 @@ import type { DictionaryEntry } from "@/types";
 import { deleteEntryAction } from "./actions";
 import { EntryDialog } from "./entry-dialog";
 
-export function EntryRow({ entry, enabledKeyboards = [] }: { entry: DictionaryEntry; enabledKeyboards?: string[] }) {
+export function EntryRow({
+  entry,
+  enabledKeyboards = [],
+  selectable = false,
+  selected = false,
+  onToggle,
+}: {
+  entry: DictionaryEntry;
+  enabledKeyboards?: string[];
+  selectable?: boolean;
+  selected?: boolean;
+  onToggle?: (id: string) => void;
+}) {
   return (
-    <TableRow>
+    <TableRow data-state={selected ? "selected" : undefined}>
+      {selectable ? (
+        <TableCell className="w-8">
+          <input
+            type="checkbox"
+            className="h-4 w-4 align-middle"
+            checked={selected}
+            onChange={() => onToggle?.(entry.id)}
+            aria-label={`Выбрать «${entry.term}»`}
+          />
+        </TableCell>
+      ) : null}
       <TableCell className="font-medium">{entry.term}</TableCell>
       <TableCell className="text-muted-foreground">{entry.pinyin ?? "—"}</TableCell>
       <TableCell>{entry.translation}</TableCell>

@@ -84,6 +84,23 @@ export async function importVocabToDictionary(
   return rows.length;
 }
 
+/** Move a set of the owner's entries into another language dictionary (null = «Общий»). */
+export async function moveEntriesLanguage(
+  db: Db,
+  ownerId: string,
+  ids: string[],
+  language: string | null,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const lang = language && language.trim() !== "" ? language.trim() : null;
+  const { error } = await db
+    .from("dictionary_entries")
+    .update({ language: lang })
+    .eq("owner_id", ownerId)
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+}
+
 export async function updateEntry(db: Db, ownerId: string, id: string, input: DictionaryEntryInput): Promise<void> {
   const { error } = await db
     .from("dictionary_entries")

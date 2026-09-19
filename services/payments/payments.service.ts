@@ -114,6 +114,8 @@ export async function setPaymentStatus(db: Db, id: string, status: "CONFIRMED" |
 export interface LessonBalance {
   studentId: string;
   paid: number;
+  /** Lessons paid in the most recent confirmed transaction (0 if none). */
+  lastPaid: number;
   consumed: number;
   adjustments: number;
   remaining: number;
@@ -122,10 +124,11 @@ export interface LessonBalance {
 function buildBalance(
   studentId: string,
   paid: number,
+  lastPaid: number,
   consumed: number,
   adjustments: number,
 ): LessonBalance {
-  return { studentId, paid, consumed, adjustments, remaining: paid + adjustments - consumed };
+  return { studentId, paid, lastPaid, consumed, adjustments, remaining: paid + adjustments - consumed };
 }
 
 /** Lesson balances for every student that has any payment, adjustment or lesson. */
@@ -134,11 +137,16 @@ export async function listLessonBalances(db: Db): Promise<Map<string, LessonBala
 
   const { data: pays } = await db
     .from("payments")
-    .select("student_id, lessons")
-    .eq("status", "CONFIRMED");
+    .select("student_id, lessons, payment_date, created_at")
+    .eq("status", "CONFIRMED")
+    .order("payment_date", { ascending: false })
+    .order("created_at", { ascending: false });
   const paidByStudent = new Map<string, number>();
+  // Rows arrive newest-first, so the first row seen per student is their last transaction.
+  const lastPaidByStudent = new Map<string, number>();
   for (const p of pays ?? []) {
     if (p.lessons) paidByStudent.set(p.student_id, (paidByStudent.get(p.student_id) ?? 0) + Number(p.lessons));
+    if (!lastPaidByStudent.has(p.student_id)) lastPaidByStudent.set(p.student_id, Number(p.lessons ?? 0));
   }
 
   const { data: adjs } = await db.from("lesson_adjustments").select("student_id, delta");
@@ -172,7 +180,13 @@ export async function listLessonBalances(db: Db): Promise<Map<string, LessonBala
   for (const id of ids) {
     out.set(
       id,
-      buildBalance(id, paidByStudent.get(id) ?? 0, consumedByStudent.get(id) ?? 0, adjByStudent.get(id) ?? 0),
+      buildBalance(
+        id,
+        paidByStudent.get(id) ?? 0,
+        lastPaidByStudent.get(id) ?? 0,
+        consumedByStudent.get(id) ?? 0,
+        adjByStudent.get(id) ?? 0,
+      ),
     );
   }
   return out;
@@ -184,10 +198,13 @@ export async function getStudentLessonBalance(db: Db, studentId: string): Promis
 
   const { data: pays } = await db
     .from("payments")
-    .select("lessons")
+    .select("lessons, payment_date, created_at")
     .eq("student_id", studentId)
-    .eq("status", "CONFIRMED");
+    .eq("status", "CONFIRMED")
+    .order("payment_date", { ascending: false })
+    .order("created_at", { ascending: false });
   const paid = (pays ?? []).reduce((sum, p) => sum + Number(p.lessons ?? 0), 0);
+  const lastPaid = Number((pays ?? [])[0]?.lessons ?? 0);
 
   const { data: adjs } = await db.from("lesson_adjustments").select("delta").eq("student_id", studentId);
   const adjustments = (adjs ?? []).reduce((sum, a) => sum + Number(a.delta), 0);
@@ -205,7 +222,7 @@ export async function getStudentLessonBalance(db: Db, studentId: string): Promis
     consumed = (lessons ?? []).length;
   }
 
-  return buildBalance(studentId, paid, consumed, adjustments);
+  return buildBalance(studentId, paid, lastPaid, consumed, adjustments);
 }
 
 /** Manually credit (delta > 0) or debit (delta < 0) a student's lesson balance. */

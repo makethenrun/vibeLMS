@@ -67,7 +67,7 @@ export default async function PaymentsPage() {
       id: s.id,
       name: s.full_name,
       login: s.login ?? null,
-      paid: b?.paid ?? 0,
+      paid: b?.lastPaid ?? 0,
       consumed: b?.consumed ?? 0,
       remaining: b?.remaining ?? 0,
     };
