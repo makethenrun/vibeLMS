@@ -240,7 +240,6 @@ export function StudentItem({
                 Пройти заново
               </Button>
             ) : null}
-            {showVocabImport ? <ImportVocabButton itemId={item.id} /> : null}
           </div>
           {vocabHasContent ? (
             <aside className={vocabHasPinyin ? "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-72" : "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56"}>
@@ -258,6 +257,11 @@ export function StudentItem({
                   );
                 })}
               </div>
+              {showVocabImport ? (
+                <div className="mt-3">
+                  <ImportVocabButton itemId={item.id} />
+                </div>
+              ) : null}
             </aside>
           ) : null}
         </div>

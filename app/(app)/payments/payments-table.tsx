@@ -21,14 +21,14 @@ type Row = PaymentWithStudent & { studentLogin: string | null };
 
 type SortKey = "date" | "student" | "amount" | "lessons" | "status";
 
-function monthLabel(m: string): string {
-  const [y, mo] = m.split("-").map(Number);
-  const label = new Date(y, mo - 1, 1).toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
+const MONTH_NAMES = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
 
 export function PaymentsTable({ payments, canManage }: { payments: Row[]; canManage: boolean }) {
   const [query, setQuery] = useState("");
+  const [year, setYear] = useState("");
   const [month, setMonth] = useState("");
   const [studentId, setStudentId] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "date", dir: "desc" });
@@ -37,8 +37,8 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
   }
 
-  const months = useMemo(
-    () => [...new Set(payments.map((p) => p.payment_date.slice(0, 7)))].sort().reverse(),
+  const years = useMemo(
+    () => [...new Set(payments.map((p) => p.payment_date.slice(0, 4)))].sort().reverse(),
     [payments],
   );
 
@@ -53,7 +53,8 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
   const q = query.trim().toLowerCase();
   const filtered = payments.filter((p) => {
     if (studentId && p.student_id !== studentId) return false;
-    if (month && p.payment_date.slice(0, 7) !== month) return false;
+    if (year && p.payment_date.slice(0, 4) !== year) return false;
+    if (month && p.payment_date.slice(5, 7) !== month) return false;
     if (q && !(p.studentName.toLowerCase().includes(q) || (p.studentLogin ?? "").toLowerCase().includes(q))) return false;
     return true;
   });
@@ -116,14 +117,25 @@ export function PaymentsTable({ payments, canManage }: { payments: Row[]; canMan
           ))}
         </select>
         <select
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+          className="h-9 rounded-md border bg-background px-2 text-sm"
+          aria-label="Фильтр по году"
+        >
+          <option value="">Все годы</option>
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+        <select
           value={month}
           onChange={(e) => setMonth(e.target.value)}
           className="h-9 rounded-md border bg-background px-2 text-sm"
           aria-label="Фильтр по месяцу"
         >
           <option value="">Все месяцы</option>
-          {months.map((m) => (
-            <option key={m} value={m}>{monthLabel(m)}</option>
+          {MONTH_NAMES.map((name, i) => (
+            <option key={i} value={String(i + 1).padStart(2, "0")}>{name}</option>
           ))}
         </select>
       </div>
