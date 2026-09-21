@@ -10,11 +10,13 @@ import { getSubmissionsForItems } from "@/services/materials/submissions.service
 import { getLessonBackground } from "@/services/materials/lessons.service";
 import { itemLabel, numberItems } from "@/lib/materials/numbering";
 import { lessonMaterialId, studentHasMaterialAccess } from "@/services/materials/student-access.service";
+import { studentHasLessonAccess } from "@/services/materials/lesson-access.service";
 import { LessonSurface } from "@/app/(app)/materials/_components/lesson-surface";
 import { Workspace } from "@/app/(app)/materials/_components/workspace";
 import { PageBreadcrumbs } from "@/components/layout/breadcrumb-context";
 import { StudentItem } from "../../_components/student-item";
 import { StudentModuleTree } from "../../_components/student-module-tree";
+import { LockedLesson } from "../../_components/locked-lesson";
 
 export const metadata: Metadata = { title: "Урок" };
 
@@ -35,6 +37,23 @@ export default async function StudentLessonPage({
 
   const ctx = await lessonContext(db, lessonId);
   if (!ctx) notFound();
+
+  const materialTitleForLock = ctx.crumbs[1]?.label ?? "Материал";
+  if (!(await studentHasLessonAccess(db, studentId, lessonId, materialId))) {
+    return (
+      <div className="space-y-6">
+        <PageBreadcrumbs
+          crumbs={[
+            { label: "Обучение", href: "/learn" },
+            { label: materialTitleForLock, href: `/learn/materials/${materialId}` },
+            { label: ctx.title, href: `/learn/lessons/${lessonId}` },
+          ]}
+        />
+        <PageHeader title={ctx.title} description="Урок пока недоступен." />
+        <LockedLesson backHref={`/learn/materials/${materialId}`} />
+      </div>
+    );
+  }
 
   const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
