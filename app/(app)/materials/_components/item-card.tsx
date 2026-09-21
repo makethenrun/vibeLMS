@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookA, Brush, ChevronDown, ChevronUp, Pin, StickyNote, Trash2 } from "lucide-react";
+import { BookA, Brush, ChevronDown, ChevronUp, Pin, Search, StickyNote, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -113,6 +113,7 @@ export function ItemCard({
   const [bulkTrans, setBulkTrans] = useState(vocab.map((v) => v.translation).join("\n"));
   const [drawMode, setDrawMode] = useState(false);
   const [pins, setPins] = useState<string[]>(pinnedGroupIds);
+  const [pinQuery, setPinQuery] = useState("");
 
   const saveDrawing = async (dataUrl: string | null) => {
     const result = await setItemDrawingAction(item.id, dataUrl);
@@ -270,12 +271,38 @@ export function ItemCard({
                   Сначала откройте доступ группам у материала.
                 </p>
               ) : (
-                availableGroups.map((g) => (
-                  <label key={g.id} className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent">
-                    <input type="checkbox" checked={pins.includes(g.id)} onChange={() => togglePin(g.id)} />
-                    {g.name}
-                  </label>
-                ))
+                (() => {
+                  const q = pinQuery.trim().toLowerCase();
+                  const shown = q ? availableGroups.filter((g) => g.name.toLowerCase().includes(q)) : availableGroups;
+                  return (
+                    <>
+                      <div className="px-1.5 pb-1.5">
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            value={pinQuery}
+                            onChange={(e) => setPinQuery(e.target.value)}
+                            placeholder="Поиск группы…"
+                            className="h-8 pl-7"
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {shown.length === 0 ? (
+                          <p className="px-2 py-1.5 text-xs text-muted-foreground">Ничего не найдено.</p>
+                        ) : (
+                          shown.map((g) => (
+                            <label key={g.id} className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent">
+                              <input type="checkbox" checked={pins.includes(g.id)} onChange={() => togglePin(g.id)} />
+                              {g.name}
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  );
+                })()
               )}
             </DropdownMenuContent>
           </DropdownMenu>
