@@ -61,7 +61,8 @@ export async function createMaterialAction(input: MaterialInput): Promise<Action
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    await materials.createMaterial(db, parsed.data);
+    const material = await materials.createMaterial(db, parsed.data);
+    await sections.createHomeworkSection(db, material.id);
   } catch (e) {
     return fail(getErrorMessage(e));
   }
