@@ -36,6 +36,7 @@ import { LESSON_STATUS_OPTIONS } from "@/lib/constants";
 import { applyFieldErrors } from "@/lib/utils/form";
 import { toDateTimeLocalValue } from "@/lib/utils";
 import { lessonSchema, type LessonInput } from "@/lib/validators";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import type { LessonWithGroup } from "@/types";
 import { createLessonAction, updateLessonAction } from "./actions";
 
@@ -156,20 +157,14 @@ export function LessonDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Группа</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите группу" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    items={groups.map((group) => ({ value: group.id, label: group.name }))}
+                    placeholder="Выберите группу"
+                    searchPlaceholder="Поиск группы…"
+                    emptyText="Групп не найдено"
+                  />
                   <FormMessage />
                 </FormItem>
               )}

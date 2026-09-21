@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingButton } from "@/components/shared/loading-button";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import { cn } from "@/lib/utils";
 import { WEEKDAYS, buildRecurringRows, validateDayTimes, type DayTime } from "@/lib/lessons/recurring";
 import { createRecurringLessonsAction } from "./actions";
@@ -89,12 +90,14 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
         <div className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm font-medium">Группа</label>
-            <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
-              <option value="">Выберите группу</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={groupId}
+              onValueChange={setGroupId}
+              items={groups.map((g) => ({ value: g.id, label: g.name }))}
+              placeholder="Выберите группу"
+              searchPlaceholder="Поиск группы…"
+              emptyText="Групп не найдено"
+            />
           </div>
 
           <div className="space-y-1">

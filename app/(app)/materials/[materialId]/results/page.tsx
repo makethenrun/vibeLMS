@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResultsSummary } from "./results-summary";
 import { requireTutor } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
@@ -48,7 +47,15 @@ export default async function MaterialResultsPage({
     const answered = mine.length;
     const scored = mine.filter((s) => s.score !== null).map((s) => Number(s.score));
     const avg = scored.length > 0 ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : null;
-    return { student, answered, avg };
+    return {
+      id: student.id,
+      name: student.full_name,
+      group: (studentGroups[student.id] ?? []).join(", "),
+      answered,
+      total: gradable.length,
+      avg,
+      href: `/materials/${material.id}/results/${student.id}`,
+    };
   });
 
   const pending = flat
@@ -77,30 +84,7 @@ export default async function MaterialResultsPage({
             <CardTitle className="text-base">Сводка</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ученик</TableHead>
-                  <TableHead>Группа</TableHead>
-                  <TableHead>Пройдено</TableHead>
-                  <TableHead>Средний балл</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={r.student.id}>
-                    <TableCell>
-                      <Link href={`/materials/${material.id}/results/${r.student.id}`} className="font-medium text-primary hover:underline">
-                        {r.student.full_name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{(studentGroups[r.student.id] ?? []).join(", ") || "—"}</TableCell>
-                    <TableCell>{r.answered} / {gradable.length}</TableCell>
-                    <TableCell>{r.avg === null ? "—" : `${r.avg}%`}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ResultsSummary rows={rows} />
           </CardContent>
         </Card>
       )}
