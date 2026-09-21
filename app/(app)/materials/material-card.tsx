@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Layers, Pencil, Trash2 } from "lucide-react";
+import { Copy, Layers, Pencil, Trash2 } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import type { MaterialWithCounts } from "@/types";
-import { deleteMaterialAction } from "./actions";
+import { deleteMaterialAction, duplicateMaterialAction } from "./actions";
 import { MaterialFormDialog } from "./material-form-dialog";
 
 export function MaterialCard({ material }: { material: MaterialWithCounts }) {
@@ -37,6 +37,14 @@ export function MaterialCard({ material }: { material: MaterialWithCounts }) {
         <MaterialFormDialog
           material={material}
           trigger={<Button size="icon" variant="outline" aria-label="Редактировать"><Pencil className="h-4 w-4" /></Button>}
+        />
+        <ConfirmDialog
+          trigger={<Button size="icon" variant="outline" aria-label="Дублировать" title="Дублировать материал"><Copy className="h-4 w-4" /></Button>}
+          title="Дублировать материал?"
+          description={`Будет создана копия «${material.title}» со всем содержимым, но без результатов учеников и настроек доступа.`}
+          confirmLabel="Дублировать"
+          successMessage="Материал продублирован"
+          action={duplicateMaterialAction.bind(null, material.id)}
         />
         <ConfirmDialog
           trigger={<Button size="icon" variant="outline" className="text-destructive" aria-label="Удалить"><Trash2 className="h-4 w-4" /></Button>}

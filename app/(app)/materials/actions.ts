@@ -100,6 +100,19 @@ export async function updateMaterialAction(id: string, input: MaterialInput): Pr
   return ok();
 }
 
+export async function duplicateMaterialAction(id: string): Promise<ActionResult> {
+  const denied = await requireTutorResult();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await materials.duplicateMaterial(db, id);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/materials");
+  return ok();
+}
+
 export async function deleteMaterialAction(id: string): Promise<ActionResult> {
   const denied = await requireTutorResult();
   if (denied) return denied;
