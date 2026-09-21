@@ -35,6 +35,9 @@ export type Payment = Tables["payments"]["Row"];
 export type Settings = Tables["settings"]["Row"];
 export type DictionaryEntry = Tables["dictionary_entries"]["Row"];
 export type GrammarEntry = Tables["grammar_entries"]["Row"];
+export type LessonAccessRow = Tables["lesson_access"]["Row"];
+
+export type LessonAccessMode = "OPEN" | "DATE" | "PROGRESS" | "MANUAL";
 
 // --- Composite / view models ----------------------------------------------
 export interface StudentWithAccount extends Student {

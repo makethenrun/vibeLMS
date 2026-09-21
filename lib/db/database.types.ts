@@ -853,6 +853,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      lesson_access: {
+        Row: {
+          id: string;
+          group_id: string;
+          lesson_id: string;
+          mode: string;
+          available_at: string | null;
+          unlocked: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          lesson_id: string;
+          mode?: string;
+          available_at?: string | null;
+          unlocked?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          lesson_id?: string;
+          mode?: string;
+          available_at?: string | null;
+          unlocked?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       settings: {
         Row: {
           id: string;

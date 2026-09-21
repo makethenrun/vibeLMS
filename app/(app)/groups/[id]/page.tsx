@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Layers, Pencil, Radio } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,13 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { assistantMaterialAccess, canAccessGroup } from "@/services/assistants/assistants.service";
 import { getGroupWithMembers, listAddableStudents } from "@/services/groups/groups.service";
 import { listGroupMaterials, listMaterialsAddableToGroup } from "@/services/materials/material-groups.service";
+import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
+import { getGroupLessonAccess } from "@/services/materials/lesson-access.service";
+import type { LessonAccessMode } from "@/types";
 import { GroupDialog } from "../group-dialog";
 import { GroupMembers } from "./group-members";
 import { AddMaterialToGroup } from "./add-material";
+import { GroupMaterialList, type AccessRule, type MaterialNode } from "./group-material-list";
 
 export const metadata: Metadata = { title: "Группа" };
 
@@ -39,6 +43,29 @@ export default async function GroupDetailPage({
     const access = await assistantMaterialAccess(db, user.id);
     materials = materials.filter((m) => access.has(m.id));
   }
+
+  // Build the material → sections → lessons tree and this group's access rules.
+  const accessRows = await getGroupLessonAccess(db, id);
+  const accessRecord: Record<string, AccessRule> = {};
+  for (const [lessonId, r] of accessRows) {
+    accessRecord[lessonId] = { mode: r.mode as LessonAccessMode, availableAt: r.available_at, unlocked: r.unlocked };
+  }
+  const materialNodes: MaterialNode[] = await Promise.all(
+    materials.map(async (m): Promise<MaterialNode> => {
+      const sections = await getSectionsWithLessons(db, m.id);
+      return {
+        id: m.id,
+        title: m.title,
+        coverUrl: m.cover_url ?? null,
+        sections: sections.map((s) => ({
+          id: s.id,
+          title: s.title,
+          isHomework: s.is_homework,
+          lessons: s.lessons.map((l) => ({ id: l.id, title: l.title, isHomework: s.is_homework })),
+        })),
+      };
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -90,38 +117,12 @@ export default async function GroupDetailPage({
           {canManage ? <AddMaterialToGroup groupId={group.id} materials={addableMaterials.map((m) => ({ id: m.id, title: m.title }))} /> : null}
         </CardHeader>
         <CardContent>
-          {materials.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Группе пока не открыт доступ ни к одному материалу. Откройте доступ на странице материала.
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {materials.map((material) => (
-                <li key={material.id} className="flex items-center gap-3 py-2">
-                  <Link
-                    href={`/materials/${material.id}`}
-                    className="flex flex-1 items-center gap-3 hover:text-primary"
-                  >
-                    {material.cover_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={material.cover_url} alt="" className="h-12 w-9 rounded object-cover" />
-                    ) : (
-                      <div className="flex h-12 w-9 items-center justify-center rounded bg-muted">
-                        <Layers className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                    <span className="text-sm font-medium">{material.title}</span>
-                  </Link>
-                  <Button asChild size="sm" variant="outline">
-                    <Link href={`/materials/${material.id}/session/${group.id}`}>
-                      <Radio className="h-4 w-4" />
-                      Провести занятие
-                    </Link>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <GroupMaterialList
+            materials={materialNodes}
+            groupId={group.id}
+            canManage={canManage}
+            access={accessRecord}
+          />
         </CardContent>
       </Card>
     </div>

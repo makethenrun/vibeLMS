@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,16 @@ export function StudentSectionTree({
   sections,
   activeLessonId,
   base,
+  lockedLessonIds = [],
 }: {
   sections: SectionWithLessons[];
   activeLessonId?: string;
   base: string;
+  /** Lessons the student cannot open yet — shown with a lock icon. */
+  lockedLessonIds?: string[];
 }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const locked = new Set(lockedLessonIds);
 
   if (sections.length === 0) return <p className="text-sm text-muted-foreground">Пока нет разделов.</p>;
 
@@ -42,19 +46,24 @@ export function StudentSectionTree({
                 {section.lessons.length === 0 ? (
                   <li className="px-2 py-1 text-xs text-muted-foreground">Нет уроков</li>
                 ) : (
-                  section.lessons.map((lesson) => (
-                    <li key={lesson.id}>
-                      <Link
-                        href={`${base}/lessons/${lesson.id}`}
-                        className={cn(
-                          "block truncate rounded px-2 py-1 hover:bg-accent",
-                          lesson.id === activeLessonId && "bg-accent font-medium",
-                        )}
-                      >
-                        {lesson.title}
-                      </Link>
-                    </li>
-                  ))
+                  section.lessons.map((lesson) => {
+                    const isLocked = locked.has(lesson.id);
+                    return (
+                      <li key={lesson.id}>
+                        <Link
+                          href={`${base}/lessons/${lesson.id}`}
+                          className={cn(
+                            "flex items-center gap-1.5 truncate rounded px-2 py-1 hover:bg-accent",
+                            lesson.id === activeLessonId && "bg-accent font-medium",
+                            isLocked && "text-muted-foreground",
+                          )}
+                        >
+                          {isLocked ? <Lock className="h-3.5 w-3.5 shrink-0" /> : null}
+                          <span className="truncate">{lesson.title}</span>
+                        </Link>
+                      </li>
+                    );
+                  })
                 )}
               </ul>
             )}

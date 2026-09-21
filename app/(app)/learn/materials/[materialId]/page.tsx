@@ -11,6 +11,7 @@ import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { getMaterial } from "@/services/materials/materials.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
 import { studentHasMaterialAccess } from "@/services/materials/student-access.service";
+import { computeAccessibleLessons } from "@/services/materials/lesson-access.service";
 import { GRADABLE_TYPES, getMaterialItemsFlat } from "@/services/materials/results.service";
 import { getSubmissionsForItems } from "@/services/materials/submissions.service";
 import { Workspace } from "@/app/(app)/materials/_components/workspace";
@@ -32,10 +33,14 @@ export default async function StudentMaterialPage({
   const material = await getMaterial(db, materialId);
   if (!material) notFound();
 
-  const [sections, flatAll] = await Promise.all([
+  const [sections, flatAll, accessible] = await Promise.all([
     getSectionsWithLessons(db, materialId),
     getMaterialItemsFlat(db, materialId),
+    computeAccessibleLessons(db, studentId, materialId),
   ]);
+  const lockedLessonIds = sections
+    .flatMap((s) => s.lessons.map((l) => l.id))
+    .filter((id) => !accessible.has(id));
   const gradable = flatAll.filter((f) => GRADABLE_TYPES.includes(f.item.type));
   const subs = await getSubmissionsForItems(db, studentId, gradable.map((f) => f.item.id));
 
@@ -52,8 +57,9 @@ export default async function StudentMaterialPage({
     byLesson.set(f.lessonTitle, e);
   }
 
-  // Where to continue: first not-yet-done exercise, else the last one.
-  const nextItem = gradable.find((f) => !subs[f.item.id]) ?? gradable[gradable.length - 1];
+  // Where to continue: first not-yet-done exercise in an accessible lesson.
+  const gradableOpen = gradable.filter((f) => accessible.has(f.lessonId));
+  const nextItem = gradableOpen.find((f) => !subs[f.item.id]) ?? gradableOpen[gradableOpen.length - 1];
   const continueHref = nextItem && nextItem.lessonId
     ? `/learn/lessons/${nextItem.lessonId}?m=${nextItem.moduleId}#item-${nextItem.item.id}`
     : null;
@@ -75,7 +81,7 @@ export default async function StudentMaterialPage({
           ) : undefined
         }
       />
-      <Workspace tree={<StudentSectionTree sections={sections} base="/learn" />} treeTitle="Разделы и уроки">
+      <Workspace tree={<StudentSectionTree sections={sections} base="/learn" lockedLessonIds={lockedLessonIds} />} treeTitle="Разделы и уроки">
         <Card>
           <CardHeader className="py-3">
             <CardTitle className="text-base">Ваш прогресс</CardTitle>
