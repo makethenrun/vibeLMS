@@ -28,8 +28,7 @@ export function ImportVocabButton({ itemId, compact = false }: { itemId: string;
     return (
       <Button
         size="sm"
-        variant="outline"
-        className="h-7 px-2"
+        className="h-7 bg-neutral-900 px-2 text-white hover:bg-neutral-800"
         onClick={run}
         disabled={busy}
         title={done ? "Слова добавлены" : "Добавить слова в словарь"}
