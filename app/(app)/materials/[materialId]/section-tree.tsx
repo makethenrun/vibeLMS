@@ -86,7 +86,10 @@ export function SectionTree({ materialId, sections, activeLessonId }: SectionTre
         <p className="text-muted-foreground">Пока нет разделов.</p>
       ) : (
         <ul className="space-y-3">
-          {sections.map((section, sIndex) => {
+          {(() => {
+            // The homework section is always pinned last and can't be moved past.
+            const movableCount = sections.filter((s) => !s.is_homework).length;
+            return sections.map((section, sIndex) => {
             const isCollapsed = collapsed[section.id] ?? false;
             return (
               <li key={section.id} className="space-y-1">
@@ -100,16 +103,18 @@ export function SectionTree({ materialId, sections, activeLessonId }: SectionTre
                     {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
                   <span className="flex-1 truncate font-medium">{section.title}</span>
-                  <RowMenu
-                    busy={busy}
-                    canUp={sIndex > 0}
-                    canDown={sIndex < sections.length - 1}
-                    deleteLabel="Удалить раздел"
-                    onUp={() => run(() => moveSectionAction(section.id, "up"))}
-                    onDown={() => run(() => moveSectionAction(section.id, "down"))}
-                    onRename={() => rename(section.title, (t) => updateSectionAction(section.id, t))}
-                    onDelete={() => remove(section.title, () => deleteSectionAction(section.id))}
-                  />
+                  {section.is_homework ? null : (
+                    <RowMenu
+                      busy={busy}
+                      canUp={sIndex > 0}
+                      canDown={sIndex < movableCount - 1}
+                      deleteLabel="Удалить раздел"
+                      onUp={() => run(() => moveSectionAction(section.id, "up"))}
+                      onDown={() => run(() => moveSectionAction(section.id, "down"))}
+                      onRename={() => rename(section.title, (t) => updateSectionAction(section.id, t))}
+                      onDelete={() => remove(section.title, () => deleteSectionAction(section.id))}
+                    />
+                  )}
                 </div>
 
                 {isCollapsed ? null : (
@@ -156,7 +161,8 @@ export function SectionTree({ materialId, sections, activeLessonId }: SectionTre
                 )}
               </li>
             );
-          })}
+          });
+          })()}
         </ul>
       )}
 
