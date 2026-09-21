@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/shared/loading-button";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import {
   importItemsAction,
   pickerLessonsAction,
@@ -111,16 +112,14 @@ export function ImportDialog({ itemIds, open, onOpenChange, onDone }: ImportDial
         <div className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm font-medium">Материал</label>
-            <Select value={materialId} onValueChange={setMaterialId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите материал" />
-              </SelectTrigger>
-              <SelectContent>
-                {materials.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={materialId}
+              onValueChange={setMaterialId}
+              items={materials.map((m) => ({ value: m.id, label: m.title }))}
+              placeholder="Выберите материал"
+              searchPlaceholder="Поиск материала…"
+              emptyText="Материалов не найдено"
+            />
           </div>
 
           <div className="space-y-1">
