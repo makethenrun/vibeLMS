@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { importItemVocabAction } from "../actions";
 
 /** Adds the exercise's "new words" to the student's dictionary on demand. */
-export function ImportVocabButton({ itemId }: { itemId: string }) {
+export function ImportVocabButton({ itemId, compact = false }: { itemId: string; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -22,6 +22,22 @@ export function ImportVocabButton({ itemId }: { itemId: string }) {
     } else {
       toast.error(result.error);
     }
+  }
+
+  if (compact) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 px-2"
+        onClick={run}
+        disabled={busy}
+        title={done ? "Слова добавлены" : "Добавить слова в словарь"}
+      >
+        {done ? <Check className="h-4 w-4" /> : <BookPlus className="h-4 w-4" />}
+        {done ? "Добавлено" : "В словарь"}
+      </Button>
+    );
   }
 
   return (

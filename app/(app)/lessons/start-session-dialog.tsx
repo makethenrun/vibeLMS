@@ -15,13 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import { startSessionAction } from "@/app/(app)/live/actions";
 
 export function StartSessionDialog({
@@ -66,30 +60,26 @@ export function StartSessionDialog({
         <div className="space-y-3">
           <div className="space-y-1">
             <label className="text-sm font-medium">Группа</label>
-            <Select value={groupId} onValueChange={setGroupId}>
-              <SelectTrigger><SelectValue placeholder="Выберите группу" /></SelectTrigger>
-              <SelectContent>
-                {groups.length === 0 ? (
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">Нет доступных групп</div>
-                ) : (
-                  groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)
-                )}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={groupId}
+              onValueChange={setGroupId}
+              items={groups.map((g) => ({ value: g.id, label: g.name }))}
+              placeholder="Выберите группу"
+              searchPlaceholder="Поиск группы…"
+              emptyText="Нет доступных групп"
+            />
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium">Материал</label>
-            <Select value={materialId} onValueChange={setMaterialId}>
-              <SelectTrigger><SelectValue placeholder="Выберите материал" /></SelectTrigger>
-              <SelectContent>
-                {materials.length === 0 ? (
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">Нет доступных материалов</div>
-                ) : (
-                  materials.map((m) => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)
-                )}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={materialId}
+              onValueChange={setMaterialId}
+              items={materials.map((m) => ({ value: m.id, label: m.title }))}
+              placeholder="Выберите материал"
+              searchPlaceholder="Поиск материала…"
+              emptyText="Нет доступных материалов"
+            />
           </div>
 
           <LoadingButton loading={loading} onClick={start} disabled={!groupId || !materialId} className="w-full">

@@ -243,7 +243,10 @@ export function StudentItem({
           </div>
           {vocabHasContent ? (
             <aside className={vocabHasPinyin ? "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-72" : "h-fit shrink-0 rounded-lg bg-green-50 p-3 md:w-56"}>
-              <p className="mb-2 text-xs font-semibold text-green-800">Новые слова</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-green-800">Новые слова</p>
+                {showVocabImport ? <ImportVocabButton itemId={item.id} compact /> : null}
+              </div>
               <div className={vocabHasPinyin ? "grid grid-cols-3 gap-x-3 gap-y-1 text-sm" : "grid grid-cols-2 gap-x-3 gap-y-1 text-sm"}>
                 {vocab.map((v, i) => {
                   const blank = !v.term && !v.pinyin && !v.translation;
@@ -257,11 +260,6 @@ export function StudentItem({
                   );
                 })}
               </div>
-              {showVocabImport ? (
-                <div className="mt-3">
-                  <ImportVocabButton itemId={item.id} />
-                </div>
-              ) : null}
             </aside>
           ) : null}
         </div>

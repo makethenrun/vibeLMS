@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Clock, Layers, Lock, Radio, Unlock } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, Layers, Lock, Radio, Search, Unlock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -251,6 +251,13 @@ export function GroupMaterialList({
   canManage: boolean;
   access: Record<string, AccessRule>;
 }) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return materials;
+    return materials.filter((m) => m.title.toLowerCase().includes(q));
+  }, [materials, query]);
+
   if (materials.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -259,10 +266,20 @@ export function GroupMaterialList({
     );
   }
   return (
-    <ul className="divide-y">
-      {materials.map((m) => (
-        <MaterialRow key={m.id} material={m} groupId={groupId} canManage={canManage} access={access} />
-      ))}
-    </ul>
+    <div className="space-y-2">
+      <div className="relative max-w-xs">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск материала…" className="pl-8" />
+      </div>
+      {filtered.length === 0 ? (
+        <p className="py-2 text-sm text-muted-foreground">Ничего не найдено.</p>
+      ) : (
+        <ul className="divide-y">
+          {filtered.map((m) => (
+            <MaterialRow key={m.id} material={m} groupId={groupId} canManage={canManage} access={access} />
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
