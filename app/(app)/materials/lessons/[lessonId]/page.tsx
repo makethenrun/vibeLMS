@@ -37,13 +37,16 @@ export default async function LessonPage({
   const { m } = await searchParams;
 
   const db = createServerSupabaseClient();
-  const ctx = await lessonContext(db, lessonId);
+  // ctx (lesson→section→material chain) and modules are independent — fetch together.
+  const [ctx, modules] = await Promise.all([
+    lessonContext(db, lessonId),
+    getLessonModules(db, lessonId),
+  ]);
   if (!ctx) notFound();
   if (!(await canViewMaterial(db, user, ctx.materialId))) notFound();
   // View-only assistants can't open the editor — send them to the read-only preview.
   if (!(await canEditMaterial(db, user, ctx.materialId))) redirect(`/materials/lessons/${lessonId}/preview`);
 
-  const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
 
   const [availableGroups, pins, background, sections, flatModules] = await Promise.all([
