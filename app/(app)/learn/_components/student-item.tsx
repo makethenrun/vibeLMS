@@ -247,15 +247,18 @@ export function StudentItem({
                 <p className="text-xs font-semibold text-green-800">Новые слова</p>
                 {showVocabImport ? <ImportVocabButton itemId={item.id} compact /> : null}
               </div>
-              <div className={vocabHasPinyin ? "grid grid-cols-3 gap-x-3 gap-y-1 text-sm" : "grid grid-cols-2 gap-x-3 gap-y-1 text-sm"}>
+              <div
+                className="grid gap-x-3 gap-y-1 text-sm"
+                style={{ gridTemplateColumns: vocabHasPinyin ? "auto auto minmax(0, 1fr)" : "auto minmax(0, 1fr)" }}
+              >
                 {vocab.map((v, i) => {
                   const blank = !v.term && !v.pinyin && !v.translation;
                   if (blank) return <span key={i} className="col-span-full h-2" aria-hidden />;
                   return (
                     <Fragment key={i}>
-                      <span className="break-words font-medium"><FormattedText text={v.term} /></span>
-                      {vocabHasPinyin ? <span className="break-words text-muted-foreground"><FormattedText text={v.pinyin ?? ""} /></span> : null}
-                      <span className="break-words text-muted-foreground"><FormattedText text={v.translation} /></span>
+                      <span className="min-w-0 break-words font-medium"><FormattedText text={v.term} /></span>
+                      {vocabHasPinyin ? <span className="min-w-0 break-words text-muted-foreground"><FormattedText text={v.pinyin ?? ""} /></span> : null}
+                      <span className="min-w-0 break-words text-muted-foreground"><FormattedText text={v.translation} /></span>
                     </Fragment>
                   );
                 })}
