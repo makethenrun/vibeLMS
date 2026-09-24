@@ -13,6 +13,7 @@ import {
   ListOrdered,
   Loader2,
   Type,
+  ALargeSmall,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,6 +31,15 @@ const FONTS: { label: string; value: string | null }[] = [
   { label: "Стандартный", value: null },
   { label: "Serif (Georgia)", value: "Georgia, 'Times New Roman', serif" },
   { label: "SimSun 宋体", value: "SimSun, 宋体, serif" },
+];
+
+// Sizes are relative (em) so they scale with the surrounding text.
+const SIZES: { label: string; value: string | null }[] = [
+  { label: "Мельче", value: "0.85em" },
+  { label: "Обычный", value: null },
+  { label: "Крупнее", value: "1.25em" },
+  { label: "Большой", value: "1.5em" },
+  { label: "Огромный", value: "2em" },
 ];
 
 interface UploadResponse {
@@ -142,6 +152,28 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
               }}
             >
               {font.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="sm" variant="ghost" className="h-8 gap-1 px-2" aria-label="Размер шрифта">
+            <ALargeSmall className="h-4 w-4" />
+            Размер
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {SIZES.map((size) => (
+            <DropdownMenuItem
+              key={size.label}
+              style={size.value ? { fontSize: size.value } : undefined}
+              onSelect={() => {
+                if (size.value) editor.chain().focus().setFontSize(size.value).run();
+                else editor.chain().focus().unsetFontSize().run();
+              }}
+            >
+              {size.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
