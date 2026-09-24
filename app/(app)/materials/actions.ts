@@ -15,7 +15,6 @@ import * as items from "@/services/materials/items.service";
 import { setMaterialGroups } from "@/services/materials/material-groups.service";
 import { setItemPins } from "@/services/materials/item-pins.service";
 import { getSectionsWithLessons } from "@/services/materials/sections-tree.service";
-import { getSettings } from "@/services/settings/settings.service";
 import { gradeSubmission, setEditedAnswer, setReaction } from "@/services/materials/submissions.service";
 
 type Dir = "up" | "down";
@@ -61,10 +60,9 @@ export async function createMaterialAction(input: MaterialInput): Promise<Action
   const parsed = materialSchema.safeParse(input);
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
-  // Assistants may create materials only when a tutor has enabled it in Settings.
-  if (user.role === "ASSISTANT") {
-    const settings = await getSettings(db);
-    if (!settings.assistants_can_create_materials) return fail("Создание материалов ассистентами отключено");
+  // Assistants may create materials only when granted on the Assistants tab.
+  if (user.role === "ASSISTANT" && !user.canCreateMaterials) {
+    return fail("Создание материалов вам не разрешено");
   }
   try {
     const material = await materials.createMaterial(db, parsed.data);

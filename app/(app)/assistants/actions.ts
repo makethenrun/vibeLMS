@@ -132,3 +132,16 @@ export async function setAssistantMaterialsAction(
   revalidatePath("/materials", "layout");
   return ok();
 }
+
+export async function setAssistantCanCreateMaterialsAction(id: string, value: boolean): Promise<ActionResult> {
+  const denied = await requireManager();
+  if (denied) return denied;
+  const db = createServerSupabaseClient();
+  try {
+    await assistants.setAssistantCanCreateMaterials(db, id, value);
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+  revalidatePath("/assistants");
+  return ok();
+}

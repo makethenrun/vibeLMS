@@ -8,6 +8,7 @@ export interface CurrentUser {
   id: string;
   login: string;
   role: UserRole;
+  canCreateMaterials: boolean;
 }
 
 export interface CurrentStudent {
@@ -24,12 +25,12 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const db = createServerSupabaseClient();
   const { data, error } = await db
     .from("users")
-    .select("id, login, role")
+    .select("id, login, role, can_create_materials")
     .eq("id", session.userId)
     .maybeSingle();
 
   if (error || !data) return null;
-  return { id: data.id, login: data.login, role: data.role };
+  return { id: data.id, login: data.login, role: data.role, canCreateMaterials: Boolean(data.can_create_materials) };
 }
 
 /** Resolves the student profile linked to the current STUDENT user, if any. */
