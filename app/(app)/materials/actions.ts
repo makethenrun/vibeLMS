@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getManagerOrNull, getStaffOrNull, getTutorOrNull } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
-import { canEditMaterial, resolveMaterialId } from "@/services/assistants/assistants.service";
+import { canEditMaterial, grantAssistantMaterial, resolveMaterialId } from "@/services/assistants/assistants.service";
 import { fail, getErrorMessage, ok, type ActionResult } from "@/lib/utils/action-result";
 import { itemContentSchema, itemMetaSchema, lessonBackgroundSchema, materialSchema, titleSchema, type MaterialInput } from "@/lib/validators";
 import * as materials from "@/services/materials/materials.service";
@@ -55,13 +55,17 @@ async function requireEdit(kind: "material" | "section" | "lesson" | "module" | 
 // --- Materials --------------------------------------------------------------
 
 export async function createMaterialAction(input: MaterialInput): Promise<ActionResult> {
-  const denied = await requireTutorResult();
-  if (denied) return denied;
+  const user = await getStaffOrNull();
+  if (!user) return fail("Недостаточно прав");
   const parsed = materialSchema.safeParse(input);
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    await materials.createMaterial(db, parsed.data);
+    const material = await materials.createMaterial(db, parsed.data);
+    // Assistants only see materials granted to them — give the creator edit access.
+    if (user.role === "ASSISTANT") {
+      await grantAssistantMaterial(db, user.id, material.id, true);
+    }
   } catch (e) {
     return fail(getErrorMessage(e));
   }
