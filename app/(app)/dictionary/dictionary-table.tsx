@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightLeft, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -30,6 +30,9 @@ export function DictionaryTable({
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [moving, setMoving] = useState(false);
+  // Optimistic mirror so moved words leave this dictionary instantly.
+  const [rows, setRows] = useState(entries);
+  useEffect(() => setRows(entries), [entries]);
 
   // Targets a word can be moved to: every other dictionary (and «Общий»).
   const targets = useMemo<(string | null)[]>(() => {
@@ -42,11 +45,11 @@ export function DictionaryTable({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return entries;
-    return entries.filter((e) =>
+    if (!q) return rows;
+    return rows.filter((e) =>
       [e.term, e.pinyin, e.translation, e.note].some((v) => (v ?? "").toLowerCase().includes(q)),
     );
-  }, [entries, query]);
+  }, [rows, query]);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -65,14 +68,18 @@ export function DictionaryTable({
   async function move() {
     if (selected.size === 0) return toast.error("Выберите слова");
     const lang = target === "__null__" ? null : target;
+    const ids = [...selected];
+    const snapshot = rows;
+    setRows(rows.filter((e) => !selected.has(e.id))); // optimistic: leave this tab
+    cancelSelect();
     setMoving(true);
-    const result = await moveEntriesLanguageAction([...selected], lang);
+    const result = await moveEntriesLanguageAction(ids, lang);
     setMoving(false);
     if (result.success) {
       toast.success("Слова перенесены");
-      cancelSelect();
       router.refresh();
     } else {
+      setRows(snapshot);
       toast.error(result.error);
     }
   }
