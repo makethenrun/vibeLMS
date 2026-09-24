@@ -37,15 +37,18 @@ export default async function LessonPreviewPage({
   const { m } = await searchParams;
 
   const db = createServerSupabaseClient();
-  const ctx = await lessonContext(db, lessonId);
+  // ctx (lesson→section→material chain), modules and background are independent.
+  const [ctx, modules, background] = await Promise.all([
+    lessonContext(db, lessonId),
+    getLessonModules(db, lessonId),
+    getLessonBackground(db, lessonId),
+  ]);
   if (!ctx) notFound();
   if (!(await canViewMaterial(db, user, ctx.materialId))) notFound();
   const canEdit = await canEditMaterial(db, user, ctx.materialId);
 
-  const modules = await getLessonModules(db, lessonId);
   const active = modules.find((mod) => mod.id === m) ?? modules[0];
-  const [background, sections, flatModules] = await Promise.all([
-    getLessonBackground(db, lessonId),
+  const [sections, flatModules] = await Promise.all([
     getSectionsWithLessons(db, ctx.materialId),
     getMaterialModulesFlat(db, ctx.materialId),
   ]);
