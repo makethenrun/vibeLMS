@@ -84,6 +84,9 @@
   }
   html {
     scroll-behavior: smooth;
+    /* Scale the whole UI up by 15% (rem-based sizes, incl. the em-based pinyin
+       ruby, follow the root size). */
+    font-size: 115%;
   }
   body {
     @apply bg-background text-foreground antialiased;
