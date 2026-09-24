@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Home } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FormattedText } from "@/components/shared/formatted-text";
@@ -56,9 +56,10 @@ export function StudentModuleTree({
               </Button>
               <Link
                 href={`${lessonHref}?m=${module.id}`}
-                className={cn("flex-1 truncate rounded px-2 py-1 font-medium hover:bg-accent", module.id === activeModuleId && "bg-accent")}
+                className={cn("flex flex-1 items-center gap-1.5 truncate rounded px-2 py-1 font-medium hover:bg-accent", module.id === activeModuleId && "bg-accent")}
               >
-                {mIndex + 1}. {module.title}
+                {module.is_homework ? <Home className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+                <span className="truncate">{module.is_homework ? module.title : `${mIndex + 1}. ${module.title}`}</span>
               </Link>
             </div>
             {isCollapsed ? null : (
@@ -72,7 +73,7 @@ export function StudentModuleTree({
                         href={`${lessonHref}?m=${module.id}#item-${item.id}`}
                         className="block truncate rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
-                        {(() => { const l = itemLabel(mIndex + 1, numbers.get(item.id)); return l ? `${l} ` : ""; })()}
+                        {(() => { const l = module.is_homework ? null : itemLabel(mIndex + 1, numbers.get(item.id)); return l ? `${l} ` : ""; })()}
                         {item.title ? <FormattedText text={item.title} /> : ITEM_LABELS[item.type]}
                       </Link>
                     </li>

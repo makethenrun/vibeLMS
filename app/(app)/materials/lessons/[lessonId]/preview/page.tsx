@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Home, Pencil } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -95,13 +95,16 @@ export default async function LessonPreviewPage({
                 const numbers = numberItems(active.items);
                 return (
                   <section className="space-y-4">
-                    <h2 className={active && background.url ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{moduleNumber}. {active.title}</h2>
+                    <h2 className={active && background.url ? "inline-flex items-center gap-1.5 rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "flex items-center gap-1.5 text-lg font-semibold"}>
+                      {active.is_homework ? <Home className="h-5 w-5 text-muted-foreground" /> : null}
+                      {active.is_homework ? active.title : `${moduleNumber}. ${active.title}`}
+                    </h2>
                     <ModuleNav modules={flatModules} activeModuleId={active.id} hrefFor={moduleHref} />
                     {active.items.length === 0 ? (
                       <p className="text-sm text-muted-foreground">В модуле нет элементов.</p>
                     ) : (
                       active.items.map((item) => (
-                        <StudentItem key={item.id} item={item} number={itemLabel(moduleNumber, numbers.get(item.id))} />
+                        <StudentItem key={item.id} item={item} number={active.is_homework ? null : itemLabel(moduleNumber, numbers.get(item.id))} />
                       ))
                     )}
                     <ModuleNav modules={flatModules} activeModuleId={active.id} hrefFor={moduleHref} />

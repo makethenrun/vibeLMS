@@ -61,8 +61,7 @@ export async function createMaterialAction(input: MaterialInput): Promise<Action
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    const material = await materials.createMaterial(db, parsed.data);
-    await sections.createHomeworkSection(db, material.id);
+    await materials.createMaterial(db, parsed.data);
   } catch (e) {
     return fail(getErrorMessage(e));
   }
@@ -193,7 +192,8 @@ export async function createLessonAction(sectionId: string, title: string): Prom
   if (!parsed.success) return fail("Проверьте поля", parsed.error.flatten().fieldErrors);
   const db = createServerSupabaseClient();
   try {
-    await lessons.createLesson(db, sectionId, parsed.data.title);
+    const lesson = await lessons.createLesson(db, sectionId, parsed.data.title);
+    await modules.createHomeworkModule(db, lesson.id);
   } catch (e) {
     return fail(getErrorMessage(e));
   }

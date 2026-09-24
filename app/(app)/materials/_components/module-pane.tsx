@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Home, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { Group, ModuleWithItems } from "@/types";
@@ -35,7 +35,10 @@ export function ModulePane({ module, moduleNumber, availableGroups, pins, onBack
   return (
     <section id={`module-${module.id}`} className="scroll-mt-20 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className={onBackground ? "inline-block rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "text-lg font-semibold"}>{moduleNumber}. {module.title}</h3>
+        <h3 className={onBackground ? "inline-flex items-center gap-1.5 rounded-md bg-card/95 px-3 py-1 text-lg font-semibold shadow-sm" : "flex items-center gap-1.5 text-lg font-semibold"}>
+          {module.is_homework ? <Home className="h-5 w-5 text-muted-foreground" /> : null}
+          {module.is_homework ? module.title : `${moduleNumber}. ${module.title}`}
+        </h3>
         {selected.size > 0 ? (
           <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4" />
@@ -52,7 +55,7 @@ export function ModulePane({ module, moduleNumber, availableGroups, pins, onBack
             <ItemCard
               key={item.id}
               item={item}
-              number={itemLabel(moduleNumber, numbers.get(item.id))}
+              number={module.is_homework ? null : itemLabel(moduleNumber, numbers.get(item.id))}
               canUp={index > 0}
               canDown={index < module.items.length - 1}
               availableGroups={availableGroups}
