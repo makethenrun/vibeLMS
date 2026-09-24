@@ -171,6 +171,27 @@ export function SettingsForm({ defaults }: { defaults: SettingsInput }) {
                 );
               }}
             />
+            <FormField
+              control={form.control}
+              name="assistantsCanCreateMaterials"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ассистенты</FormLabel>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(field.value)}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                    Разрешить ассистентам создавать материалы
+                  </label>
+                  <FormDescription>
+                    Созданный ассистентом материал автоматически доступен ему для редактирования.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <LoadingButton type="submit" loading={form.formState.isSubmitting}>
               Сохранить
             </LoadingButton>

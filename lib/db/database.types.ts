@@ -896,6 +896,7 @@ export interface Database {
           logo_url: string | null;
           enabled_keyboards: Json;
           languages: Json;
+          assistants_can_create_materials: boolean;
           created_at: string;
         };
         Insert: {
@@ -904,6 +905,7 @@ export interface Database {
           logo_url?: string | null;
           enabled_keyboards?: Json;
           languages?: Json;
+          assistants_can_create_materials?: boolean;
           created_at?: string;
         };
         Update: {
@@ -912,6 +914,7 @@ export interface Database {
           logo_url?: string | null;
           enabled_keyboards?: Json;
           languages?: Json;
+          assistants_can_create_materials?: boolean;
           created_at?: string;
         };
         Relationships: [];

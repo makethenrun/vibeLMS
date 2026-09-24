@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: Settings = {
   logo_url: null,
   enabled_keyboards: ["ipa"],
   languages: [],
+  assistants_can_create_materials: false,
   created_at: new Date(0).toISOString(),
 };
 
@@ -31,6 +32,7 @@ export async function updateSettings(db: Db, input: SettingsInput): Promise<Sett
     logo_url: input.logoUrl && input.logoUrl.trim() !== "" ? input.logoUrl.trim() : null,
     enabled_keyboards: input.enabledKeyboards as unknown as Settings["enabled_keyboards"],
     languages: input.languages as unknown as Settings["languages"],
+    assistants_can_create_materials: input.assistantsCanCreateMaterials,
   };
 
   if (existing.id) {
