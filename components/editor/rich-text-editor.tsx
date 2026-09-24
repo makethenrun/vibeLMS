@@ -11,6 +11,7 @@ import FontFamily from "@tiptap/extension-font-family";
 import { cn } from "@/lib/utils";
 import { RichTextToolbar } from "./rich-text-toolbar";
 import { Pinyin } from "./pinyin-mark";
+import { FontSize } from "./font-size";
 import { PinyinSelection } from "./pinyin-selection";
 
 interface RichTextEditorProps {
@@ -29,6 +30,7 @@ export function RichTextEditor({ value, onChange, onReady, className }: RichText
       Image,
       TextStyle,
       FontFamily,
+      FontSize,
       Pinyin,
     ],
     content: value as JSONContent,

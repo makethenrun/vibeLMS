@@ -9,12 +9,13 @@ import FontFamily from "@tiptap/extension-font-family";
 
 import { cn } from "@/lib/utils";
 import { Pinyin } from "@/components/editor/pinyin-mark";
+import { FontSize } from "@/components/editor/font-size";
 
 export function InfoView({ doc }: { doc: Record<string, unknown> }) {
   const editor = useEditor({
     editable: false,
     immediatelyRender: false,
-    extensions: [StarterKit, Link.configure({ openOnClick: true }), Image, TextStyle, FontFamily, Pinyin],
+    extensions: [StarterKit, Link.configure({ openOnClick: true }), Image, TextStyle, FontFamily, FontSize, Pinyin],
     content: doc as JSONContent,
     editorProps: {
       attributes: {
