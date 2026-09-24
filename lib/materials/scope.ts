@@ -80,3 +80,16 @@ export function itemsForScope(tree: TreeSection[], kind: ScopeKind, id: string |
   }
   return [];
 }
+
+/** The lesson id a scope belongs to (for an item/module: its lesson; for a lesson: itself). */
+export function lessonIdForScope(tree: TreeSection[], kind: ScopeKind, id: string | null): string | null {
+  if (!id) return null;
+  if (kind === "lesson") return id;
+  for (const section of tree) {
+    for (const lesson of section.lessons) {
+      if (kind === "module" && lesson.modules.some((m) => m.id === id)) return lesson.id;
+      if (kind === "item" && lesson.modules.some((m) => m.items.some((i) => i.id === id))) return lesson.id;
+    }
+  }
+  return null;
+}
