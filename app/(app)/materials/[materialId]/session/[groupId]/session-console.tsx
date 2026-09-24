@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Hand, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Hand, MonitorPlay, Radio, Square, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { LiveDrawingOverlay } from "@/components/shared/live-drawing-overlay";
 import { PreviewProvider } from "@/app/(app)/learn/_components/preview-provider";
 import { StudentItem } from "@/app/(app)/learn/_components/student-item";
 import { cn } from "@/lib/utils";
-import { flatModules, itemsForScope, moduleIdForScope, type ScopeKind, type TreeSection } from "@/lib/materials/scope";
+import { flatModules, itemsForScope, lessonIdForScope, moduleIdForScope, type ScopeKind, type TreeSection } from "@/lib/materials/scope";
 import type { ItemRow, ItemSubmissionRow } from "@/types";
 import type { RaisedHand, SessionResultRow, SessionState } from "@/services/materials/live-session.service";
 import {
@@ -119,8 +119,11 @@ export function SessionConsole({
   initialTutorDrawings: Record<string, string>;
 }) {
   const router = useRouter();
-  const [scope, setScope] = useState<{ kind: ScopeKind; id: string | null }>({ kind: initialState.kind, id: initialState.scopeId });
-  const [focusedItemId, setFocusedItemId] = useState<string | null>(initialState.focusedItemId);
+  // What students currently see (broadcast, synced to the server) vs. the tutor's
+  // own local view (tree navigation, scrolls within the lesson — not broadcast).
+  const [broadcast, setBroadcast] = useState<{ kind: ScopeKind; id: string | null }>({ kind: initialState.kind, id: initialState.scopeId });
+  const [viewScope, setViewScope] = useState<{ kind: ScopeKind; id: string | null }>({ kind: initialState.kind, id: initialState.scopeId });
+  const pendingScrollRef = useRef<string | null>(null);
   const [results, setResults] = useState<SessionResultRow[]>(
     students.map((s) => ({ studentId: s.id, fullName: s.fullName, submissions: {} })),
   );
@@ -137,11 +140,12 @@ export function SessionConsole({
   const handIdsRef = useRef<Set<string>>(new Set());
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i.item])), [items]);
-  const scopeItemIds = useMemo(() => itemsForScope(tree, scope.kind, scope.id), [tree, scope]);
+  const viewItemIds = useMemo(() => itemsForScope(tree, viewScope.kind, viewScope.id), [tree, viewScope]);
+  const broadcastItemIds = useMemo(() => itemsForScope(tree, broadcast.kind, broadcast.id), [tree, broadcast]);
 
   // Module prev/next across the whole material (crosses lesson boundaries).
   const flatMods = useMemo(() => flatModules(tree), [tree]);
-  const currentModuleId = moduleIdForScope(tree, scope.kind, scope.id);
+  const currentModuleId = moduleIdForScope(tree, viewScope.kind, viewScope.id);
   const moduleIdx = flatMods.findIndex((mod) => mod.id === currentModuleId);
   const prevMod = moduleIdx > 0 ? flatMods[moduleIdx - 1] : null;
   const nextMod = moduleIdx >= 0 && moduleIdx < flatMods.length - 1 ? flatMods[moduleIdx + 1] : null;
@@ -155,7 +159,6 @@ export function SessionConsole({
         setResults(res.data.results);
         setTutorDrawings(res.data.tutorDrawings);
         setWatchDrawings(res.data.watchDrawings);
-        setFocusedItemId(res.data.state.focusedItemId);
         // Toast newly raised hands (ids not seen on the previous poll).
         const seen = handIdsRef.current;
         for (const h of res.data.hands) {
@@ -176,19 +179,32 @@ export function SessionConsole({
     return () => clearInterval(id);
   }, [poll]);
 
-  async function selectScope(kind: ScopeKind, id: string) {
-    setScope({ kind, id });
-    setFocusedItemId(null);
-    const res = await setActiveScopeAction(sessionId, kind, id);
-    if (!res.success) toast.error(res.error);
+  // Tutor navigates their own view; for an exercise, open its lesson and scroll to it.
+  function navigate(kind: ScopeKind, id: string) {
+    if (kind === "item") {
+      const lessonId = lessonIdForScope(tree, "item", id);
+      pendingScrollRef.current = id;
+      setViewScope(lessonId ? { kind: "lesson", id: lessonId } : { kind: "item", id });
+    } else {
+      setViewScope({ kind, id });
+    }
   }
 
-  async function toggleFocus(itemId: string) {
-    const next = focusedItemId === itemId ? null : itemId;
-    setFocusedItemId(next);
-    const res = await setFocusedItemAction(sessionId, next);
+  // Broadcast a node to the students (what they see now).
+  async function broadcastScope(kind: ScopeKind, id: string) {
+    setBroadcast({ kind, id });
+    const res = await setActiveScopeAction(sessionId, kind, id);
     if (!res.success) toast.error(res.error);
+    void setFocusedItemAction(sessionId, null);
   }
+
+  // After a view change requested a scroll, jump to that exercise within the lesson.
+  useEffect(() => {
+    const id = pendingScrollRef.current;
+    if (!id) return;
+    pendingScrollRef.current = null;
+    requestAnimationFrame(() => document.getElementById(`item-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [viewItemIds]);
 
   async function saveTutorDrawing(itemId: string, dataUrl: string | null) {
     const res = await saveTutorDrawingAction(sessionId, itemId, dataUrl);
@@ -225,13 +241,13 @@ export function SessionConsole({
     };
   }
 
-  const doneCount = results.filter((r) => scopeItemIds.length > 0 && scopeItemIds.every((id) => r.submissions[id])).length;
+  const doneCount = results.filter((r) => broadcastItemIds.length > 0 && broadcastItemIds.every((id) => r.submissions[id])).length;
 
   const moduleNavBar =
     moduleIdx !== -1 && flatMods.length > 1 ? (
       <div className="flex items-center justify-between gap-2">
         {prevMod ? (
-          <Button variant="outline" size="sm" className="max-w-[45%]" onClick={() => selectScope("module", prevMod.id)}>
+          <Button variant="outline" size="sm" className="max-w-[45%]" onClick={() => navigate("module", prevMod.id)}>
             <ChevronLeft className="h-4 w-4 shrink-0" />
             <span className="truncate">{prevMod.title}</span>
           </Button>
@@ -239,7 +255,7 @@ export function SessionConsole({
           <span />
         )}
         {nextMod ? (
-          <Button variant="outline" size="sm" className="max-w-[45%]" onClick={() => selectScope("module", nextMod.id)}>
+          <Button variant="outline" size="sm" className="max-w-[45%]" onClick={() => navigate("module", nextMod.id)}>
             <span className="truncate">{nextMod.title}</span>
             <ChevronRight className="h-4 w-4 shrink-0" />
           </Button>
@@ -258,7 +274,7 @@ export function SessionConsole({
               <Radio className="h-5 w-5 text-red-500" />
               Занятие · {groupName}
             </h1>
-            <ScopeJump tree={tree} onPick={(lessonId) => selectScope("lesson", lessonId)} />
+            <ScopeJump tree={tree} onPick={(lessonId) => navigate("lesson", lessonId)} />
           </div>
           <p className="text-sm text-muted-foreground">{materialTitle}</p>
         </div>
@@ -317,29 +333,42 @@ export function SessionConsole({
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* Exercises tree */}
         <aside className="h-fit rounded-lg border bg-card p-2 lg:sticky lg:top-4">
-          <p className="px-2 pb-2 text-xs font-semibold text-muted-foreground">Упражнения</p>
-          <ExerciseTree tree={tree} activeKind={scope.kind} activeId={scope.id} onSelect={selectScope} />
+          <p className="px-2 pb-1 text-xs font-semibold text-muted-foreground">Упражнения</p>
+          <p className="px-2 pb-2 text-[11px] leading-tight text-muted-foreground">
+            Нажмите на упражнение — вы перейдёте к нему. Иконка{" "}
+            <MonitorPlay className="inline h-3 w-3 align-[-1px]" /> показывает его ученикам.
+          </p>
+          <ExerciseTree
+            tree={tree}
+            viewKind={viewScope.kind}
+            viewId={viewScope.id}
+            liveKind={broadcast.kind}
+            liveId={broadcast.id}
+            onNavigate={navigate}
+            onBroadcast={broadcastScope}
+          />
         </aside>
 
         {/* Active scope: exercises with the "pin to students" control and live drawing */}
         <main className="min-w-0 space-y-4">
           {moduleNavBar}
-          {scopeItemIds.length === 0 ? (
+          {viewItemIds.length === 0 ? (
             <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-              Выберите раздел, урок, модуль или упражнение слева — оно откроется у всех учеников.
+              Выберите раздел, урок, модуль или упражнение слева, чтобы открыть его у себя. Значок{" "}
+              <MonitorPlay className="inline h-4 w-4 align-[-2px]" /> покажет выбранное ученикам.
             </div>
           ) : (
             <PreviewProvider>
-              {scopeItemIds.map((id) => {
+              {viewItemIds.map((id) => {
                 const item = itemById.get(id);
                 if (!item) return null;
-                const focused = focusedItemId === id;
+                const live = broadcast.kind === "item" && broadcast.id === id;
                 return (
-                  <div key={id} className={cn("rounded-lg", focused && "ring-2 ring-primary ring-offset-2")}>
+                  <div key={id} className={cn("rounded-lg", live && "ring-2 ring-red-400 ring-offset-2")}>
                     <div className="mb-1 flex justify-end">
-                      <Button size="sm" variant={focused ? "default" : "outline"} onClick={() => toggleFocus(id)}>
-                        {focused ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                        {focused ? "Откреплено" : "Показать всем"}
+                      <Button size="sm" variant={live ? "default" : "outline"} onClick={() => broadcastScope("item", id)}>
+                        <MonitorPlay className="h-4 w-4" />
+                        {live ? "Видят ученики" : "Показать всем"}
                       </Button>
                     </div>
                     <StudentItem
@@ -354,7 +383,7 @@ export function SessionConsole({
               })}
             </PreviewProvider>
           )}
-          {scopeItemIds.length > 0 ? moduleNavBar : null}
+          {viewItemIds.length > 0 ? moduleNavBar : null}
         </main>
 
         {/* Live results — wide slide-over toggled from the header */}
@@ -369,13 +398,13 @@ export function SessionConsole({
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-3">
-                {scopeItemIds.length === 0 ? (
+                {broadcastItemIds.length === 0 ? (
             <p className="text-xs text-muted-foreground">Нет активного упражнения.</p>
           ) : (
             <ul className="space-y-1">
               {results.map((r) => {
                 const isOpen = expanded === r.studentId;
-                const hasAny = scopeItemIds.some((id) => r.submissions[id]);
+                const hasAny = broadcastItemIds.some((id) => r.submissions[id]);
                 return (
                   <li key={r.studentId} className="rounded border">
                     <button
@@ -388,7 +417,7 @@ export function SessionConsole({
                         <span className="truncate">{r.fullName}</span>
                       </span>
                       <span className="flex shrink-0 flex-wrap justify-end gap-0.5">
-                        {scopeItemIds.map((id) => {
+                        {broadcastItemIds.map((id) => {
                           const b = badge(r.submissions[id]);
                           return <span key={id} className={cn("rounded px-1 text-[10px] font-medium leading-4", b.cls)}>{b.text}</span>;
                         })}
@@ -398,7 +427,7 @@ export function SessionConsole({
                       <div className="space-y-2 border-t p-2">
                         {hasAny || Object.keys(watchDrawings).length > 0 ? (
                           <PreviewProvider>
-                            {scopeItemIds.map((id) => {
+                            {broadcastItemIds.map((id) => {
                               const item = itemById.get(id);
                               if (!item) return null;
                               const sub = r.submissions[id];
