@@ -48,9 +48,10 @@ function GroupRow({
   onToggle: () => void;
   label: string;
   viewing: boolean;
-  live: boolean;
+  live?: boolean;
   onNavigate: () => void;
-  onBroadcast: () => void;
+  /** Only lessons broadcast to students, so only they get the monitor icon. */
+  onBroadcast?: () => void;
   bold?: boolean;
 }) {
   return (
@@ -64,7 +65,7 @@ function GroupRow({
       <button type="button" onClick={onNavigate} className={cn("flex-1 truncate py-1 pr-1 text-left", bold && "font-medium")}>
         {label}
       </button>
-      <BroadcastButton live={live} onClick={onBroadcast} />
+      {onBroadcast ? <BroadcastButton live={Boolean(live)} onClick={onBroadcast} /> : null}
     </div>
   );
 }
@@ -105,8 +106,8 @@ export function ExerciseTree({
         <div key={section.id}>
           <GroupRow
             depth={0} bold open={isOpen(section.id)} onToggle={() => toggle(section.id)}
-            label={section.title} viewing={isViewing("section", section.id)} live={isLive("section", section.id)}
-            onNavigate={() => onNavigate("section", section.id)} onBroadcast={() => onBroadcast("section", section.id)}
+            label={section.title} viewing={isViewing("section", section.id)}
+            onNavigate={() => onNavigate("section", section.id)}
           />
           {isOpen(section.id)
             ? section.lessons.map((lesson) => (
@@ -121,29 +122,23 @@ export function ExerciseTree({
                         <div key={mod.id}>
                           <GroupRow
                             depth={2} open={isOpen(mod.id)} onToggle={() => toggle(mod.id)}
-                            label={mod.title} viewing={isViewing("module", mod.id)} live={isLive("module", mod.id)}
-                            onNavigate={() => onNavigate("module", mod.id)} onBroadcast={() => onBroadcast("module", mod.id)}
+                            label={mod.title} viewing={isViewing("module", mod.id)}
+                            onNavigate={() => onNavigate("module", mod.id)}
                           />
                           {isOpen(mod.id)
                             ? mod.items.map((item) => (
-                                <div
+                                <button
                                   key={item.id}
+                                  type="button"
+                                  onClick={() => onNavigate("item", item.id)}
                                   className={cn(
-                                    "flex items-center gap-1 rounded",
+                                    "block w-full truncate rounded py-1 pr-1 text-left hover:bg-accent",
                                     isViewing("item", item.id) && "bg-accent",
-                                    isLive("item", item.id) && "ring-1 ring-red-400",
                                   )}
-                                  style={{ paddingLeft: 3 * 12 + 8 }}
+                                  style={{ paddingLeft: 3 * 12 + 20 }}
                                 >
-                                  <button
-                                    type="button"
-                                    onClick={() => onNavigate("item", item.id)}
-                                    className="flex-1 truncate py-1 pr-1 text-left hover:text-foreground"
-                                  >
-                                    {item.title || TYPE_LABELS[item.type]}
-                                  </button>
-                                  <BroadcastButton live={isLive("item", item.id)} onClick={() => onBroadcast("item", item.id)} />
-                                </div>
+                                  {item.title || TYPE_LABELS[item.type]}
+                                </button>
                               ))
                             : null}
                         </div>
