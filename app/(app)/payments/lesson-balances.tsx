@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Minus, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -40,22 +40,29 @@ export function LessonBalances({ rows, canManage }: { rows: BalanceRow[]; canMan
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
+  // Optimistic mirror so the "Осталось" number updates instantly.
+  const [rowList, setRowList] = useState<BalanceRow[]>(rows);
+  useEffect(() => setRowList(rows), [rows]);
 
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? rows.filter((r) => r.name.toLowerCase().includes(q) || (r.login ?? "").toLowerCase().includes(q))
-    : rows;
+    ? rowList.filter((r) => r.name.toLowerCase().includes(q) || (r.login ?? "").toLowerCase().includes(q))
+    : rowList;
 
   async function adjust(id: string, sign: 1 | -1) {
     const n = Math.round(Number(amounts[id] ?? "1")) || 1;
+    const delta = sign * Math.abs(n);
+    const snapshot = rowList;
+    setRowList(rowList.map((r) => (r.id === id ? { ...r, remaining: r.remaining + delta } : r)));
+    setAmounts((prev) => ({ ...prev, [id]: "" }));
     setBusy(id);
-    const result = await addLessonAdjustmentAction(id, sign * Math.abs(n));
+    const result = await addLessonAdjustmentAction(id, delta);
     setBusy(null);
     if (result.success) {
       toast.success(sign > 0 ? "Занятия начислены" : "Занятия списаны");
-      setAmounts((prev) => ({ ...prev, [id]: "" }));
       router.refresh();
     } else {
+      setRowList(snapshot);
       toast.error(result.error);
     }
   }

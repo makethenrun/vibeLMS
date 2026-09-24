@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -55,25 +55,40 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
   const [groupQuery, setGroupQuery] = useState("");
   const [materialQuery, setMaterialQuery] = useState("");
   const isAdministrator = assistant.role === "ADMINISTRATOR";
-  const matById = new Map(assistant.materials.map((m) => [m.materialId, m.canEdit]));
+  // Optimistic mirrors so checkboxes tick instantly.
+  const [groupIds, setGroupIds] = useState<string[]>(assistant.groupIds);
+  const [mats, setMats] = useState(assistant.materials);
+  useEffect(() => setGroupIds(assistant.groupIds), [assistant.groupIds]);
+  useEffect(() => setMats(assistant.materials), [assistant.materials]);
+  const matById = new Map(mats.map((m) => [m.materialId, m.canEdit]));
   const gq = groupQuery.trim().toLowerCase();
   const mq = materialQuery.trim().toLowerCase();
   const visibleGroups = gq ? groups.filter((g) => g.name.toLowerCase().includes(gq)) : groups;
   const visibleMaterials = mq ? materials.filter((m) => m.title.toLowerCase().includes(mq)) : materials;
 
   async function toggleGroup(groupId: string, on: boolean) {
-    const next = on ? [...assistant.groupIds, groupId] : assistant.groupIds.filter((g) => g !== groupId);
+    const next = on ? [...groupIds, groupId] : groupIds.filter((g) => g !== groupId);
+    const snapshot = groupIds;
+    setGroupIds(next);
     const result = await setAssistantGroupsAction(assistant.id, next);
     if (result.success) router.refresh();
-    else toast.error(result.error);
+    else {
+      setGroupIds(snapshot);
+      toast.error(result.error);
+    }
   }
 
   async function setMaterial(materialId: string, assigned: boolean, canEdit: boolean) {
-    const others = assistant.materials.filter((m) => m.materialId !== materialId);
+    const others = mats.filter((m) => m.materialId !== materialId);
     const next = assigned ? [...others, { materialId, canEdit }] : others;
+    const snapshot = mats;
+    setMats(next);
     const result = await setAssistantMaterialsAction(assistant.id, next);
     if (result.success) router.refresh();
-    else toast.error(result.error);
+    else {
+      setMats(snapshot);
+      toast.error(result.error);
+    }
   }
 
   if (isAdministrator) {
@@ -102,7 +117,7 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
               ) : (
                 visibleGroups.map((g) => (
                   <label key={g.id} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={assistant.groupIds.includes(g.id)} onChange={(e) => toggleGroup(g.id, e.target.checked)} />
+                    <input type="checkbox" checked={groupIds.includes(g.id)} onChange={(e) => toggleGroup(g.id, e.target.checked)} />
                     {g.name}
                   </label>
                 ))
