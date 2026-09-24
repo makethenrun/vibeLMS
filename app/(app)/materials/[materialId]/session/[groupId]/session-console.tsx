@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Hand, MonitorPlay, Radio, Square, Users, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Hand, MonitorPlay, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -123,6 +123,7 @@ export function SessionConsole({
   // own local view (tree navigation, scrolls within the lesson — not broadcast).
   const [broadcast, setBroadcast] = useState<{ kind: ScopeKind; id: string | null }>({ kind: initialState.kind, id: initialState.scopeId });
   const [viewScope, setViewScope] = useState<{ kind: ScopeKind; id: string | null }>({ kind: initialState.kind, id: initialState.scopeId });
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(initialState.focusedItemId);
   const pendingScrollRef = useRef<string | null>(null);
   const [results, setResults] = useState<SessionResultRow[]>(
     students.map((s) => ({ studentId: s.id, fullName: s.fullName, submissions: {} })),
@@ -159,6 +160,7 @@ export function SessionConsole({
         setResults(res.data.results);
         setTutorDrawings(res.data.tutorDrawings);
         setWatchDrawings(res.data.watchDrawings);
+        setFocusedItemId(res.data.state.focusedItemId);
         // Toast newly raised hands (ids not seen on the previous poll).
         const seen = handIdsRef.current;
         for (const h of res.data.hands) {
@@ -190,12 +192,21 @@ export function SessionConsole({
     }
   }
 
-  // Broadcast a node to the students (what they see now).
+  // Broadcast a lesson to the students (what they see now).
   async function broadcastScope(kind: ScopeKind, id: string) {
     setBroadcast({ kind, id });
+    setFocusedItemId(null);
     const res = await setActiveScopeAction(sessionId, kind, id);
     if (!res.success) toast.error(res.error);
     void setFocusedItemAction(sessionId, null);
+  }
+
+  // Scroll the students to a specific exercise within what they currently see.
+  async function toggleFocus(itemId: string) {
+    const next = focusedItemId === itemId ? null : itemId;
+    setFocusedItemId(next);
+    const res = await setFocusedItemAction(sessionId, next);
+    if (!res.success) toast.error(res.error);
   }
 
   // After a view change requested a scroll, jump to that exercise within the lesson.
@@ -336,7 +347,7 @@ export function SessionConsole({
           <p className="px-2 pb-1 text-xs font-semibold text-muted-foreground">Упражнения</p>
           <p className="px-2 pb-2 text-[11px] leading-tight text-muted-foreground">
             Нажмите на упражнение — вы перейдёте к нему. Иконка{" "}
-            <MonitorPlay className="inline h-3 w-3 align-[-1px]" /> показывает его ученикам.
+            <MonitorPlay className="inline h-3 w-3 align-[-1px]" /> у урока открывает этот урок ученикам.
           </p>
           <ExerciseTree
             tree={tree}
@@ -355,20 +366,20 @@ export function SessionConsole({
           {viewItemIds.length === 0 ? (
             <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
               Выберите раздел, урок, модуль или упражнение слева, чтобы открыть его у себя. Значок{" "}
-              <MonitorPlay className="inline h-4 w-4 align-[-2px]" /> покажет выбранное ученикам.
+              <MonitorPlay className="inline h-4 w-4 align-[-2px]" /> напротив урока откроет его ученикам.
             </div>
           ) : (
             <PreviewProvider>
               {viewItemIds.map((id) => {
                 const item = itemById.get(id);
                 if (!item) return null;
-                const live = broadcast.kind === "item" && broadcast.id === id;
+                const focused = focusedItemId === id;
                 return (
-                  <div key={id} className={cn("rounded-lg", live && "ring-2 ring-red-400 ring-offset-2")}>
+                  <div key={id} className={cn("rounded-lg", focused && "ring-2 ring-primary ring-offset-2")}>
                     <div className="mb-1 flex justify-end">
-                      <Button size="sm" variant={live ? "default" : "outline"} onClick={() => broadcastScope("item", id)}>
-                        <MonitorPlay className="h-4 w-4" />
-                        {live ? "Видят ученики" : "Показать всем"}
+                      <Button size="sm" variant={focused ? "default" : "outline"} onClick={() => toggleFocus(id)}>
+                        {focused ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                        {focused ? "Откреплено" : "Показать всем"}
                       </Button>
                     </div>
                     <StudentItem
