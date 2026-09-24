@@ -358,6 +358,7 @@ export interface Database {
           lesson_id: string;
           title: string;
           position: number;
+          is_homework: boolean;
           created_at: string;
         };
         Insert: {
@@ -365,6 +366,7 @@ export interface Database {
           lesson_id: string;
           title: string;
           position?: number;
+          is_homework?: boolean;
           created_at?: string;
         };
         Update: {
@@ -372,6 +374,7 @@ export interface Database {
           lesson_id?: string;
           title?: string;
           position?: number;
+          is_homework?: boolean;
           created_at?: string;
         };
         Relationships: [];

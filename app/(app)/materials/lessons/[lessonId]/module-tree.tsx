@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Home, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -74,12 +74,21 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
       lesson_id: lessonId,
       title,
       position: items.length,
+      is_homework: false,
       created_at: new Date().toISOString(),
       items: [],
     };
+    // Insert before the homework module so it stays last.
+    const homeworkIdx = items.findIndex((m) => m.is_homework);
+    const next = [...items];
+    if (homeworkIdx >= 0) next.splice(homeworkIdx, 0, temp);
+    else next.push(temp);
     setNewModule("");
-    void mutate([...items, temp], () => createModuleAction(lessonId, title));
+    void mutate(next, () => createModuleAction(lessonId, title));
   }
+
+  // Modules movable by the tutor (all except the pinned homework module).
+  const movableCount = items.filter((m) => !m.is_homework).length;
 
   return (
     <div className="space-y-4 text-sm">
@@ -104,22 +113,25 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
                   <Link
                     href={`/materials/lessons/${lessonId}?m=${module.id}`}
                     className={cn(
-                      "flex-1 truncate rounded px-2 py-1 font-medium hover:bg-accent",
+                      "flex flex-1 items-center gap-1.5 truncate rounded px-2 py-1 font-medium hover:bg-accent",
                       module.id === activeModuleId && "bg-accent",
                     )}
                   >
-                    {mIndex + 1}. {module.title}
+                    {module.is_homework ? <Home className="h-4 w-4 shrink-0 text-muted-foreground" /> : null}
+                    <span className="truncate">{module.is_homework ? module.title : `${mIndex + 1}. ${module.title}`}</span>
                   </Link>
-                  <RowMenu
-                    busy={busy}
-                    canUp={mIndex > 0}
-                    canDown={mIndex < items.length - 1}
-                    deleteLabel="Удалить модуль"
-                    onUp={() => mutate(swapItems(items, mIndex, mIndex - 1), () => moveModuleAction(module.id, "up"))}
-                    onDown={() => mutate(swapItems(items, mIndex, mIndex + 1), () => moveModuleAction(module.id, "down"))}
-                    onRename={() => rename(module.id, module.title, (t) => updateModuleAction(module.id, t))}
-                    onDelete={() => removeModule(module.title, module.id)}
-                  />
+                  {module.is_homework ? null : (
+                    <RowMenu
+                      busy={busy}
+                      canUp={mIndex > 0}
+                      canDown={mIndex < movableCount - 1}
+                      deleteLabel="Удалить модуль"
+                      onUp={() => mutate(swapItems(items, mIndex, mIndex - 1), () => moveModuleAction(module.id, "up"))}
+                      onDown={() => mutate(swapItems(items, mIndex, mIndex + 1), () => moveModuleAction(module.id, "down"))}
+                      onRename={() => rename(module.id, module.title, (t) => updateModuleAction(module.id, t))}
+                      onDelete={() => removeModule(module.title, module.id)}
+                    />
+                  )}
                 </div>
 
                 {isCollapsed ? null : (
@@ -133,7 +145,7 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
                             href={`/materials/lessons/${lessonId}?m=${module.id}#item-${item.id}`}
                             className="flex-1 truncate rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                           >
-                            {(() => { const l = itemLabel(mIndex + 1, numbers.get(item.id)); return l ? `${l} ` : ""; })()}{item.title || ITEM_LABELS[item.type]}
+                            {(() => { const l = module.is_homework ? null : itemLabel(mIndex + 1, numbers.get(item.id)); return l ? `${l} ` : ""; })()}{item.title || ITEM_LABELS[item.type]}
                           </Link>
                           <RowMenu
                             busy={busy}
