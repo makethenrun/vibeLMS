@@ -16,6 +16,7 @@ export interface AssistantRow {
   fullName: string | null;
   notes: string | null;
   isArchived: boolean;
+  canCreateMaterials: boolean;
   createdAt: string;
   groupIds: string[];
   materials: { materialId: string; canEdit: boolean }[];
@@ -89,7 +90,7 @@ export async function deleteAssistant(db: Db, assistantId: string): Promise<void
 export async function listAssistants(db: Db, params: { archivedOnly?: boolean } = {}): Promise<AssistantRow[]> {
   const query = db
     .from("users")
-    .select("id, login, role, full_name, notes, is_archived, created_at")
+    .select("id, login, role, full_name, notes, is_archived, can_create_materials, created_at")
     .in("role", ["ASSISTANT", "ADMINISTRATOR"])
     .eq("is_archived", Boolean(params.archivedOnly))
     .order("full_name", { ascending: true, nullsFirst: false })
@@ -115,10 +116,17 @@ export async function listAssistants(db: Db, params: { archivedOnly?: boolean } 
     fullName: u.full_name,
     notes: u.notes,
     isArchived: u.is_archived,
+    canCreateMaterials: Boolean(u.can_create_materials),
     createdAt: u.created_at,
     groupIds: groupsByAssistant.get(u.id) ?? [],
     materials: matsByAssistant.get(u.id) ?? [],
   }));
+}
+
+/** Sets whether an assistant may create materials. */
+export async function setAssistantCanCreateMaterials(db: Db, assistantId: string, value: boolean): Promise<void> {
+  const { error } = await db.from("users").update({ can_create_materials: value }).eq("id", assistantId);
+  if (error) throw new Error(error.message);
 }
 
 export async function setAssistantGroups(db: Db, assistantId: string, groupIds: string[]): Promise<void> {

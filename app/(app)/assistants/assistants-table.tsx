@@ -39,6 +39,7 @@ import type { AssistantRow } from "@/services/assistants/assistants.service";
 import {
   archiveAssistantAction,
   deleteAssistantAction,
+  setAssistantCanCreateMaterialsAction,
   setAssistantGroupsAction,
   setAssistantMaterialsAction,
 } from "./actions";
@@ -58,8 +59,20 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
   // Optimistic mirrors so checkboxes tick instantly.
   const [groupIds, setGroupIds] = useState<string[]>(assistant.groupIds);
   const [mats, setMats] = useState(assistant.materials);
+  const [canCreate, setCanCreate] = useState(assistant.canCreateMaterials);
   useEffect(() => setGroupIds(assistant.groupIds), [assistant.groupIds]);
   useEffect(() => setMats(assistant.materials), [assistant.materials]);
+  useEffect(() => setCanCreate(assistant.canCreateMaterials), [assistant.canCreateMaterials]);
+
+  async function toggleCanCreate(value: boolean) {
+    setCanCreate(value);
+    const result = await setAssistantCanCreateMaterialsAction(assistant.id, value);
+    if (result.success) router.refresh();
+    else {
+      setCanCreate(!value);
+      toast.error(result.error);
+    }
+  }
   const matById = new Map(mats.map((m) => [m.materialId, m.canEdit]));
   const gq = groupQuery.trim().toLowerCase();
   const mq = materialQuery.trim().toLowerCase();
@@ -100,7 +113,12 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
   }
 
   return (
-    <div className="grid gap-6 bg-muted/30 p-4 md:grid-cols-2">
+    <div className="space-y-4 bg-muted/30 p-4">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" checked={canCreate} onChange={(e) => toggleCanCreate(e.target.checked)} />
+        Может создавать материалы
+      </label>
+      <div className="grid gap-6 md:grid-cols-2">
       <div className="space-y-2">
         <p className="text-sm font-medium">Группы</p>
         {groups.length === 0 ? (
@@ -162,6 +180,7 @@ function AccessPanel({ assistant, groups, materials }: { assistant: AssistantRow
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

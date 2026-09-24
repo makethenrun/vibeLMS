@@ -91,6 +91,7 @@ export interface Database {
           full_name: string | null;
           notes: string | null;
           is_archived: boolean;
+          can_create_materials: boolean;
           created_at: string;
         };
         Insert: {
@@ -101,6 +102,7 @@ export interface Database {
           full_name?: string | null;
           notes?: string | null;
           is_archived?: boolean;
+          can_create_materials?: boolean;
           created_at?: string;
         };
         Update: {
@@ -111,6 +113,7 @@ export interface Database {
           full_name?: string | null;
           notes?: string | null;
           is_archived?: boolean;
+          can_create_materials?: boolean;
           created_at?: string;
         };
         Relationships: [];
