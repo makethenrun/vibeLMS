@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Timer, X } from "lucide-react";
 
 import { LatencyHistory } from "./latency-history";
@@ -51,6 +52,44 @@ function describe(target: EventTarget | null): { label: string; tag: string; tex
 export function LatencyMeter({ role, login }: { role: string; login: string | null }) {
   const [open, setOpen] = useState(false);
   const [, force] = useReducer((x) => x + 1, 0);
+  const pathname = usePathname();
+
+  // Tracks a pending page transition started by a link click.
+  const navRef = useRef<{ t0: number; from: string } | null>(null);
+  const pathRef = useRef(pathname);
+
+  // When the path changes and a link click started it, log the transition time.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (nav && nav.from !== pathname) {
+      const { t0, from } = nav;
+      navRef.current = null;
+      requestAnimationFrame(() => {
+        addRecord({
+          id: newId(),
+          ts: new Date().toISOString(),
+          t: t0,
+          kind: "nav",
+          path: from,
+          role,
+          label: `${from} → ${pathname}`,
+          tag: "nav",
+          text: "",
+          aria: "",
+          elId: "",
+          x: 0,
+          y: 0,
+          rafMs: 0,
+          inputDelayMs: null,
+          processingMs: null,
+          durationMs: null,
+          toPath: pathname,
+          navMs: Math.round(performance.now() - t0),
+        });
+      });
+    }
+    pathRef.current = pathname;
+  }, [pathname, role]);
 
   useEffect(() => {
     setLatencyContext({ role, login: login ?? "" });
@@ -64,6 +103,15 @@ export function LatencyMeter({ role, login }: { role: string; login: string | nu
       // Don't log interactions with the meter's own UI.
       if (target && target.closest?.("[data-latency-ui]")) return;
 
+      // Detect internal link navigations to time the page transition.
+      const anchor = target?.closest?.("a[href]") as HTMLAnchorElement | null;
+      const href = anchor?.getAttribute("href") ?? "";
+      if (href.startsWith("/") && !href.startsWith("//") && href.split("?")[0] !== pathRef.current) {
+        navRef.current = { t0: performance.now(), from: pathRef.current };
+      } else {
+        navRef.current = null;
+      }
+
       const t0 = performance.now();
       const info = describe(e.target);
       const id = newId();
@@ -71,6 +119,7 @@ export function LatencyMeter({ role, login }: { role: string; login: string | nu
         id,
         ts: new Date().toISOString(),
         t: t0,
+        kind: "click",
         path: window.location.pathname,
         role,
         ...info,
@@ -80,6 +129,8 @@ export function LatencyMeter({ role, login }: { role: string; login: string | nu
         inputDelayMs: null,
         processingMs: null,
         durationMs: null,
+        toPath: null,
+        navMs: null,
       };
       addRecord(rec);
 
@@ -142,7 +193,8 @@ export function LatencyMeter({ role, login }: { role: string; login: string | nu
 
   const records = getRecords();
   const last = records[records.length - 1];
-  const lastMs = last ? (last.durationMs ?? last.rafMs) : null;
+  const lastMs = last ? (last.kind === "nav" ? last.navMs : (last.durationMs ?? last.rafMs)) : null;
+  const lastLabel = last?.kind === "nav" ? "переход" : "клик";
 
   return (
     <div data-latency-ui className="fixed bottom-3 left-3 z-[9999] text-sm">
@@ -164,7 +216,7 @@ export function LatencyMeter({ role, login }: { role: string; login: string | nu
         >
           <Timer className="h-4 w-4 text-primary" />
           <span className="tabular-nums">{lastMs === null ? "—" : `${lastMs} ms`}</span>
-          <span className="text-xs text-muted-foreground">({records.length})</span>
+          <span className="text-xs text-muted-foreground">{last ? lastLabel : ""} ({records.length})</span>
         </button>
       )}
     </div>
