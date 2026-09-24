@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -31,32 +31,51 @@ export function GroupMembers({ groupId, members, addable }: GroupMembersProps) {
   const [memberQuery, setMemberQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
+  // Optimistic mirrors so add/remove reflect instantly, then reconcile.
+  const [memberList, setMemberList] = useState<Student[]>(members);
+  const [addableList, setAddableList] = useState<Student[]>(addable);
+  useEffect(() => setMemberList(members), [members]);
+  useEffect(() => setAddableList(addable), [addable]);
+
   const aq = addQuery.trim().toLowerCase();
-  const filteredAddable = aq ? addable.filter((s) => s.full_name.toLowerCase().includes(aq)) : addable;
+  const filteredAddable = aq ? addableList.filter((s) => s.full_name.toLowerCase().includes(aq)) : addableList;
   const mq = memberQuery.trim().toLowerCase();
-  const filteredMembers = mq ? members.filter((s) => s.full_name.toLowerCase().includes(mq)) : members;
+  const filteredMembers = mq ? memberList.filter((s) => s.full_name.toLowerCase().includes(mq)) : memberList;
 
   function add() {
     if (!selected) return;
+    const student = addableList.find((s) => s.id === selected);
+    if (!student) return;
+    const prevMembers = memberList;
+    const prevAddable = addableList;
+    setMemberList([...memberList, student].sort((a, b) => a.full_name.localeCompare(b.full_name, "ru")));
+    setAddableList(addableList.filter((s) => s.id !== selected));
+    setSelected("");
     startTransition(async () => {
-      const result = await addMemberAction(groupId, selected);
+      const result = await addMemberAction(groupId, student.id);
       if (result.success) {
-        toast.success("Ученик добавлен в группу");
-        setSelected("");
         router.refresh();
       } else {
+        setMemberList(prevMembers);
+        setAddableList(prevAddable);
         toast.error(result.error);
       }
     });
   }
 
   function remove(studentId: string) {
+    const student = memberList.find((s) => s.id === studentId);
+    const prevMembers = memberList;
+    const prevAddable = addableList;
+    setMemberList(memberList.filter((s) => s.id !== studentId));
+    if (student) setAddableList([...addableList, student].sort((a, b) => a.full_name.localeCompare(b.full_name, "ru")));
     startTransition(async () => {
       const result = await removeMemberAction(groupId, studentId);
       if (result.success) {
-        toast.success("Ученик удалён из группы");
         router.refresh();
       } else {
+        setMemberList(prevMembers);
+        setAddableList(prevAddable);
         toast.error(result.error);
       }
     });
@@ -69,7 +88,7 @@ export function GroupMembers({ groupId, members, addable }: GroupMembersProps) {
           <CardTitle className="text-base">Добавить ученика</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {addable.length === 0 ? (
+          {addableList.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Все активные ученики уже состоят в этой группе.
             </p>
@@ -106,10 +125,10 @@ export function GroupMembers({ groupId, members, addable }: GroupMembersProps) {
 
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-base">Участники ({members.length})</CardTitle>
+          <CardTitle className="text-base">Участники ({memberList.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {members.length === 0 ? (
+          {memberList.length === 0 ? (
             <p className="text-sm text-muted-foreground">В группе пока нет учеников.</p>
           ) : (
             <>

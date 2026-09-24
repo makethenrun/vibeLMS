@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { ActionResult } from "@/lib/utils/action-result";
+import { useOptimisticList, swapItems } from "@/lib/hooks/use-optimistic-list";
 import { itemLabel, numberItems } from "@/lib/materials/numbering";
-import type { MaterialItemType, ModuleWithItems } from "@/types";
+import type { ModuleWithItems, MaterialItemType } from "@/types";
 import {
   createModuleAction,
   deleteItemAction,
@@ -45,27 +45,11 @@ interface ModuleTreeProps {
 }
 
 export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProps) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const { items, busy, mutate } = useOptimisticList<ModuleWithItems>(modules);
   const [newModule, setNewModule] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  async function run(action: () => Promise<ActionResult>) {
-    setBusy(true);
-    try {
-      const result = await action();
-      if (result.success) {
-        router.refresh();
-        return true;
-      }
-      toast.error(result.error);
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function rename(current: string, action: (title: string) => Promise<ActionResult>) {
+  function rename(id: string, current: string, action: (title: string) => Promise<ActionResult>) {
     const title = window.prompt("Название модуля:", current);
     if (title === null) return;
     const trimmed = title.trim();
@@ -73,28 +57,37 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
       toast.error("Минимум 2 символа");
       return;
     }
-    void run(() => action(trimmed));
+    void mutate(items.map((m) => (m.id === id ? { ...m, title: trimmed } : m)), () => action(trimmed));
   }
 
   function removeModule(label: string, id: string) {
     if (window.confirm(`Удалить модуль «${label}» со всеми элементами?`)) {
-      void run(() => deleteModuleAction(id));
+      void mutate(items.filter((m) => m.id !== id), () => deleteModuleAction(id));
     }
   }
 
-  async function addModule() {
+  function addModule() {
     const title = newModule.trim();
-    if (title.length < 2) return toast.error("Минимум 2 символа");
-    if (await run(() => createModuleAction(lessonId, title))) setNewModule("");
+    if (title.length < 2) return void toast.error("Минимум 2 символа");
+    const temp: ModuleWithItems = {
+      id: `temp-${Date.now()}`,
+      lesson_id: lessonId,
+      title,
+      position: items.length,
+      created_at: new Date().toISOString(),
+      items: [],
+    };
+    setNewModule("");
+    void mutate([...items, temp], () => createModuleAction(lessonId, title));
   }
 
   return (
     <div className="space-y-4 text-sm">
-      {modules.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-muted-foreground">Пока нет модулей.</p>
       ) : (
         <ul className="space-y-3">
-          {modules.map((module, mIndex) => {
+          {items.map((module, mIndex) => {
             const isCollapsed = collapsed[module.id] ?? false;
             const numbers = numberItems(module.items);
             return (
@@ -120,11 +113,11 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
                   <RowMenu
                     busy={busy}
                     canUp={mIndex > 0}
-                    canDown={mIndex < modules.length - 1}
+                    canDown={mIndex < items.length - 1}
                     deleteLabel="Удалить модуль"
-                    onUp={() => run(() => moveModuleAction(module.id, "up"))}
-                    onDown={() => run(() => moveModuleAction(module.id, "down"))}
-                    onRename={() => rename(module.title, (t) => updateModuleAction(module.id, t))}
+                    onUp={() => mutate(swapItems(items, mIndex, mIndex - 1), () => moveModuleAction(module.id, "up"))}
+                    onDown={() => mutate(swapItems(items, mIndex, mIndex + 1), () => moveModuleAction(module.id, "down"))}
+                    onRename={() => rename(module.id, module.title, (t) => updateModuleAction(module.id, t))}
                     onDelete={() => removeModule(module.title, module.id)}
                   />
                 </div>
@@ -147,10 +140,24 @@ export function ModuleTree({ lessonId, modules, activeModuleId }: ModuleTreeProp
                             canUp={iIndex > 0}
                             canDown={iIndex < module.items.length - 1}
                             deleteLabel="Удалить элемент"
-                            onUp={() => run(() => moveItemAction(item.id, "up"))}
-                            onDown={() => run(() => moveItemAction(item.id, "down"))}
+                            onUp={() =>
+                              mutate(
+                                items.map((m) => (m.id === module.id ? { ...m, items: swapItems(m.items, iIndex, iIndex - 1) } : m)),
+                                () => moveItemAction(item.id, "up"),
+                              )
+                            }
+                            onDown={() =>
+                              mutate(
+                                items.map((m) => (m.id === module.id ? { ...m, items: swapItems(m.items, iIndex, iIndex + 1) } : m)),
+                                () => moveItemAction(item.id, "down"),
+                              )
+                            }
                             onDelete={() => {
-                              if (window.confirm("Удалить элемент?")) void run(() => deleteItemAction(item.id));
+                              if (window.confirm("Удалить элемент?"))
+                                void mutate(
+                                  items.map((m) => (m.id === module.id ? { ...m, items: m.items.filter((it) => it.id !== item.id) } : m)),
+                                  () => deleteItemAction(item.id),
+                                );
                             }}
                           />
                         </li>
