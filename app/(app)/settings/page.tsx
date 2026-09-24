@@ -23,6 +23,7 @@ export default async function SettingsPage() {
     logoUrl: settings.logo_url ?? "",
     enabledKeyboards: Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : [],
     languages: Array.isArray(settings.languages) ? (settings.languages as string[]) : [],
+    assistantsCanCreateMaterials: Boolean(settings.assistants_can_create_materials),
   };
 
   return (

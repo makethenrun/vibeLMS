@@ -8,6 +8,7 @@ import { requireStaff } from "@/lib/auth/guards";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { assistantMaterialAccess } from "@/services/assistants/assistants.service";
 import { listMaterials } from "@/services/materials/materials.service";
+import { getSettings } from "@/services/settings/settings.service";
 import { MaterialsBrowser } from "./materials-browser";
 import { MaterialFormDialog } from "./material-form-dialog";
 
@@ -16,10 +17,11 @@ export const metadata: Metadata = { title: "Материалы" };
 export default async function MaterialsPage() {
   const user = await requireStaff();
   const isTutor = user.role === "TUTOR";
-  // Tutors and assistants can create materials (assistants get access to what they create).
-  const canCreate = user.role === "TUTOR" || user.role === "ASSISTANT";
 
   const db = createServerSupabaseClient();
+  const settings = await getSettings(db);
+  // Tutors always; assistants only when a tutor enabled it in Settings.
+  const canCreate = user.role === "TUTOR" || (user.role === "ASSISTANT" && Boolean(settings.assistants_can_create_materials));
   let materials = await listMaterials(db);
   // Assistants see only assigned materials; tutor and administrator see all.
   if (user.role === "ASSISTANT") {
