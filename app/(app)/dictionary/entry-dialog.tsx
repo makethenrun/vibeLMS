@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -54,7 +53,6 @@ export function EntryDialog({
   /** When given, show a dictionary picker instead of a fixed language. */
   languageOptions?: string[];
 }) {
-  const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -89,7 +87,6 @@ export function EntryDialog({
     if (result.success) {
       toast.success(isEdit ? "Сохранено" : "Добавлено");
       setOpen(false);
-      router.refresh();
       return;
     }
     applyFieldErrors(form.setError, result.fieldErrors);

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -39,7 +38,6 @@ interface ImportDialogProps {
 }
 
 export function ImportDialog({ itemIds, open, onOpenChange, onDone }: ImportDialogProps) {
-  const router = useRouter();
   const [materials, setMaterials] = useState<PickerOption[]>([]);
   const [lessonGroups, setLessonGroups] = useState<PickerLessonGroup[]>([]);
   const [modules, setModules] = useState<PickerOption[]>([]);
@@ -90,7 +88,6 @@ export function ImportDialog({ itemIds, open, onOpenChange, onDone }: ImportDial
         toast.success(`Импортировано упражнений: ${itemIds.length}`);
         onOpenChange(false);
         onDone();
-        router.refresh();
       } else {
         toast.error(result.error);
       }

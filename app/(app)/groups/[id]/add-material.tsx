@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,7 +22,6 @@ import { addMaterialToGroupAction } from "../actions";
 interface MaterialOption { id: string; title: string }
 
 export function AddMaterialToGroup({ groupId, materials }: { groupId: string; materials: MaterialOption[] }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [materialId, setMaterialId] = useState("");
   const [query, setQuery] = useState("");
@@ -45,7 +43,6 @@ export function AddMaterialToGroup({ groupId, materials }: { groupId: string; ma
       setOpen(false);
       setMaterialId("");
       setQuery("");
-      router.refresh();
     } else {
       toast.error(result.error);
     }
