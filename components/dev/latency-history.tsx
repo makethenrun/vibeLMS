@@ -24,6 +24,8 @@ export function LatencyHistory({ compact = false }: { compact?: boolean }) {
 
   const records = getRecords();
   const rows = records.map((r, i) => ({ n: i + 1, r }));
+  const navRows = rows.filter(({ r }) => r.kind === "nav");
+  const clickRows = rows.filter(({ r }) => r.kind !== "nav");
 
   function copy() {
     void navigator.clipboard
@@ -66,6 +68,40 @@ export function LatencyHistory({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="space-y-1">
+        <p className="text-xs font-semibold">Переходы между страницами (мс)</p>
+        <div className={`overflow-auto rounded-md border ${maxH}`}>
+          <Table>
+            <TableHeader className="sticky top-0 bg-background">
+              <TableRow>
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>Время</TableHead>
+                <TableHead>Роль</TableHead>
+                <TableHead>Откуда</TableHead>
+                <TableHead>Куда</TableHead>
+                <TableHead className="text-right">Переход</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {navRows.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground">Пока нет переходов.</TableCell></TableRow>
+              ) : (
+                navRows.map(({ n, r }) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-muted-foreground">{n}</TableCell>
+                    <TableCell className="font-mono text-xs">{timeOf(r.ts)}</TableCell>
+                    <TableCell className="text-xs">{r.role || "—"}</TableCell>
+                    <TableCell className="max-w-[10rem] truncate text-xs" title={r.path}>{r.path}</TableCell>
+                    <TableCell className="max-w-[10rem] truncate text-xs" title={r.toPath ?? ""}>{r.toPath}</TableCell>
+                    <TableCell className={`text-right font-medium tabular-nums ${(r.navMs ?? 0) >= 1000 ? "text-destructive" : (r.navMs ?? 0) >= 400 ? "text-yellow-600" : ""}`}>{num(r.navMs)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="space-y-1">
         <p className="text-xs font-semibold">Время отклика (мс)</p>
         <div className={`overflow-auto rounded-md border ${maxH}`}>
           <Table>
@@ -80,10 +116,10 @@ export function LatencyHistory({ compact = false }: { compact?: boolean }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {clickRows.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground">Пока нет данных.</TableCell></TableRow>
               ) : (
-                rows.map(({ n, r }) => (
+                clickRows.map(({ n, r }) => (
                   <TableRow key={r.id}>
                     <TableCell className="text-muted-foreground">{n}</TableCell>
                     <TableCell className="font-mono text-xs">{timeOf(r.ts)}</TableCell>
@@ -114,10 +150,10 @@ export function LatencyHistory({ compact = false }: { compact?: boolean }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 ? (
+              {clickRows.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground">Пока нет данных.</TableCell></TableRow>
               ) : (
-                rows.map(({ n, r }) => (
+                clickRows.map(({ n, r }) => (
                   <TableRow key={r.id}>
                     <TableCell className="text-muted-foreground">{n}</TableCell>
                     <TableCell className="font-mono text-xs">{timeOf(r.ts)}</TableCell>

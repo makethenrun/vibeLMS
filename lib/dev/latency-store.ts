@@ -9,7 +9,8 @@ export interface LatencyRecord {
   id: string;
   ts: string; // ISO timestamp of the click
   t: number; // performance.now() at click, for ordering
-  path: string;
+  kind: "click" | "nav"; // click interaction vs. page transition
+  path: string; // page the event happened on (for nav: the "from" page)
   role: string;
   label: string; // best human-readable name of what was clicked
   tag: string;
@@ -22,6 +23,8 @@ export interface LatencyRecord {
   inputDelayMs: number | null; // Event Timing: processingStart - startTime
   processingMs: number | null; // Event Timing: processingEnd - processingStart
   durationMs: number | null; // Event Timing: full interaction duration
+  toPath: string | null; // nav: destination page
+  navMs: number | null; // nav: click -> destination rendered (ms)
 }
 
 const KEY = "vibe:latencyLog:v1";
