@@ -139,6 +139,19 @@ export async function setAssistantMaterials(db: Db, assistantId: string, entries
   }
 }
 
+/** Grants one assistant access to a single material (used when they create one). */
+export async function grantAssistantMaterial(
+  db: Db,
+  assistantId: string,
+  materialId: string,
+  canEdit: boolean,
+): Promise<void> {
+  const { error } = await db
+    .from("assistant_materials")
+    .upsert({ assistant_id: assistantId, material_id: materialId, can_edit: canEdit }, { onConflict: "assistant_id,material_id" });
+  if (error) throw new Error(error.message);
+}
+
 // --- Access helpers (used by page loaders and action guards) ----------------
 
 export async function assistantGroupIds(db: Db, assistantId: string): Promise<string[]> {

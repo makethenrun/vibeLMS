@@ -16,6 +16,8 @@ export const metadata: Metadata = { title: "Материалы" };
 export default async function MaterialsPage() {
   const user = await requireStaff();
   const isTutor = user.role === "TUTOR";
+  // Tutors and assistants can create materials (assistants get access to what they create).
+  const canCreate = user.role === "TUTOR" || user.role === "ASSISTANT";
 
   const db = createServerSupabaseClient();
   let materials = await listMaterials(db);
@@ -36,16 +38,16 @@ export default async function MaterialsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Материалы"
-        description={isTutor ? "Конструктор учебных материалов." : "Материалы, выданные вам главным преподавателем."}
-        actions={isTutor ? <MaterialFormDialog trigger={addButton} /> : null}
+        description={isTutor ? "Конструктор учебных материалов." : "Ваши материалы и выданные главным преподавателем."}
+        actions={canCreate ? <MaterialFormDialog trigger={addButton} /> : null}
       />
 
       {materials.length === 0 ? (
         <EmptyState
           icon={Layers}
           title="Пока нет материалов"
-          description={isTutor ? "Создайте материал и наполните его разделами, уроками и упражнениями." : "Главный преподаватель ещё не выдал вам материалы."}
-          action={isTutor ? <MaterialFormDialog trigger={addButton} /> : undefined}
+          description={canCreate ? "Создайте материал и наполните его разделами, уроками и упражнениями." : "Главный преподаватель ещё не выдал вам материалы."}
+          action={canCreate ? <MaterialFormDialog trigger={addButton} /> : undefined}
         />
       ) : (
         <MaterialsBrowser materials={materials} />
