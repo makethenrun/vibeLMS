@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -38,7 +37,6 @@ interface MaterialFormDialogProps {
 }
 
 export function MaterialFormDialog({ trigger, material }: MaterialFormDialogProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const isEdit = Boolean(material);
 
@@ -65,7 +63,6 @@ export function MaterialFormDialog({ trigger, material }: MaterialFormDialogProp
     if (result.success) {
       toast.success(isEdit ? "Материал обновлён" : "Материал создан");
       setOpen(false);
-      router.refresh();
       return;
     }
     applyFieldErrors(form.setError, result.fieldErrors);

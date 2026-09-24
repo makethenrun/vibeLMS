@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -24,7 +23,6 @@ import { createRecurringLessonsAction } from "./actions";
 interface GroupOption { id: string; name: string }
 
 export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption[]; trigger: ReactNode }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [groupId, setGroupId] = useState("");
   const [title, setTitle] = useState("");
@@ -72,7 +70,6 @@ export function RecurringLessonDialog({ groups, trigger }: { groups: GroupOption
       setOpen(false);
       setTitle("");
       setDayTimes(new Map());
-      router.refresh();
     } else {
       toast.error(result.error);
     }

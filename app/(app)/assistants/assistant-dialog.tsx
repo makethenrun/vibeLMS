@@ -3,7 +3,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -49,7 +48,6 @@ interface AssistantDialogProps {
 }
 
 export function AssistantDialog({ mode, assistant, trigger, open, onOpenChange }: AssistantDialogProps) {
-  const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = open !== undefined;
   const dialogOpen = isControlled ? open : internalOpen;
@@ -80,7 +78,6 @@ export function AssistantDialog({ mode, assistant, trigger, open, onOpenChange }
     if (result.success) {
       toast.success(mode === "create" ? "Ассистент добавлен" : "Изменения сохранены");
       setOpen(false);
-      router.refresh();
       return;
     }
     applyFieldErrors(form.setError, result.fieldErrors);

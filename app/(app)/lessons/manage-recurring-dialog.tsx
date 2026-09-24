@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
@@ -41,7 +40,6 @@ function ymd(iso: string): string {
 }
 
 export function ManageRecurringDialog({ trigger }: { trigger: ReactNode }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [series, setSeries] = useState<LessonSeriesSummary[]>([]);
   const [seriesId, setSeriesId] = useState("");
@@ -126,7 +124,6 @@ export function ManageRecurringDialog({ trigger }: { trigger: ReactNode }) {
     if (r.success) {
       toast.success(`Обновлено занятий: ${r.data.count}`);
       setOpen(false);
-      router.refresh();
     } else {
       toast.error(r.error);
     }
@@ -140,7 +137,6 @@ export function ManageRecurringDialog({ trigger }: { trigger: ReactNode }) {
     if (r.success) {
       toast.success(`Удалено занятий: ${r.data.count}`);
       setOpen(false);
-      router.refresh();
     } else {
       toast.error(r.error);
     }

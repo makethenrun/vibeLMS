@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -20,7 +19,6 @@ import type { GrammarEntry } from "@/types";
 import { createGrammarAction, updateGrammarAction } from "./actions";
 
 export function GrammarDialog({ entry, trigger }: { entry?: GrammarEntry; trigger: ReactNode }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(entry?.title ?? "");
   const [body, setBody] = useState(entry?.body ?? "");
@@ -43,7 +41,6 @@ export function GrammarDialog({ entry, trigger }: { entry?: GrammarEntry; trigge
     if (result.success) {
       toast.success(isEdit ? "Сохранено" : "Блок добавлен");
       setOpen(false);
-      router.refresh();
     } else {
       toast.error(result.error);
     }

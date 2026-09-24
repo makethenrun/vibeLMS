@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -41,7 +40,6 @@ export function DuplicateHomeworkDialog({
   open,
   onOpenChange,
 }: DuplicateHomeworkDialogProps) {
-  const router = useRouter();
   const [target, setTarget] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -57,7 +55,6 @@ export function DuplicateHomeworkDialog({
       toast.success("Задание скопировано");
       setTarget("");
       onOpenChange(false);
-      router.refresh();
     } else {
       toast.error(result.error);
     }
