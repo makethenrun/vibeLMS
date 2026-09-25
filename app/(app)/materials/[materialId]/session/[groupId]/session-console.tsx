@@ -400,7 +400,7 @@ export function SessionConsole({
         {resultsOpen ? (
           <>
             <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setResultsOpen(false)} aria-hidden />
-            <aside className="fixed bottom-0 right-0 top-14 z-50 flex w-[min(760px,calc(100vw-4rem))] flex-col border-l bg-card shadow-xl">
+            <aside className="fixed bottom-0 right-0 top-14 z-50 flex w-[min(1040px,calc(100vw-3rem))] flex-col border-l bg-card shadow-xl">
               <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
                 <p className="text-sm font-semibold">Результаты · выполнили {doneCount}/{results.length}</p>
                 <button type="button" onClick={() => setResultsOpen(false)} aria-label="Закрыть" className="rounded p-1 hover:bg-accent">
