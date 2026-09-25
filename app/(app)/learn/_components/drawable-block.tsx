@@ -11,12 +11,27 @@ const PEN_COLORS = ["#ef4444", "#111827", "#2563eb", "#16a34a", "#eab308"];
 const PEN_WIDTHS = [2, 4, 8];
 
 /**
+ * The fixed logical width of the drawing "stage" (in CSS px). The exercise
+ * content and the drawing canvas both live in this fixed-width coordinate
+ * space, which is then scaled to fit the available width. Because the layout
+ * width never changes, text wraps identically on every monitor, so a stroke
+ * drawn over a word stays over that word everywhere (word-level anchoring).
+ * Wider containers are not upscaled (scale is capped at 1); narrower ones
+ * (phones) scale the whole stage down.
+ */
+const STAGE_WIDTH = 720;
+
+/**
  * Wraps any exercise block with a freehand drawing layer.
  *
  * - Without `onSave` (student/lesson use): strokes are local/ephemeral.
  * - With `onSave` (tutor authoring): the tutor draws over the student view and
  *   saves the annotation; `initial` preloads a previously saved drawing, which
  *   is also shown (read-only) to students.
+ *
+ * Drawings are resolution-independent: content + canvas render in a fixed
+ * {@link STAGE_WIDTH} coordinate space scaled to fit, so both the exercise
+ * layout and the annotation land identically on any screen.
  */
 export function DrawableBlock({
   children,
@@ -36,12 +51,12 @@ export function DrawableBlock({
   /**
    * A read-only drawing (PNG data URL) from someone else — e.g. the tutor's
    * live annotation shown to a student, or a student's drawing watched by the
-   * tutor. Rendered over this same block (the exact region it was captured
-   * over) and scaled by width, so it lines up on any monitor.
+   * tutor. Rendered over this same stage, so it lines up on any monitor.
    */
   overlay?: string | null;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const loadedInitial = useRef(false);
@@ -50,6 +65,13 @@ export function DrawableBlock({
   const [color, setColor] = useState(PEN_COLORS[0]);
   const [width, setWidth] = useState(3);
   const [saving, setSaving] = useState(false);
+  // Scale that fits the fixed-width stage into the available width (≤ 1), and
+  // the resulting host height (the stage's natural height × scale) that the
+  // outer box must reserve since CSS transforms don't affect layout.
+  const [scale, setScale] = useState(1);
+  const [hostHeight, setHostHeight] = useState<number | null>(null);
+  // Left offset that centers the (capped-width) stage on wide screens.
+  const [offsetLeft, setOffsetLeft] = useState(0);
 
   function preload() {
     const c = canvasRef.current;
@@ -57,46 +79,68 @@ export function DrawableBlock({
     loadedInitial.current = true;
     const img = new Image();
     img.onload = () => {
-      // Scale by WIDTH and pin top-left, preserving the drawing's aspect ratio,
-      // so a saved annotation lands in the same place/scale regardless of this
-      // block's current height (which reflows with the viewport). Stretching it
-      // to the full canvas box distorted and shifted it across monitors.
+      // Draw at stage width, top-left, preserving the drawing's aspect ratio,
+      // so a saved annotation lands in the same place/scale as it was drawn.
       const h = img.width ? Math.round(c.width * (img.height / img.width)) : c.height;
       c.getContext("2d")!.drawImage(img, 0, 0, c.width, h);
     };
     img.src = initial;
   }
 
-  function fit() {
+  /**
+   * Recompute the fit scale (from the host width) and the canvas backing store
+   * (fixed stage width × the stage's natural height). Existing strokes are
+   * preserved across a height change.
+   */
+  function relayout() {
+    const host = hostRef.current;
+    const stage = stageRef.current;
     const c = canvasRef.current;
-    const w = wrapRef.current;
-    if (!c || !w) return;
-    const r = w.getBoundingClientRect();
-    if (!r.width || !r.height) return;
-    if (c.width === Math.round(r.width) && c.height === Math.round(r.height)) {
+    if (!host || !stage || !c) return;
+    const hostWidth = host.clientWidth;
+    if (!hostWidth) return;
+
+    const nextScale = Math.min(1, hostWidth / STAGE_WIDTH);
+    // offsetHeight ignores the CSS transform, i.e. it's the natural (unscaled)
+    // stage height.
+    const natural = stage.offsetHeight;
+    if (!natural) return;
+
+    setScale(nextScale);
+    setHostHeight(Math.round(natural * nextScale));
+    setOffsetLeft(Math.round(Math.max(0, (hostWidth - STAGE_WIDTH * nextScale) / 2)));
+
+    const targetW = STAGE_WIDTH;
+    const targetH = Math.round(natural);
+    if (c.width !== targetW || c.height !== targetH) {
+      const snapshot = c.width && c.height ? c.getContext("2d")!.getImageData(0, 0, c.width, c.height) : null;
+      c.width = targetW;
+      c.height = targetH;
+      if (snapshot) c.getContext("2d")!.putImageData(snapshot, 0, 0);
       preload();
-      return;
+    } else {
+      preload();
     }
-    // Preserve existing strokes across a resize.
-    const snapshot = c.width && c.height ? c.getContext("2d")!.getImageData(0, 0, c.width, c.height) : null;
-    c.width = Math.round(r.width);
-    c.height = Math.round(r.height);
-    if (snapshot) c.getContext("2d")!.putImageData(snapshot, 0, 0);
-    preload();
   }
 
   useEffect(() => {
-    fit();
-    const ro = new ResizeObserver(() => fit());
-    if (wrapRef.current) ro.observe(wrapRef.current);
+    relayout();
+    const ro = new ResizeObserver(() => relayout());
+    if (hostRef.current) ro.observe(hostRef.current);
+    if (stageRef.current) ro.observe(stageRef.current);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Map a pointer event to canvas (stage) coordinates. Using the ratio of the
+  // backing store to the rendered (scaled) box makes this correct at any scale.
   function point(e: ReactPointerEvent) {
     const c = canvasRef.current!;
     const r = c.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return {
+      x: ((e.clientX - r.left) * c.width) / r.width,
+      y: ((e.clientY - r.top) * c.height) / r.height,
+    };
   }
   function down(e: ReactPointerEvent) {
     if (!active) return;
@@ -148,20 +192,26 @@ export function DrawableBlock({
   }
 
   return (
-    <div ref={wrapRef} className="relative">
-      {children}
-      <canvas
-        ref={canvasRef}
-        className={cn(
-          "absolute inset-0 h-full w-full touch-none",
-          active ? "cursor-crosshair" : "pointer-events-none",
-        )}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={stop}
-        onPointerCancel={stop}
-      />
-      {overlay ? <LiveDrawingOverlay src={overlay} className="pointer-events-none z-[5]" /> : null}
+    <div ref={hostRef} className="relative" style={{ height: hostHeight ?? undefined }}>
+      <div
+        ref={stageRef}
+        className="absolute top-0"
+        style={{ left: offsetLeft, width: STAGE_WIDTH, transform: `scale(${scale})`, transformOrigin: "top left" }}
+      >
+        {children}
+        <canvas
+          ref={canvasRef}
+          className={cn(
+            "absolute inset-0 touch-none",
+            active ? "cursor-crosshair" : "pointer-events-none",
+          )}
+          onPointerDown={down}
+          onPointerMove={move}
+          onPointerUp={stop}
+          onPointerCancel={stop}
+        />
+        {overlay ? <LiveDrawingOverlay src={overlay} className="pointer-events-none z-[5]" /> : null}
+      </div>
       <div className="absolute right-1 top-1 z-10 flex flex-wrap justify-end gap-1">
         <Button
           size="icon"
