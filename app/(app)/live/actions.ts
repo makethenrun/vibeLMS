@@ -98,6 +98,24 @@ export async function saveTutorDrawingAction(sessionId: string, itemId: string, 
   }
 }
 
+/** Tutor draws for ONE specific student (results panel) — only that student sees it. */
+export async function saveTutorStudentDrawingAction(
+  sessionId: string,
+  studentId: string,
+  itemId: string,
+  drawing: string | null,
+): Promise<ActionResult> {
+  if (!validDrawing(drawing)) return fail("Некорректный рисунок");
+  const db = createServerSupabaseClient();
+  if (!(await sessionStaff(db, sessionId))) return fail("Недостаточно прав");
+  try {
+    await live.upsertDrawing(db, sessionId, itemId, live.tutorStudentAuthor(studentId), studentId, drawing);
+    return ok();
+  } catch (e) {
+    return fail(getErrorMessage(e));
+  }
+}
+
 export async function saveStudentDrawingAction(sessionId: string, itemId: string, drawing: string | null): Promise<ActionResult> {
   const student = await getStudentOrNull();
   if (!student) return fail("Недостаточно прав");
@@ -161,6 +179,7 @@ export async function pollSessionResultsAction(
   results: live.SessionResultRow[];
   tutorDrawings: Record<string, string>;
   watchDrawings: Record<string, string>;
+  watchTutorDrawings: Record<string, string>;
   hands: live.RaisedHand[];
 }>> {
   const db = createServerSupabaseClient();
@@ -171,13 +190,14 @@ export async function pollSessionResultsAction(
     const state = live.toState(session);
     const tree = await getMaterialTree(db, session.material_id);
     const itemIds = itemsForScope(tree, state.kind, state.scopeId);
-    const [results, tutorDrawings, watchDrawings, hands] = await Promise.all([
+    const [results, tutorDrawings, watchDrawings, watchTutorDrawings, hands] = await Promise.all([
       live.getSessionResults(db, session.group_id, itemIds),
       live.getDrawings(db, sessionId, itemIds, live.TUTOR_AUTHOR),
       watchStudentId ? live.getDrawings(db, sessionId, itemIds, watchStudentId) : Promise.resolve({}),
+      watchStudentId ? live.getDrawings(db, sessionId, itemIds, live.tutorStudentAuthor(watchStudentId)) : Promise.resolve({}),
       live.getRaisedHands(db, sessionId),
     ]);
-    return ok({ state, itemIds, results, tutorDrawings, watchDrawings, hands });
+    return ok({ state, itemIds, results, tutorDrawings, watchDrawings, watchTutorDrawings, hands });
   } catch (e) {
     return fail(getErrorMessage(e));
   }
@@ -215,11 +235,14 @@ export async function pollStudentSessionAction(
         .in("item_id", itemIds);
       for (const row of data ?? []) submissions[row.item_id] = row;
     }
-    const [tutorDrawings, myDrawings, handRaised] = await Promise.all([
+    const [broadcastTutor, forMeTutor, myDrawings, handRaised] = await Promise.all([
       live.getDrawings(db, sessionId, itemIds, live.TUTOR_AUTHOR),
+      live.getDrawings(db, sessionId, itemIds, live.tutorStudentAuthor(student.studentId)),
       live.getDrawings(db, sessionId, itemIds, student.studentId),
       live.isHandRaised(db, sessionId, student.studentId),
     ]);
+    // A drawing the tutor made for THIS student overrides the broadcast one per item.
+    const tutorDrawings = { ...broadcastTutor, ...forMeTutor };
     return ok({ state, itemIds, submissions, tutorDrawings, myDrawings, handRaised });
   } catch (e) {
     return fail(getErrorMessage(e));
