@@ -21,6 +21,7 @@ import {
   type ImageTaskVariant,
   type ItemContent,
 } from "@/lib/validators";
+import { BulkFill } from "./bulk-fill";
 
 const VARIANTS: { value: ImageTaskVariant; label: string }[] = [
   { value: "DRAG_IMAGE_TO_WORD", label: "Перенести изображение к слову" },
@@ -63,6 +64,17 @@ export function ImageTaskEditor({ content, onSave }: EditorProps) {
   }
   function patchImage(i: number, p: Partial<ImageDraft>) {
     setImages((prev) => prev.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  }
+  // Fill the pair words from a pasted column (one per line), keeping images and
+  // extending the list when there are more words than existing pairs.
+  function fillWords(lines: string[]) {
+    setPairs((prev) => {
+      const len = Math.max(prev.length, lines.length);
+      return Array.from({ length: len }, (_, i) => ({
+        imageUrl: prev[i]?.imageUrl ?? "",
+        word: i < lines.length ? lines[i] : prev[i]?.word ?? "",
+      }));
+    });
   }
 
   async function handleSave() {
@@ -139,6 +151,11 @@ export function ImageTaskEditor({ content, onSave }: EditorProps) {
       ) : (
         <div className="space-y-2">
           <label className="text-sm font-medium">Пары «изображение — слово»</label>
+          <BulkFill
+            label="Вставить слова колонкой (по одному на строку)"
+            placeholder={"apple\nbanana\ncherry"}
+            onApply={fillWords}
+          />
           {pairs.map((pair, i) => (
             <div key={i} className="flex items-center gap-2 rounded-md border p-2">
               {pair.imageUrl ? (
