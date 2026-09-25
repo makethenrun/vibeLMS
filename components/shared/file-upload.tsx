@@ -5,7 +5,6 @@ import { Loader2, Paperclip, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 
 interface FileUploadProps {
   folder: "materials" | "submissions";
@@ -25,11 +24,6 @@ export function FileUpload({ folder, accept, value, onUploaded }: FileUploadProp
   const [fileName, setFileName] = useState<string | null>(null);
 
   async function handleFile(file: File) {
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error("Файл слишком большой (максимум 25 МБ)");
-      return;
-    }
-
     setUploading(true);
     try {
       const formData = new FormData();

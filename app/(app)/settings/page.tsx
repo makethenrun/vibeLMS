@@ -7,7 +7,6 @@ import type { SettingsInput } from "@/lib/validators";
 import { getSettings } from "@/services/settings/settings.service";
 import { SettingsForm } from "./settings-form";
 import { AllChats } from "./all-chats";
-import { LatencyHistory } from "@/components/dev/latency-history";
 
 export const metadata: Metadata = { title: "Настройки" };
 
@@ -33,16 +32,6 @@ export default async function SettingsPage() {
       />
       {isTutor ? <SettingsForm defaults={defaults} /> : null}
       <AllChats />
-
-      <section className="space-y-2">
-        <div>
-          <h2 className="text-base font-semibold">Диагностика откликов (временно)</h2>
-          <p className="text-xs text-muted-foreground">
-            История времени отклика на нажатия и того, куда нажимали. Скопируйте или скачайте JSON и пришлите для анализа.
-          </p>
-        </div>
-        <LatencyHistory />
-      </section>
     </div>
   );
 }

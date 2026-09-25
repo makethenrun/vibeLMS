@@ -43,8 +43,6 @@ export const ACCEPTED_FILE_EXTENSIONS: Record<(typeof FILE_MATERIAL_TYPES)[numbe
   WEBP: ".webp",
 };
 
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
-
 export const LESSON_STATUS_OPTIONS: { value: LessonStatus; label: string }[] = (
   Object.keys(LESSON_STATUS_LABELS) as LessonStatus[]
 ).map((value) => ({ value, label: LESSON_STATUS_LABELS[value] }));

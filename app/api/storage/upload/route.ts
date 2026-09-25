@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { createServerSupabaseClient } from "@/lib/db/supabase";
 import { uploadFile } from "@/services/storage/storage.service";
 
@@ -22,9 +21,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   if (file.size === 0) {
     return NextResponse.json({ error: "Файл пустой" }, { status: 400 });
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json({ error: "Файл слишком большой (максимум 25 МБ)" }, { status: 413 });
   }
 
   const folder = typeof folderValue === "string" && ALLOWED_FOLDERS.has(folderValue)
