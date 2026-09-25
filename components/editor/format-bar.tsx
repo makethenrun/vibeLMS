@@ -10,8 +10,14 @@ type Field = HTMLInputElement | HTMLTextAreaElement;
 // Highlighter (marker) colours — light so dark text stays readable.
 const COLORS = ["#fde68a", "#a7f3d0", "#bfdbfe", "#fbcfe8", "#ddd6fe", "#fecaca", "#bbf7d0", "#e5e7eb"];
 
+// Text-like input types the bar can wrap a selection inside. Notably excludes
+// `color` so the palette's own colour picker never becomes the target field.
+const TEXT_TYPES = new Set(["text", "search", "url", "email", "tel", "password", "number", ""]);
+
 function isField(el: EventTarget | null): el is Field {
-  return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+  if (el instanceof HTMLTextAreaElement) return true;
+  if (el instanceof HTMLInputElement) return TEXT_TYPES.has((el.type || "text").toLowerCase());
+  return false;
 }
 
 /**
@@ -81,21 +87,35 @@ export function FormatBar() {
               <Highlighter className="h-4 w-4" />
             </Button>
             {colors ? (
-              <div className="absolute bottom-12 right-0 grid grid-cols-4 gap-2 rounded-lg border bg-background p-2 shadow-lg">
-                {COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-label={`Цвет ${c}`}
-                    className="h-7 w-7 rounded-full border shadow-sm transition-transform hover:scale-110"
-                    style={{ backgroundColor: c }}
-                    onMouseDown={noBlur}
-                    onClick={() => {
-                      wrap(`[c=${c}]`, "[/c]");
+              <div className="absolute bottom-12 right-0 rounded-lg border bg-background p-2 shadow-lg">
+                <div className="grid grid-cols-4 gap-2">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-label={`Цвет ${c}`}
+                      className="h-7 w-7 rounded-full border shadow-sm transition-transform hover:scale-110"
+                      style={{ backgroundColor: c }}
+                      onMouseDown={noBlur}
+                      onClick={() => {
+                        wrap(`[c=${c}]`, "[/c]");
+                        setColors(false);
+                      }}
+                    />
+                  ))}
+                </div>
+                <label className="mt-2 flex items-center gap-1 text-xs text-muted-foreground" title="Любой цвет">
+                  Свой цвет:
+                  <input
+                    type="color"
+                    defaultValue="#fde68a"
+                    className="h-6 w-8 cursor-pointer rounded border bg-background p-0.5"
+                    onChange={(e) => {
+                      wrap(`[c=${e.target.value}]`, "[/c]");
                       setColors(false);
                     }}
                   />
-                ))}
+                </label>
               </div>
             ) : null}
           </div>

@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import {
   Bold,
   Heading2,
+  Highlighter,
   ImagePlus,
   Italic,
   Languages,
@@ -12,6 +13,7 @@ import {
   List,
   ListOrdered,
   Loader2,
+  MessageSquareText,
   Type,
   ALargeSmall,
 } from "lucide-react";
@@ -47,12 +49,38 @@ interface UploadResponse {
   error?: string;
 }
 
+// Preset highlight colours (light, so dark text stays readable) — matches the
+// note colours / the plain-text FormatBar palette.
+const HIGHLIGHTS = ["#fde68a", "#a7f3d0", "#bfdbfe", "#fbcfe8", "#ddd6fe", "#fecaca", "#bbf7d0", "#e5e7eb"];
+
 export function RichTextToolbar({ editor }: { editor: Editor }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pinyinOpen, setPinyinOpen] = useState(false);
   const [pinyinRange, setPinyinRange] = useState<{ from: number; to: number }>({ from: 0, to: 0 });
   const [pinyinCurrent, setPinyinCurrent] = useState("");
+  const [colorOpen, setColorOpen] = useState(false);
   const uploadingRef = useRef(false);
+
+  function applyHighlight(color: string) {
+    editor.chain().focus().setHighlightColor(color).run();
+    setColorOpen(false);
+  }
+  function clearHighlight() {
+    editor.chain().focus().unsetHighlightColor().run();
+    setColorOpen(false);
+  }
+
+  function addFootnote() {
+    if (editor.state.selection.empty) {
+      toast.error("Сначала выделите слово или часть текста");
+      return;
+    }
+    const current = (editor.getAttributes("footnote").note as string) ?? "";
+    const note = window.prompt("Текст сноски (всплывает при наведении на слово):", current);
+    if (note === null) return;
+    if (note.trim() === "") editor.chain().focus().unsetFootnote().run();
+    else editor.chain().focus().setFootnote(note.trim()).run();
+  }
 
   async function handleImage(file: File) {
     if (uploadingRef.current) return;
@@ -133,6 +161,46 @@ export function RichTextToolbar({ editor }: { editor: Editor }) {
       <Button type="button" size="icon" variant="ghost" className={btn(editor.isActive("pinyin"))}
         onClick={openPinyin} aria-label="Текст над выделением" title="Текст над выделением (транскрипция)">
         <Languages className="h-4 w-4" />
+      </Button>
+      <div className="relative">
+        <Button type="button" size="icon" variant="ghost" className={btn(editor.getAttributes("textStyle").bgColor != null)}
+          onClick={() => setColorOpen((o) => !o)} aria-label="Цвет фона" title="Цвет фона выделенного текста">
+          <Highlighter className="h-4 w-4" />
+        </Button>
+        {colorOpen ? (
+          <div className="absolute left-0 top-9 z-30 w-max rounded-lg border bg-popover p-2 shadow-lg">
+            <div className="grid grid-cols-4 gap-2">
+              {HIGHLIGHTS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={`Цвет ${c}`}
+                  className="h-6 w-6 rounded-full border shadow-sm transition-transform hover:scale-110"
+                  style={{ backgroundColor: c }}
+                  onClick={() => applyHighlight(c)}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <label className="flex items-center gap-1 text-xs text-muted-foreground" title="Любой цвет">
+                Свой:
+                <input
+                  type="color"
+                  defaultValue="#fde68a"
+                  onChange={(e) => applyHighlight(e.target.value)}
+                  className="h-6 w-8 cursor-pointer rounded border bg-background p-0.5"
+                />
+              </label>
+              <button type="button" className="text-xs text-muted-foreground underline hover:text-foreground" onClick={clearHighlight}>
+                убрать
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+      <Button type="button" size="icon" variant="ghost" className={btn(editor.isActive("footnote"))}
+        onClick={addFootnote} aria-label="Сноска" title="Сноска: всплывающая заметка при наведении">
+        <MessageSquareText className="h-4 w-4" />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
