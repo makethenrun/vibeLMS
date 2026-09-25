@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { itemContentSchema, type CardsContent, type ItemContent } from "@/lib/validators";
+import { BulkFill } from "./bulk-fill";
 
 interface CardDraft {
   imageUrl: string;
@@ -48,6 +49,17 @@ export function CardsEditor({ content, onSave }: EditorProps) {
 
   function update(i: number, patch: Partial<CardDraft>) {
     setCards((prev) => prev.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  }
+  // Fill one field (answer/hint) of the cards from a pasted column, keeping
+  // images and other fields and extending the list as needed.
+  function fillField(field: "answer" | "hint", lines: string[]) {
+    setCards((prev) => {
+      const len = Math.max(prev.length, lines.length);
+      return Array.from({ length: len }, (_, i) => {
+        const base = prev[i] ?? { imageUrl: "", hint: "", answer: "" };
+        return { ...base, [field]: i < lines.length ? lines[i] : base[field] };
+      });
+    });
   }
 
   async function uploadImage(i: number, file: File) {
@@ -147,6 +159,10 @@ export function CardsEditor({ content, onSave }: EditorProps) {
         </div>
       ) : (
         <div className="space-y-2">
+          {mode === "ANSWER" ? (
+            <BulkFill label="Вставить ответы колонкой (по одному на строку)" placeholder={"собака\nкошка\nптица"} onApply={(lines) => fillField("answer", lines)} />
+          ) : null}
+          <BulkFill label="Вставить подсказки колонкой (по одной на строку)" placeholder={"dog\ncat\nbird"} onApply={(lines) => fillField("hint", lines)} />
           {cards.map((card, i) => (
             <div key={i} className="flex items-start gap-2 rounded-md border p-2">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">

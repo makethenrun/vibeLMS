@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import {
   Card,
@@ -21,12 +20,6 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <LoginForm />
-        <p className="text-center text-sm text-muted-foreground">
-          Нет аккаунта?{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
-            Зарегистрироваться
-          </Link>
-        </p>
       </CardContent>
     </Card>
   );
