@@ -160,6 +160,7 @@ export async function duplicateMaterial(db: Db, sourceId: string): Promise<Mater
       title: it.title,
       note: it.note,
       note_hidden: it.note_hidden,
+      note_color: it.note_color,
       retry_disabled: it.retry_disabled,
       font_family: it.font_family,
       font_size: it.font_size,

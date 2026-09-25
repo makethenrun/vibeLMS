@@ -11,7 +11,25 @@ import { cn } from "@/lib/utils";
  * standalone button (e.g. in the gutter beside the image). Stops pointer/click
  * propagation so it never triggers the surrounding exercise (drag, card flip, …).
  */
-export function ImageZoom({ src, className, inline = false }: { src: string; className?: string; inline?: boolean }) {
+const CORNER_POS = {
+  tr: "right-1 top-1",
+  tl: "left-1 top-1",
+  br: "right-1 bottom-1",
+  bl: "left-1 bottom-1",
+} as const;
+
+export function ImageZoom({
+  src,
+  className,
+  inline = false,
+  corner = "tr",
+}: {
+  src: string;
+  className?: string;
+  inline?: boolean;
+  /** Which corner the overlay button sits in (ignored when `inline`). */
+  corner?: keyof typeof CORNER_POS;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -34,7 +52,7 @@ export function ImageZoom({ src, className, inline = false }: { src: string; cla
         className={cn(
           inline
             ? "rounded-md border bg-background p-1.5 text-muted-foreground hover:bg-accent"
-            : "absolute right-1 top-1 z-20 rounded-md bg-black/50 p-1 text-white hover:bg-black/70",
+            : cn("absolute z-20 rounded-md bg-black/50 p-1 text-white hover:bg-black/70", CORNER_POS[corner]),
           className,
         )}
         aria-label="Увеличить"

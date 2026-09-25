@@ -19,16 +19,20 @@ export function Carousel({ images }: { images: CarouselImage[] }) {
   const current = images[Math.min(index, images.length - 1)];
 
   return (
-    <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-lg border">
+    <div className="space-y-2 text-center">
+      {/* The frame hugs the image (inline-block) so the switch arrows sit at the
+          image edges and the box's top-right corner no longer coincides with the
+          exercise's draw button. */}
+      <div className="relative inline-block overflow-hidden rounded-lg border align-top">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={current.url} alt={current.caption ?? "Изображение"} className="mx-auto aspect-square w-full max-w-[200px] rounded-2xl object-cover" />
-        <ImageZoom src={current.url} />
+        <img src={current.url} alt={current.caption ?? "Изображение"} className="block aspect-square w-full max-w-[220px] object-cover" />
+        {/* Bottom-right so it doesn't sit under the exercise's drawing button. */}
+        <ImageZoom src={current.url} corner="br" />
         {images.length > 1 ? (
           <>
             <Button
               type="button" size="icon" variant="secondary"
-              className="absolute left-2 top-1/2 h-8 w-8 -translate-y-1/2"
+              className="absolute left-1 top-1/2 h-8 w-8 -translate-y-1/2"
               onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
               aria-label="Назад"
             >
@@ -36,7 +40,7 @@ export function Carousel({ images }: { images: CarouselImage[] }) {
             </Button>
             <Button
               type="button" size="icon" variant="secondary"
-              className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2"
+              className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
               onClick={() => setIndex((i) => (i + 1) % images.length)}
               aria-label="Вперёд"
             >

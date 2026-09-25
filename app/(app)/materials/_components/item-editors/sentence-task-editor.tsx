@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { LoadingButton } from "@/components/shared/loading-button";
 import {
   Select,
@@ -51,7 +52,9 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
   const [wordSentences, setWordSentences] = useState<string[]>(
     content.wordSentences?.length ? content.wordSentences : content.words.length ? [content.words.join(" ")] : [""],
   );
-  const [sentences, setSentences] = useState<string[]>(content.sentences.length ? content.sentences : [""]);
+  // SENTENCE_ORDER is edited as free text: one sentence per line, in the correct
+  // order. This lets the tutor paste/type several sentences at once via Enter.
+  const [sentencesText, setSentencesText] = useState<string>(content.sentences.join("\n"));
   const [word, setWord] = useState(content.word);
   const [extraLetters, setExtraLetters] = useState(content.extraLetters);
   const [columns, setColumns] = useState<ColumnDraft[]>(
@@ -75,7 +78,7 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       prompt: prompt.trim() || null,
       words: [],
       wordSentences: variant === "WORD_ORDER" ? wordSentences.map((s) => s.trim()).filter(Boolean) : [],
-      sentences: variant === "SENTENCE_ORDER" ? sentences.map((s) => s.trim()).filter(Boolean) : [],
+      sentences: variant === "SENTENCE_ORDER" ? sentencesText.split("\n").map((s) => s.trim()).filter(Boolean) : [],
       word: variant === "WORD_FROM_LETTERS" ? word.trim() : "",
       extraLetters: variant === "WORD_FROM_LETTERS" ? extraLetters.trim() : "",
       columns:
@@ -147,28 +150,15 @@ export function SentenceTaskEditor({ content, onSave }: EditorProps) {
       {variant === "SENTENCE_ORDER" ? (
         <div className="space-y-2">
           <label className="text-sm font-medium">Предложения в правильном порядке</label>
-          {sentences.map((s, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <span className="w-5 text-xs text-muted-foreground">{i + 1}.</span>
-              <Input value={s} onChange={(e) => setSentences((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))} />
-              <Button size="icon" variant="ghost" className="h-7 w-7" disabled={i === 0}
-                onClick={() => setSentences((prev) => { const n = [...prev]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; return n; })} aria-label="Вверх">
-                <ChevronUp className="h-4 w-4" />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7" disabled={i === sentences.length - 1}
-                onClick={() => setSentences((prev) => { const n = [...prev]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n; })} aria-label="Вниз">
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
-                onClick={() => setSentences((prev) => prev.filter((_, j) => j !== i))} aria-label="Удалить">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <Button size="sm" variant="outline" onClick={() => setSentences((prev) => [...prev, ""])}>
-            <Plus className="h-4 w-4" />
-            Предложение
-          </Button>
+          <Textarea
+            rows={6}
+            value={sentencesText}
+            onChange={(e) => setSentencesText(e.target.value)}
+            placeholder={"Первое предложение\nВторое предложение\nТретье предложение"}
+          />
+          <p className="text-xs text-muted-foreground">
+            По одному предложению на строку (Enter — новое предложение), в правильном порядке. Ученику они перемешиваются.
+          </p>
         </div>
       ) : null}
 
