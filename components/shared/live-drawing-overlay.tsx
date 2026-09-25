@@ -9,6 +9,13 @@ import { useEffect, useState } from "react";
  * the new image — so a live drawing appeared to "erase then redraw" on every
  * update. This preloads the next frame off-screen and only swaps the visible
  * image once it has fully loaded, keeping the previous frame until then.
+ *
+ * Positioning is resolution-independent: the overlay is pinned to the top-left
+ * of its (relatively positioned) container and scaled to the container's WIDTH
+ * with the aspect ratio preserved (`height: auto`). This must match how the
+ * drawing was captured — over the same element, sized to its width — so it
+ * lands in the same place and scale on any monitor instead of being stretched
+ * to a different box (which distorted and shifted it).
  */
 export function LiveDrawingOverlay({ src, className }: { src: string; className?: string }) {
   const [shown, setShown] = useState(src);
@@ -22,6 +29,14 @@ export function LiveDrawingOverlay({ src, className }: { src: string; className?
     return () => { cancelled = true; };
   }, [src, shown]);
 
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={shown} alt="" aria-hidden className={className} />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={shown}
+      alt=""
+      aria-hidden
+      className={className}
+      style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "auto" }}
+    />
+  );
 }

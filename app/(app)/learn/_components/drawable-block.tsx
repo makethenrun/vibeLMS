@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import { Check, Eraser, Loader2, Pen, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { LiveDrawingOverlay } from "@/components/shared/live-drawing-overlay";
 import { cn } from "@/lib/utils";
 
 const PEN_COLORS = ["#ef4444", "#111827", "#2563eb", "#16a34a", "#eab308"];
@@ -23,6 +24,7 @@ export function DrawableBlock({
   onSave,
   autoSave = false,
   startActive,
+  overlay,
 }: {
   children: ReactNode;
   initial?: string | null;
@@ -31,6 +33,13 @@ export function DrawableBlock({
   autoSave?: boolean;
   /** Whether drawing starts on (default: on when it can save, off otherwise). */
   startActive?: boolean;
+  /**
+   * A read-only drawing (PNG data URL) from someone else — e.g. the tutor's
+   * live annotation shown to a student, or a student's drawing watched by the
+   * tutor. Rendered over this same block (the exact region it was captured
+   * over) and scaled by width, so it lines up on any monitor.
+   */
+  overlay?: string | null;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,7 +56,14 @@ export function DrawableBlock({
     if (!c || loadedInitial.current || !initial || !c.width || !c.height) return;
     loadedInitial.current = true;
     const img = new Image();
-    img.onload = () => c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+    img.onload = () => {
+      // Scale by WIDTH and pin top-left, preserving the drawing's aspect ratio,
+      // so a saved annotation lands in the same place/scale regardless of this
+      // block's current height (which reflows with the viewport). Stretching it
+      // to the full canvas box distorted and shifted it across monitors.
+      const h = img.width ? Math.round(c.width * (img.height / img.width)) : c.height;
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, h);
+    };
     img.src = initial;
   }
 
@@ -145,6 +161,7 @@ export function DrawableBlock({
         onPointerUp={stop}
         onPointerCancel={stop}
       />
+      {overlay ? <LiveDrawingOverlay src={overlay} className="pointer-events-none z-[5]" /> : null}
       <div className="absolute right-1 top-1 z-10 flex flex-wrap justify-end gap-1">
         <Button
           size="icon"
