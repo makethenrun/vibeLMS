@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { RichTextToolbar } from "./rich-text-toolbar";
 import { Pinyin } from "./pinyin-mark";
 import { FontSize } from "./font-size";
+import { HighlightColor } from "./highlight-color";
+import { Footnote } from "./footnote-mark";
 import { PinyinSelection } from "./pinyin-selection";
 
 interface RichTextEditorProps {
@@ -31,6 +33,8 @@ export function RichTextEditor({ value, onChange, onReady, className }: RichText
       TextStyle,
       FontFamily,
       FontSize,
+      HighlightColor,
+      Footnote,
       Pinyin,
     ],
     content: value as JSONContent,

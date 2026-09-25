@@ -126,3 +126,48 @@
 .pinyin-content h2 {
   line-height: 2.1;
 }
+
+/* Footnote mark (components/editor/footnote-mark.ts): a word with an attached
+   note. A small marker sits at the top-right of the text; hovering the word
+   reveals the note in a pop-up. */
+.footnote-ref {
+  position: relative;
+}
+.footnote-ref > .footnote-base {
+  border-bottom: 1px dotted #d97706;
+}
+.footnote-ref > .footnote-marker {
+  font-size: 0.7em;
+  vertical-align: super;
+  line-height: 0;
+  margin-left: 1px;
+  font-weight: 700;
+  color: #d97706;
+  cursor: help;
+  user-select: none;
+}
+/* The note text is stored as the pop-up's content but hidden until hover. */
+.footnote-ref > .footnote-rt {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 30;
+  display: none;
+  margin-top: 4px;
+  width: max-content;
+  max-width: 260px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  color: #111827;
+  padding: 6px 8px;
+  font-size: 0.78em;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: normal;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+  user-select: none;
+}
+.footnote-ref:hover > .footnote-rt {
+  display: block;
+}
