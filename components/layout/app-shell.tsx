@@ -18,6 +18,7 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { GroupChat } from "./group-chat";
 import { Messenger } from "./messenger";
 import { SidebarNav } from "./sidebar-nav";
+import { SoundControl } from "./sound-control";
 import { UserMenu } from "./user-menu";
 
 interface AppShellProps {
@@ -101,6 +102,7 @@ export function AppShell({ role, login, orgName, logoUrl, liveIndicator, childre
               <span className="hidden sm:inline">{liveIndicator.label}</span>
             </Link>
           ) : null}
+          <SoundControl />
           <GroupChat role={role} />
           <Messenger role={role} />
           <UserMenu login={login} role={role} />

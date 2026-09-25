@@ -1,6 +1,7 @@
 import {
   getMatchTable,
   wordOrderTokens,
+  type AudioContent,
   type CardsContent,
   type GapsContent,
   type ImageTaskContent,
@@ -44,6 +45,18 @@ export interface MatchAnswer {
 export interface CardsAnswer {
   picked: number[]; // pool indices shown, in order
   answers: string[]; // student's typed answer per shown card
+}
+export interface AudioMatchAnswer {
+  order?: string[]; // the `right` values in the student's chosen order
+}
+
+/** Scores an AUDIO match variant: right[i] should equal the correct pair's right. */
+export function scoreAudioMatch(content: AudioContent, answer: AudioMatchAnswer): number {
+  const pairs = content.pairs.filter((p) => p.left.trim() !== "" && p.right.trim() !== "");
+  if (pairs.length === 0) return 0;
+  const order = answer.order ?? [];
+  const correct = pairs.reduce((s, p, i) => s + ((order[i] ?? "") === p.right ? 1 : 0), 0);
+  return pct(correct, pairs.length);
 }
 
 export function scoreCards(content: CardsContent, answer: CardsAnswer): number | null {
@@ -185,6 +198,10 @@ export function checkItem(content: ItemContent, answer: unknown): number | null 
       return matchTableScore(getMatchTable(content as MatchContent), answer as MatchAnswer);
     case "CARDS":
       return scoreCards(content as CardsContent, answer as CardsAnswer);
+    case "AUDIO":
+      return (content as AudioContent).variant && (content as AudioContent).variant !== "PLAYBACK"
+        ? scoreAudioMatch(content as AudioContent, answer as AudioMatchAnswer)
+        : null;
     case "FREE":
       return null;
     default:

@@ -48,8 +48,16 @@ export const audioContentSchema = z.object({
   type: z.literal("AUDIO"),
   // Legacy single audio (kept so old items keep working / old readers see one).
   audioUrl: z.string().trim().max(1000),
-  // One or more audio recordings played in order.
+  // One or more audio recordings played in order (PLAYBACK variant).
   audios: z.array(z.string().trim().max(1000)).max(20).default([]),
+  // PLAYBACK: just listen. MATCH_AUDIO: match an audio to another audio.
+  // MATCH_IMAGE: match an audio to a picture. The match variants are graded by
+  // the student ordering the right column against the fixed left column.
+  variant: z.enum(["PLAYBACK", "MATCH_AUDIO", "MATCH_IMAGE"]).default("PLAYBACK"),
+  prompt: z.string().trim().max(1000).nullable().default(null),
+  // Correct pairs (in order): `left` is an audio URL; `right` is an audio URL
+  // (MATCH_AUDIO) or an image URL (MATCH_IMAGE).
+  pairs: z.array(z.object({ left: z.string().trim().max(1000), right: z.string().trim().max(1000) })).max(20).default([]),
 });
 
 export const videoContentSchema = z.object({
@@ -275,6 +283,13 @@ export const itemContentSchema = z
       }
     }
 
+    if (v.type === "AUDIO" && v.variant !== "PLAYBACK") {
+      const filled = v.pairs.filter((p) => p.left.trim() !== "" && p.right.trim() !== "");
+      if (filled.length < 2) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Добавьте минимум 2 пары", path: ["pairs"] });
+      }
+    }
+
     if (v.type === "CARDS" && v.mode === "ANSWER") {
       v.cards.forEach((c, i) => {
         if (c.answer.trim() === "") {
@@ -376,7 +391,7 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "QUIZ":
       return { type: "QUIZ", timerSeconds: null, questions: [defaultQuestion()] };
     case "AUDIO":
-      return { type: "AUDIO", audioUrl: "", audios: [] };
+      return { type: "AUDIO", audioUrl: "", audios: [], variant: "PLAYBACK", prompt: null, pairs: [] };
     case "VIDEO":
       return { type: "VIDEO", url: "" };
     case "IMAGE":
