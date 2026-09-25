@@ -391,6 +391,7 @@ export interface Database {
           title: string | null;
           note: string | null;
           note_hidden: boolean;
+          note_color: string | null;
           retry_disabled: boolean;
           font_family: string | null;
           font_size: string | null;
@@ -410,6 +411,7 @@ export interface Database {
           title?: string | null;
           note?: string | null;
           note_hidden?: boolean;
+          note_color?: string | null;
           retry_disabled?: boolean;
           font_family?: string | null;
           font_size?: string | null;
@@ -429,6 +431,7 @@ export interface Database {
           title?: string | null;
           note?: string | null;
           note_hidden?: boolean;
+          note_color?: string | null;
           retry_disabled?: boolean;
           font_family?: string | null;
           font_size?: string | null;

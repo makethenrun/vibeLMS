@@ -5,6 +5,8 @@ import { ExternalLink, Lightbulb, RotateCcw, StickyNote } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { audioUrls, imageEntries } from "@/lib/validators";
 import { AudioPlayer } from "@/app/(app)/materials/_components/media/audio-player";
 import { Carousel } from "@/app/(app)/materials/_components/media/carousel";
 import { VideoEmbed } from "@/app/(app)/materials/_components/media/video-embed";
@@ -134,13 +136,26 @@ export function StudentItem({
     switch (item.type) {
       case "INFO":
         return <InfoView doc={(item.content as unknown as InfoContent).doc} />;
-      case "AUDIO":
-        return <AudioPlayer src={(item.content as unknown as AudioContent).audioUrl} />;
+      case "AUDIO": {
+        const urls = audioUrls(item.content as unknown as AudioContent);
+        if (urls.length === 0) return <AudioPlayer src="" />;
+        return (
+          <div className="space-y-2">
+            {urls.map((u, i) => <AudioPlayer key={`${i}-${u}`} src={u} />)}
+          </div>
+        );
+      }
       case "VIDEO":
         return <VideoEmbed url={(item.content as unknown as VideoContent).url} />;
       case "IMAGE": {
-        const c = item.content as unknown as ImageContent;
-        return <ImageAnnotate url={c.url} caption={c.caption} annotations={c.annotations} labels={c.labels} />;
+        const entries = imageEntries(item.content as unknown as ImageContent);
+        return (
+          <div className="space-y-3">
+            {entries.map((im, i) => (
+              <ImageAnnotate key={`${i}-${im.url}`} url={im.url} caption={im.caption} annotations={im.annotations} labels={im.labels} />
+            ))}
+          </div>
+        );
       }
       case "CAROUSEL":
         return <Carousel images={(item.content as unknown as CarouselContent).images} />;
@@ -217,7 +232,13 @@ export function StudentItem({
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
         {hasNote && notesOpen ? (
-          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          <div
+            className={cn(
+              "rounded-md border p-3 text-sm",
+              item.note_color ? "border-black/10 text-foreground" : "border-blue-200 bg-blue-50 text-blue-900",
+            )}
+            style={item.note_color ? { backgroundColor: item.note_color } : undefined}
+          >
             <FormattedText text={item.note} />
           </div>
         ) : null}

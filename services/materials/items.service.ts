@@ -64,6 +64,7 @@ export async function updateItemMeta(db: Db, id: string, meta: ItemMetaInput): P
       title: nullable(meta.title),
       note: nullable(meta.note),
       note_hidden: meta.noteHidden,
+      note_color: meta.noteColor,
       retry_disabled: meta.retryDisabled,
       font_family: meta.fontFamily,
       font_size: meta.fontSize,
@@ -109,6 +110,7 @@ export async function copyItemsToModule(db: Db, itemIds: string[], targetModuleI
     title: s.title,
     note: s.note,
     note_hidden: s.note_hidden,
+    note_color: s.note_color,
     content: s.content,
   }));
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ImageIcon, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,11 @@ export function CardsSolve({
   const [answers, setAnswers] = useState<string[]>(() => picked.map((_, i) => initialAnswer?.answers?.[i] ?? ""));
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // While a flipped card is animating back to its front before we swap in the
+  // next card, block further navigation so the next card's back never shows.
+  const [turning, setTurning] = useState(false);
+  const flipTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (flipTimer.current) window.clearTimeout(flipTimer.current); }, []);
 
   const card = content.cards[picked[pos]];
   const isLastCard = pos === picked.length - 1;
@@ -73,9 +78,25 @@ export function CardsSolve({
   function setAnswer(v: string) {
     setAnswers((prev) => prev.map((a, i) => (i === pos ? v : a)));
   }
+  // The flip animation duration (keep in sync with `duration-500` on the card).
+  const FLIP_MS = 500;
   function go(delta: number) {
-    setFlipped(false);
-    setPos((p) => Math.min(picked.length - 1, Math.max(0, p + delta)));
+    if (turning) return;
+    const target = Math.min(picked.length - 1, Math.max(0, pos + delta));
+    if (target === pos) return;
+    if (flipped) {
+      // Turn the current card back to its front first, then swap in the next
+      // card only after the flip finishes — otherwise the next card's back
+      // (answer/hint) would be briefly visible mid-flip.
+      setFlipped(false);
+      setTurning(true);
+      flipTimer.current = window.setTimeout(() => {
+        setPos(target);
+        setTurning(false);
+      }, FLIP_MS);
+    } else {
+      setPos(target);
+    }
   }
   async function onSubmit() {
     await submit({ picked, answers: studyMode ? [] : answers } as unknown as Json, content);

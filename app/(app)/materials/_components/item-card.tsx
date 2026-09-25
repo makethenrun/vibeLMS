@@ -94,6 +94,7 @@ export function ItemCard({
   const [title, setTitle] = useState(item.title ?? "");
   const [note, setNote] = useState(item.note ?? "");
   const [noteHidden, setNoteHidden] = useState(item.note_hidden);
+  const [noteColor, setNoteColor] = useState<string | null>(item.note_color);
   const [retryDisabled, setRetryDisabled] = useState(item.retry_disabled);
   const [fontFamily, setFontFamily] = useState<string | null>(item.font_family);
   const [fontSize, setFontSize] = useState<string | null>(item.font_size);
@@ -139,6 +140,7 @@ export function ItemCard({
     title?: string;
     note?: string;
     noteHidden?: boolean;
+    noteColor?: string | null;
     retryDisabled?: boolean;
     fontFamily?: string | null;
     fontSize?: string | null;
@@ -150,6 +152,7 @@ export function ItemCard({
       title: next?.title ?? title,
       note: next?.note ?? note,
       noteHidden: next?.noteHidden ?? noteHidden,
+      noteColor: next?.noteColor !== undefined ? next.noteColor : noteColor,
       retryDisabled: next?.retryDisabled ?? retryDisabled,
       fontFamily: next?.fontFamily !== undefined ? next.fontFamily : fontFamily,
       fontSize: next?.fontSize !== undefined ? next.fontSize : fontSize,
@@ -427,8 +430,9 @@ export function ItemCard({
               placeholder="Заметка к упражнению…"
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              style={noteColor ? { backgroundColor: noteColor } : undefined}
             />
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
@@ -439,6 +443,30 @@ export function ItemCard({
                   }}
                 />
                 Скрыть от ученика
+              </label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Цвет фона заметки">
+                Цвет фона:
+                <input
+                  type="color"
+                  value={noteColor ?? "#dbeafe"}
+                  onChange={(e) => {
+                    setNoteColor(e.target.value);
+                    void saveMeta({ noteColor: e.target.value });
+                  }}
+                  className="h-7 w-9 cursor-pointer rounded border bg-background p-0.5"
+                />
+                {noteColor ? (
+                  <button
+                    type="button"
+                    className="rounded px-1 text-muted-foreground underline hover:text-foreground"
+                    onClick={() => {
+                      setNoteColor(null);
+                      void saveMeta({ noteColor: null });
+                    }}
+                  >
+                    сбросить
+                  </button>
+                ) : null}
               </label>
               <Button size="sm" variant="outline" onClick={() => saveMeta({ note })}>
                 Сохранить заметку

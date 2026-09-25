@@ -46,7 +46,10 @@ export const quizContentSchema = z.object({
 
 export const audioContentSchema = z.object({
   type: z.literal("AUDIO"),
+  // Legacy single audio (kept so old items keep working / old readers see one).
   audioUrl: z.string().trim().max(1000),
+  // One or more audio recordings played in order.
+  audios: z.array(z.string().trim().max(1000)).max(20).default([]),
 });
 
 export const videoContentSchema = z.object({
@@ -54,25 +57,36 @@ export const videoContentSchema = z.object({
   url: z.string().trim().max(1000),
 });
 
+// Text label placed on an image, on a white block. x/y are percentages (0..100)
+// of the image box (label centre). opacity is the white block's opacity in
+// percent (0 = fully transparent, 100 = solid white).
+export const imageLabelSchema = z.object({
+  text: z.string().trim().max(200),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  opacity: z.number().min(0).max(100).default(100),
+  size: z.number().min(10).max(96).default(16),
+});
+
+// One image with its own caption, drawing overlay and labels.
+export const imageEntrySchema = z.object({
+  url: nonEmpty.max(1000),
+  caption: z.string().trim().max(500).nullable().default(null),
+  annotations: z.string().max(3_000_000).nullable().default(null),
+  labels: z.array(imageLabelSchema).max(30).default([]),
+});
+
 export const imageContentSchema = z.object({
   type: z.literal("IMAGE"),
+  // Legacy single image (kept so old items keep working / old readers see one);
+  // mirrors the first entry of `images`.
   url: z.string().trim().max(1000),
   caption: z.string().trim().max(500).nullable(),
   // Teacher's saved drawing overlay, as a PNG data URL (null = none).
   annotations: z.string().max(3_000_000).nullable().default(null),
-  // Text labels placed on the image, each on a white block. x/y are percentages
-  // (0..100) of the image box (label centre). opacity is the white block's
-  // opacity in percent (0 = fully transparent, 100 = solid white).
-  labels: z
-    .array(z.object({
-      text: z.string().trim().max(200),
-      x: z.number().min(0).max(100),
-      y: z.number().min(0).max(100),
-      opacity: z.number().min(0).max(100).default(100),
-      size: z.number().min(10).max(96).default(16),
-    }))
-    .max(30)
-    .default([]),
+  labels: z.array(imageLabelSchema).max(30).default([]),
+  // One or more images, each with its own caption / drawing / labels.
+  images: z.array(imageEntrySchema).max(20).default([]),
 });
 
 export const carouselContentSchema = z.object({
@@ -326,7 +340,30 @@ export type GapsContent = z.infer<typeof gapsContentSchema>;
 export type FreeContent = z.infer<typeof freeContentSchema>;
 export type MatchContent = z.infer<typeof matchContentSchema>;
 export type CardsContent = z.infer<typeof cardsContentSchema>;
+export type ImageEntry = z.infer<typeof imageEntrySchema>;
+export type ImageLabel = z.infer<typeof imageLabelSchema>;
 export type ItemContent = z.infer<typeof itemContentSchema>;
+
+/** The audio recordings of an AUDIO item (new `audios`, falling back to legacy `audioUrl`). */
+export function audioUrls(content: { audios?: string[]; audioUrl?: string }): string[] {
+  if (content.audios && content.audios.length > 0) return content.audios.filter((u) => u.trim() !== "");
+  return content.audioUrl && content.audioUrl.trim() !== "" ? [content.audioUrl] : [];
+}
+
+/** The images of an IMAGE item (new `images`, falling back to the legacy single image). */
+export function imageEntries(content: {
+  images?: ImageEntry[];
+  url?: string;
+  caption?: string | null;
+  annotations?: string | null;
+  labels?: ImageLabel[];
+}): ImageEntry[] {
+  if (content.images && content.images.length > 0) return content.images;
+  if (content.url && content.url.trim() !== "") {
+    return [{ url: content.url, caption: content.caption ?? null, annotations: content.annotations ?? null, labels: content.labels ?? [] }];
+  }
+  return [];
+}
 
 function defaultQuestion(): MaterialQuestion {
   return { question: "Вопрос", options: ["Вариант 1", "Вариант 2"], correctAnswers: ["Вариант 1"], correctAnswer: "", grading: "STRICT" };
@@ -339,11 +376,11 @@ export function defaultContentFor(type: MaterialItemType): ItemContent {
     case "QUIZ":
       return { type: "QUIZ", timerSeconds: null, questions: [defaultQuestion()] };
     case "AUDIO":
-      return { type: "AUDIO", audioUrl: "" };
+      return { type: "AUDIO", audioUrl: "", audios: [] };
     case "VIDEO":
       return { type: "VIDEO", url: "" };
     case "IMAGE":
-      return { type: "IMAGE", url: "", caption: null, annotations: null, labels: [] };
+      return { type: "IMAGE", url: "", caption: null, annotations: null, labels: [], images: [] };
     case "CAROUSEL":
       return { type: "CAROUSEL", images: [] };
     case "LINK":
