@@ -83,6 +83,7 @@ export function StudentItem({
   drawingOverride,
   liveDraw = false,
   drawStartActive,
+  overlay,
 }: {
   item: ItemRow;
   number?: string | null;
@@ -92,6 +93,8 @@ export function StudentItem({
   drawingOverride?: string | null;
   liveDraw?: boolean;
   drawStartActive?: boolean;
+  /** Read-only drawing from someone else (tutor→student live, or watched student). */
+  overlay?: string | null;
 }) {
   const review = useContext(ReviewContext);
   const submittedAt = submission?.submitted_at;
@@ -225,6 +228,7 @@ export function StudentItem({
               onSave={saveDrawing}
               autoSave={liveDraw}
               startActive={drawStartActive}
+              overlay={overlay}
             >
               <div key={solveKey} style={itemTextStyle(item.font_family, item.font_size)}>{render()}</div>
             </DrawableBlock>
