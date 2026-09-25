@@ -8,7 +8,6 @@ import { PinyinBar } from "@/components/editor/pinyin-bar";
 import { ExtraKeyboards } from "@/components/editor/extra-keyboards";
 import { EnabledKeyboardsProvider } from "@/components/editor/keyboards-context";
 import { FormatBar } from "@/components/editor/format-bar";
-import { LatencyMeter } from "@/components/dev/latency-meter";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -36,7 +35,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <PinyinBar />
       <FormatBar />
       <ExtraKeyboards enabled={Array.isArray(settings.enabled_keyboards) ? (settings.enabled_keyboards as string[]) : []} />
-      <LatencyMeter role={user.role} login={user.login} />
     </AppShell>
   );
 }

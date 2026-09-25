@@ -19,9 +19,11 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      // Allow slightly larger payloads for form submissions (file uploads use a
-      // dedicated route handler, not Server Actions).
-      bodySizeLimit: "2mb",
+      // Large payloads for form submissions / saved drawings. File uploads use a
+      // dedicated route handler (no app-level size cap). Note: on Vercel the
+      // platform still caps a serverless request body at ~4.5 MB regardless of
+      // this value — larger files need a direct-to-storage (signed URL) upload.
+      bodySizeLimit: "50mb",
     },
   },
 };

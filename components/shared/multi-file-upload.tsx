@@ -5,7 +5,6 @@ import { Loader2, Paperclip, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { MAX_UPLOAD_BYTES } from "@/lib/constants";
 
 interface MultiFileUploadProps {
   folder: "materials" | "submissions";
@@ -43,10 +42,6 @@ export function MultiFileUpload({
   const atMax = value.length >= max;
 
   async function uploadOne(file: File): Promise<string | null> {
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error(`«${file.name}» слишком большой (максимум 25 МБ)`);
-      return null;
-    }
     const formData = new FormData();
     formData.append("file", file);
     formData.append("folder", folder);
