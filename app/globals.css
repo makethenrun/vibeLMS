@@ -86,8 +86,9 @@
     scroll-behavior: smooth;
     /* Root font scale for the whole UI: all rem-based sizes (incl. the named
        Tailwind text classes and the em-based pinyin ruby) follow this.
-       86.25% = the earlier 115% reduced by 25%. */
-    font-size: 86.25%;
+       103.5% = 86.25% raised by 20%. The nav panel counter-scales (see
+       Workspace) so it keeps its previous size. */
+    font-size: 103.5%;
   }
   body {
     @apply bg-background text-foreground antialiased;
