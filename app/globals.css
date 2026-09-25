@@ -84,9 +84,10 @@
   }
   html {
     scroll-behavior: smooth;
-    /* Scale the whole UI up by 15% (rem-based sizes, incl. the em-based pinyin
-       ruby, follow the root size). */
-    font-size: 115%;
+    /* Root font scale for the whole UI: all rem-based sizes (incl. the named
+       Tailwind text classes and the em-based pinyin ruby) follow this.
+       86.25% = the earlier 115% reduced by 25%. */
+    font-size: 86.25%;
   }
   body {
     @apply bg-background text-foreground antialiased;
