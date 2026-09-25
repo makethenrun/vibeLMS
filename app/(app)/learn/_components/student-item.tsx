@@ -39,6 +39,7 @@ import { QuizSolve } from "./quiz-solve";
 import { GapsDragSolve } from "./solves/gaps-drag-solve";
 import { ImageTaskSolve } from "./solves/image-task-solve";
 import { CardsSolve } from "./solves/cards-solve";
+import { AudioMatchSolve } from "./solves/audio-match-solve";
 import { MatchColumnsSolve } from "./solves/match-columns-solve";
 import { SentenceSolve } from "./solves/sentence-solve";
 import { ReviewContext } from "./submit-context";
@@ -125,7 +126,8 @@ export function StudentItem({
   // submit (INFO/audio/image/link, or cards in study mode) get a manual button.
   const submitsAnswer =
     ["QUIZ", "GAPS", "IMAGE_TASK", "SENTENCE_TASK", "MATCH", "FREE"].includes(item.type) ||
-    (item.type === "CARDS" && (item.content as unknown as CardsContent).mode === "ANSWER");
+    (item.type === "CARDS" && (item.content as unknown as CardsContent).mode === "ANSWER") ||
+    (item.type === "AUDIO" && ((item.content as unknown as AudioContent).variant ?? "PLAYBACK") !== "PLAYBACK");
   const showVocabImport = vocabHasContent && !submitsAnswer;
   const showExplanation =
     !cleared && Boolean(item.explanation) && submission?.score != null && submission.score < 100;
@@ -137,7 +139,11 @@ export function StudentItem({
       case "INFO":
         return <InfoView doc={(item.content as unknown as InfoContent).doc} />;
       case "AUDIO": {
-        const urls = audioUrls(item.content as unknown as AudioContent);
+        const c = item.content as unknown as AudioContent;
+        if (c.variant && c.variant !== "PLAYBACK") {
+          return <AudioMatchSolve itemId={item.id} content={c} initialScore={initialScore} initialAnswer={savedAnswer} />;
+        }
+        const urls = audioUrls(c);
         if (urls.length === 0) return <AudioPlayer src="" />;
         return (
           <div className="space-y-2">

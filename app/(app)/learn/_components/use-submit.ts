@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import type { ItemContent } from "@/lib/validators";
 import type { Json } from "@/types";
+import { playAnswerSound } from "@/lib/audio/answer-sound";
 import { SubmitContext } from "./submit-context";
 
 export function useSubmit(itemId: string, initialScore: number | null | undefined) {
@@ -17,6 +18,8 @@ export function useSubmit(itemId: string, initialScore: number | null | undefine
     try {
       const result = await submitFn(itemId, answer, content);
       setScore(result);
+      // Short feedback sound (full score = correct chime; partial/zero = buzz).
+      if (typeof result === "number") playAnswerSound(result);
       toast.success("Задание выполнено");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
