@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Hand, MonitorPlay, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Hand, Loader2, MonitorPlay, Pin, PinOff, Radio, Square, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   endSessionAction,
   pollSessionResultsAction,
   saveTutorDrawingAction,
+  saveTutorStudentDrawingAction,
   setActiveScopeAction,
   setFocusedItemAction,
 } from "@/app/(app)/live/actions";
@@ -128,7 +129,11 @@ export function SessionConsole({
     students.map((s) => ({ studentId: s.id, fullName: s.fullName, submissions: {} })),
   );
   const [tutorDrawings, setTutorDrawings] = useState<Record<string, string>>(initialTutorDrawings);
+  // watchDrawings: the expanded student's own drawings (tutor sees them).
+  // watchTutorDrawings: what the tutor has drawn FOR that student (per-student).
   const [watchDrawings, setWatchDrawings] = useState<Record<string, string>>({});
+  const [watchTutorDrawings, setWatchTutorDrawings] = useState<Record<string, string>>({});
+  const [expandedLoaded, setExpandedLoaded] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
@@ -159,6 +164,8 @@ export function SessionConsole({
         setResults(res.data.results);
         setTutorDrawings(res.data.tutorDrawings);
         setWatchDrawings(res.data.watchDrawings);
+        setWatchTutorDrawings(res.data.watchTutorDrawings);
+        if (expandedRef.current) setExpandedLoaded(true);
         setFocusedItemId(res.data.state.focusedItemId);
         // Toast newly raised hands (ids not seen on the previous poll).
         const seen = handIdsRef.current;
@@ -219,6 +226,31 @@ export function SessionConsole({
   async function saveTutorDrawing(itemId: string, dataUrl: string | null) {
     const res = await saveTutorDrawingAction(sessionId, itemId, dataUrl);
     if (!res.success) toast.error(res.error);
+  }
+
+  // Tutor draws for one specific student in the results panel — only that
+  // student sees it. Keep it locally so it survives the next poll.
+  async function saveTutorStudentDrawing(studentId: string, itemId: string, dataUrl: string | null) {
+    setWatchTutorDrawings((prev) => {
+      const next = { ...prev };
+      if (dataUrl) next[itemId] = dataUrl;
+      else delete next[itemId];
+      return next;
+    });
+    const res = await saveTutorStudentDrawingAction(sessionId, studentId, itemId, dataUrl);
+    if (!res.success) toast.error(res.error);
+  }
+
+  function toggleExpanded(studentId: string) {
+    const opening = expanded !== studentId;
+    setWatchDrawings({});
+    setWatchTutorDrawings({});
+    setExpandedLoaded(false);
+    setExpanded(opening ? studentId : null);
+    // Point the ref now so the immediate poll fetches this student's drawings
+    // (the ref is otherwise only synced on the next render).
+    expandedRef.current = opening ? studentId : null;
+    if (opening) void poll();
   }
 
   async function clearHand(studentId: string) {
@@ -420,7 +452,7 @@ export function SessionConsole({
                     <button
                       type="button"
                       className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-sm"
-                      onClick={() => { setWatchDrawings({}); setExpanded(isOpen ? null : r.studentId); }}
+                      onClick={() => toggleExpanded(r.studentId)}
                     >
                       <span className="flex items-center gap-1 truncate">
                         {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -435,16 +467,29 @@ export function SessionConsole({
                     </button>
                     {isOpen ? (
                       <div className="space-y-2 border-t p-2">
-                        {hasAny || Object.keys(watchDrawings).length > 0 ? (
+                        {!expandedLoaded ? (
+                          <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Загрузка…</p>
+                        ) : (
                           <PreviewProvider>
+                            {!hasAny ? (
+                              <p className="text-xs text-muted-foreground">Ученик ещё ничего не сделал — можно писать пометки поверх задания.</p>
+                            ) : null}
                             {broadcastItemIds.map((id) => {
                               const item = itemById.get(id);
                               if (!item) return null;
                               const sub = r.submissions[id];
                               return (
-                                <div key={id} className="space-y-2">
+                                <div key={`${r.studentId}-${id}`} className="space-y-2">
                                   <div className="relative">
-                                    <StudentItem item={item} submission={sub} drawingOverride={null} overlay={watchDrawings[id] ?? null} />
+                                    <StudentItem
+                                      item={item}
+                                      submission={sub}
+                                      drawingOverride={watchTutorDrawings[id] ?? null}
+                                      saveDrawing={(d) => saveTutorStudentDrawing(r.studentId, id, d)}
+                                      liveDraw
+                                      drawStartActive={false}
+                                      overlay={watchDrawings[id] ?? null}
+                                    />
                                   </div>
                                   {item.type === "FREE" && sub ? (
                                     <FreeAnswerEditor
@@ -457,8 +502,6 @@ export function SessionConsole({
                               );
                             })}
                           </PreviewProvider>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Ученик ещё ничего не сделал.</p>
                         )}
                       </div>
                     ) : null}

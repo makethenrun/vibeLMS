@@ -14,6 +14,11 @@ export interface SessionState {
 
 export const TUTOR_AUTHOR = "tutor";
 
+/** Author key for a drawing the tutor makes for ONE specific student (results panel). */
+export function tutorStudentAuthor(studentId: string): string {
+  return `tutor:${studentId}`;
+}
+
 export interface SessionResultRow {
   studentId: string;
   fullName: string;
